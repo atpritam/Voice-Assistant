@@ -1,0 +1,153 @@
+
+{
+  "order": {
+    "patterns": [
+      "I want to order a pizza",
+      "place an order",
+      "order pizza",
+      "can I order",
+      "I'd like to order",
+      "make an order",
+      "order food",
+      "place order",
+      "I want pizza",
+      "can I get a pizza",
+      "order delivery",
+      "order pickup",
+      "start an order",
+      "new order",
+      "I'd like a large pepperoni",
+      "order a medium pizza",
+      "can I place an order",
+      "buy pizza"
+    ],
+    "similarity_threshold": 0.35
+  },
+  "complaint": {
+    "patterns": [
+      "I have a complaint",
+      "my order is wrong",
+      "wrong order",
+      "pizza is cold",
+      "late delivery",
+      "order never arrived",
+      "missing items",
+      "problem with order",
+      "I do not like the pizza",
+      "issue with pizza",
+      "not satisfied",
+      "bad service",
+      "terrible experience",
+      "speak to manager",
+      "refund please",
+      "want my money back",
+      "pizza is burnt",
+      "wrong toppings",
+      "complaint about order"
+    ],
+    "similarity_threshold": 0.3
+  },
+  "hours_location": {
+    "patterns": [
+      "what are your hours",
+      "when are you open",
+      "opening hours",
+      "closing time",
+      "what time do you close",
+      "what time do you open",
+      "are you open now",
+      "open today",
+      "hours of operation",
+      "where are you located",
+      "what's your address",
+      "location",
+      "where is the store",
+      "nearest location",
+      "find a store",
+      "store address",
+      "business hours",
+      "when do you close"
+    ],
+    "similarity_threshold": 0.35
+  },
+  "menu_inquiry": {
+    "patterns": [
+      "what's on the menu",
+      "show me the menu",
+      "menu options",
+      "what pizzas do you have",
+      "pizza menu",
+      "what toppings",
+      "specialty pizzas",
+      "deals and specials",
+      "what sides do you have",
+      "dessert menu",
+      "drink options",
+      "do you have",
+      "what sizes",
+      "pizza sizes",
+      "crust options",
+      "gluten free options",
+      "vegan options",
+      "prices",
+      "how much is",
+      "cost of pizza",
+      "special offers",
+      "promotions"
+    ],
+    "similarity_threshold": 0.3
+  },
+  "delivery": {
+    "patterns": [
+      "do you deliver",
+      "delivery options",
+      "how long for delivery",
+      "delivery time",
+      "track my order",
+      "where is my order",
+      "order status",
+      "delivery fee",
+      "delivery charge",
+      "free delivery",
+      "minimum order for delivery",
+      "delivery area",
+      "do you deliver to",
+      "how much is delivery",
+      "estimated delivery time",
+      "when will my order arrive",
+      "track delivery",
+      "delivery eta",
+      "what is the status of my order delivery?"
+    ],
+    "similarity_threshold": 0.35
+  },
+  "general": {
+    "patterns": [
+      "hello",
+      "hi",
+      "hey",
+      "good morning",
+      "good afternoon",
+      "good evening",
+      "thank you",
+      "thanks",
+      "goodbye",
+      "bye",
+      "help",
+      "can you help me",
+      "what can you do",
+      "I need help",
+      "yes",
+      "no",
+      "okay",
+      "sure",
+      "sounds good",
+      "appreciate it"
+    ],
+    "similarity_threshold": 0.5
+  },
+  "unknown": {
+    "patterns": [],
+    "similarity_threshold": 0.0
+  }
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assistant - Real-Time</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Assistant</h1>
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-indicator" id="statusIndicator"></span>
+        </div>
+      </header>
+
+      <div class="chat-container">
+        <div class="conversation-history" id="conversationHistory">
+          <!-- Messages will be displayed here -->
+        </div>
+
+        <div class="input-container">
+          <div class="input-group">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type your message here..."
+              maxlength="500"
+            />
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+          </div>
+          <div class="input-actions">
+            <button id="clearButton" onclick="clearHistory()">
+              Clear History
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/scripts.js"></script>
+  </body>
+</html>
