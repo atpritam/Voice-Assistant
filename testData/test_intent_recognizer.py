@@ -1,15 +1,17 @@
 """
 Test script for Intent Recognizer
 Runs test dataset and displays statistics
+Activate VENV first: source .venv/bin/activate
 Run: python -m testData.test_intent_recognizer
 """
 
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from utils.intent_recognizer import IntentRecognizer
+from intentRecognizer.intent_recognizer import IntentRecognizer
+from testData.test_data import get_test_dataset
 
 
 def run_comprehensive_test():
@@ -20,49 +22,7 @@ def run_comprehensive_test():
     print()
 
     # Comprehensive test dataset
-    test_data = [
-        # Order intents
-        ("I want to order a large pepperoni pizza", "order"),
-        ("Can I get two medium pizzas with extra cheese", "order"),
-        ("I'd like to purchase a pizza", "order"),
-        ("Place an order for delivery", "order"),
-        ("I want a small pizza", "order"),
-
-        # Complaint intents
-        ("My pizza was cold when it arrived", "complaint"),
-        ("This is terrible, I want a refund", "complaint"),
-        ("The order is wrong and I'm very disappointed", "complaint"),
-        ("My pizza is burnt", "complaint"),
-        ("I have a complaint about my order", "complaint"),
-
-        # Hours/Location intents
-        ("What time do you close", "hours_location"),
-        ("When are you open", "hours_location"),
-        ("What's your address", "hours_location"),
-        ("Where are you located", "hours_location"),
-        ("What are your business hours", "hours_location"),
-
-        # Menu inquiry intents
-        ("What toppings do you have", "menu_inquiry"),
-        ("What's on your menu", "menu_inquiry"),
-        ("How much does a large pizza cost", "menu_inquiry"),
-        ("Do you have vegetarian options", "menu_inquiry"),
-        ("What sizes do you offer", "menu_inquiry"),
-
-        # Delivery tracking intents
-        ("Where is my order", "delivery"),
-        ("Can you track my delivery", "delivery"),
-        ("What's the status of my pizza", "delivery"),
-        ("How much is the delivery fee", "delivery"),
-        ("When will my order arrive", "delivery"),
-
-        # General/greeting intents
-        ("Hello", "general"),
-        ("Hi there", "general"),
-        ("Thanks for your help", "general"),
-        ("Good morning", "general"),
-        ("Goodbye", "general"),
-    ]
+    test_data = get_test_dataset()
 
     print(f"Running tests on {len(test_data)} queries...")
     print()

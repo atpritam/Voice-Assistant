@@ -6,8 +6,9 @@ import os
 
 # Utils directory path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'intentRecognizer'))
 
-from utils.intent_recognizer import IntentRecognizer
+from intentRecognizer.intent_recognizer import IntentRecognizer
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'hjbasfbue76t34g76wgv3bywyu47'
@@ -17,8 +18,11 @@ CORS(app)
 # Conversation history
 conversation_history = []
 
-# Initialize intent recognizer
-intent_recognizer = IntentRecognizer()
+# Initialize intent recognizer with LLM fallback enabled
+intent_recognizer = IntentRecognizer(
+    enable_logging=True,
+    enable_llm_fallback=True
+)
 
 @socketio.on('connect')
 def handle_connect():
@@ -52,7 +56,9 @@ def handle_message(data):
             'timestamp': len(conversation_history),
             'intent': intent_info.intent,
             'confidence': intent_info.confidence_level,
-            'similarity': intent_info.confidence
+            'similarity': intent_info.confidence,
+            'used_llm': intent_info.used_llm,
+            'processing_method': intent_info.processing_method
         })
 
         # Send response back to client
@@ -63,7 +69,10 @@ def handle_message(data):
             'intent_info': {
                 'intent': intent_info.intent,
                 'confidence': intent_info.confidence_level,
-                'similarity': intent_info.confidence
+                'similarity': intent_info.confidence,
+                'used_llm': intent_info.used_llm,
+                'processing_method': intent_info.processing_method,
+                'llm_explanation': intent_info.llm_explanation
             }
         })
 
@@ -86,6 +95,14 @@ def handle_clear_history():
 def index():
     """Static HTML page"""
     return app.send_static_file('index.html')
+
+
+@app.route('/statistics')
+def get_statistics():
+    """Get system statistics including LLM usage"""
+    from flask import jsonify
+    stats = intent_recognizer.get_statistics()
+    return jsonify(stats)
 
 
 if __name__ == '__main__':

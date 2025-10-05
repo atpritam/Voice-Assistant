@@ -1,7 +1,7 @@
 """
-Intent Recognition System - Algorithm Layer Only
+Algorithmic Intent Recognizer
+Handles pattern matching, keyword analysis, and Levenshtein distance-based recognition
 Optimized for ASR (Automatic Speech Recognition) input
-Uses keyword matching, Levenshtein distance, and intelligent scoring
 """
 
 import json
@@ -13,16 +13,18 @@ import Levenshtein
 
 
 @dataclass
-class RecognitionResult:
-    """Structured result from intent recognition"""
+class AlgorithmicResult:
+    """Result from algorithmic recognition"""
     intent: str
     confidence: float
     confidence_level: str  # 'high', 'medium', 'low'
     matched_pattern: str
     processing_method: str  # 'keyword', 'levenshtein', 'combined'
+    score_breakdown: Dict
 
 
-class IntentRecognizer:
+class AlgorithmicRecognizer:
+    """Pattern-based intent recognition using keywords and string similarity"""
 
     def __init__(
             self,
@@ -31,17 +33,17 @@ class IntentRecognizer:
             min_confidence: float = 0.5
     ):
         """
-        Initialize the intent recognizer
+        Initialize the algorithmic recognizer
 
         Args:
             patterns_file: Path to JSON file with intent patterns
-            enable_logging: Enable detailed logging for analysis
+            enable_logging: Enable detailed logging
             min_confidence: Minimum confidence threshold (default: 0.5)
         """
         # Paths
         if patterns_file is None:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            patterns_file = os.path.join(current_dir, 'intent_patterns.json')
+            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+            patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
 
         self.patterns_file = patterns_file
         self.min_confidence = min_confidence
@@ -68,7 +70,7 @@ class IntentRecognizer:
         self.stats = {
             'total_queries': 0,
             'intent_distribution': {},
-            'avg_confidence': [],
+            'avg_confidence': []
         }
 
     def _load_patterns(self) -> Dict:
@@ -115,7 +117,8 @@ class IntentRecognizer:
             'hours': {'hours', 'open', 'close', 'time', 'opening', 'closing', 'schedule'},
             'location': {'location', 'address', 'where', 'place', 'store', 'restaurant', 'shop'},
             'track': {'track', 'status', 'where', 'find', 'locate'},
-            'price': {'price', 'cost', 'much', 'expensive', 'cheap', 'charge', 'fee'}
+            'price': {'price', 'cost', 'much', 'expensive', 'cheap', 'charge', 'fee', 'prices'},
+            'specialty': {'specialty', 'special', 'signature', 'featured', 'premium'}
         }
 
         # Common filler words in speech (to be removed)
@@ -127,15 +130,14 @@ class IntentRecognizer:
 
         # Critical keywords that strongly indicate specific intents
         self.intent_critical_keywords = {
-            'order': {'order', 'buy', 'purchase', 'want', 'get', 'pizza', 'large', 'medium', 'small'},
+            'order': {'order', 'buy', 'purchase', 'want', 'get', 'place', 'make'},
             'complaint': {'wrong', 'cold', 'late', 'missing', 'burnt', 'complaint',
                           'problem', 'issue', 'refund', 'manager', 'terrible', 'horrible', 'bad'},
             'hours_location': {'hours', 'open', 'close', 'address', 'location',
                                'where', 'when', 'time'},
             'menu_inquiry': {'menu', 'toppings', 'sizes', 'price', 'cost',
-                             'have', 'options', 'special', 'deal'},
-            'delivery': {'delivery', 'deliver', 'track', 'status', 'eta',
-                         'arrive', 'fee', 'charge', 'time'},
+                             'have', 'options', 'special', 'deal', 'signature'},
+            'delivery': {'track', 'status', 'eta', 'arrive', 'fee', 'charge'},
             'general': {'hello', 'hi', 'hey', 'thanks', 'thank', 'bye',
                         'goodbye', 'help', 'assist'}
         }
@@ -214,7 +216,7 @@ class IntentRecognizer:
                     break
         return expanded
 
-    def _calculate_similarity(self, query: str, pattern: str) -> Tuple[float, Dict]:
+    def _calculate_similarity(self, query: str, pattern: str, intent_name: str = None) -> Tuple[float, Dict]:
         """
         Calculate multi-metric similarity score between query and pattern
 
@@ -273,13 +275,12 @@ class IntentRecognizer:
         phrase_bonus = self._calculate_phrase_bonus(query_words_filtered, pattern_words_filtered)
 
         # METRIC 4: CRITICAL KEYWORD BONUS
-        keyword_bonus = self._calculate_keyword_bonus(query_set, pattern_set)
+        keyword_bonus = self._calculate_keyword_bonus(query_set, pattern_set, intent_name)
 
         # FINAL WEIGHTED COMBINATION
-        # Base score: 100% weighting
         base_similarity = (
-                0.70 * keyword_similarity +  # Primary: semantic keyword matching
-                0.30 * levenshtein_similarity  # Secondary: overall string similarity
+                0.40 * keyword_similarity +
+                0.60 * levenshtein_similarity #primary
         )
 
         # Add bonuses (capped at 1.0)
@@ -301,7 +302,6 @@ class IntentRecognizer:
     def _calculate_phrase_bonus(self, query_words: List[str], pattern_words: List[str]) -> float:
         """
         Calculate bonus for matching consecutive word phrases
-        Preserves word order which is important in natural language
 
         Args:
             query_words: Filtered query words
@@ -335,31 +335,47 @@ class IntentRecognizer:
 
         return 0.0
 
-    def _calculate_keyword_bonus(self, query_set: Set[str], pattern_set: Set[str]) -> float:
+    def _calculate_keyword_bonus(self, query_set: Set[str], pattern_set: Set[str],
+                                 intent_name: str = None) -> float:
         """
         Calculate bonus for matching critical intent keywords
-        These are high-confidence indicators of specific intents
+
+        Strategy: Check if query contains critical keywords for the intent category
+        being evaluated, regardless of whether the pattern contains them.
 
         Args:
             query_set: Set of query words
-            pattern_set: Set of pattern words
+            pattern_set: Set of pattern words (used for context)
+            intent_name: The intent category being evaluated (if known)
 
         Returns:
-            Bonus score (0.0 to 0.10)
+            Bonus score (0.0 to 0.20)
         """
         max_bonus = 0.0
 
-        for intent_name, critical_keywords in self.intent_critical_keywords.items():
-            # Find critical keywords in both query and pattern
+        # STRATEGY 1: If we know which intent we're evaluating, check directly
+        if intent_name and intent_name in self.intent_critical_keywords:
+            critical_keywords = self.intent_critical_keywords[intent_name]
             query_critical = query_set.intersection(critical_keywords)
-            pattern_critical = pattern_set.intersection(critical_keywords)
 
-            # If both have critical keywords from same intent category
-            if query_critical and pattern_critical:
-                overlap = len(query_critical.intersection(pattern_critical))
-                if overlap > 0:
-                    # More matches = higher bonus (max 10%)
-                    bonus = min(0.10, 0.03 * overlap)
+            if query_critical:
+                # More critical keywords = stronger signal
+                num_matches = len(query_critical)
+
+                # Base bonus: 0.08 for first match
+                # Additional: 0.04 per additional match (capped at 0.20)
+                bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
+
+                return bonus
+
+        # STRATEGY 2: If intent unknown, find best matching intent category
+        else:
+            for category_name, critical_keywords in self.intent_critical_keywords.items():
+                query_critical = query_set.intersection(critical_keywords)
+
+                if query_critical:
+                    num_matches = len(query_critical)
+                    bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
                     max_bonus = max(max_bonus, bonus)
 
         return max_bonus
@@ -384,10 +400,8 @@ class IntentRecognizer:
         if not query_words:
             return "unknown", 0.0, "", {}
 
-        best_intent = "unknown"
-        best_similarity = 0.0
-        best_pattern = ""
-        best_breakdown = {}
+        # Intent scores for potential reranking
+        intent_scores = {}
 
         # Evaluate each intent category
         for intent_name, intent_data in self.patterns.items():
@@ -411,7 +425,7 @@ class IntentRecognizer:
             best_breakdown_in_category = {}
 
             for pattern in patterns:
-                similarity, breakdown = self.calculate_similarity(query, pattern)
+                similarity, breakdown = self._calculate_similarity(query, pattern, intent_name=intent_name)
 
                 if similarity > max_similarity_in_category:
                     max_similarity_in_category = similarity
@@ -422,35 +436,115 @@ class IntentRecognizer:
                 if similarity > 0.95:
                     break
 
-            # Update global best if this category scored higher
-            if max_similarity_in_category > best_similarity:
-                best_similarity = max_similarity_in_category
-                best_intent = intent_name
-                best_pattern = best_pattern_in_category
-                best_breakdown = best_breakdown_in_category
+            # Store this intent's score
+            intent_scores[intent_name] = {
+                'similarity': max_similarity_in_category,
+                'pattern': best_pattern_in_category,
+                'breakdown': best_breakdown_in_category
+            }
+
+        if not intent_scores:
+            return "unknown", 0.0, "", {}
+
+        # INTENT-LEVEL BOOSTING: Apply contextual bonuses
+        intent_scores = self._apply_intent_level_boosts(query_words, intent_scores)
+
+        # Find best intent after boosting
+        best_intent = max(intent_scores.items(), key=lambda x: x[1]['similarity'])
+        best_intent_name = best_intent[0]
+        best_similarity = best_intent[1]['similarity']
+        best_pattern = best_intent[1]['pattern']
+        best_breakdown = best_intent[1]['breakdown']
 
         # Check if best match meets minimum threshold
-        threshold = self.patterns.get(best_intent, {}).get('similarity_threshold', self.min_confidence)
+        threshold = self.patterns.get(best_intent_name, {}).get('similarity_threshold', self.min_confidence)
 
         if best_similarity < threshold:
             return "unknown", best_similarity, best_pattern, best_breakdown
 
-        return best_intent, best_similarity, best_pattern, best_breakdown
+        return best_intent_name, best_similarity, best_pattern, best_breakdown
 
-    def recognize_intent(self, query: str) -> RecognitionResult:
+    def _apply_intent_level_boosts(self, query_words: Set[str], intent_scores: Dict) -> Dict:
         """
-        Main method: Recognize intent from user query
+        Apply intent-level contextual boosts based on query structure
+
+        Args:
+            query_words: Set of normalized query words
+            intent_scores: Dictionary of intent scores
+
+        Returns:
+            Updated intent_scores dictionary
+        """
+        # RULE 1: "place/make/start + order" strongly indicates ORDER intent
+        has_order_action = bool(query_words.intersection(self.intent_critical_keywords.get('order', set())))
+        has_order_keyword = 'order' in query_words
+        if has_order_action and has_order_keyword:
+            if 'order' in intent_scores:
+                boost = 0.20  # 20% boost
+                original = intent_scores['order']['similarity']
+                intent_scores['order']['similarity'] = min(1.0, original + boost)
+
+                if self.enable_logging:
+                    self.logger.debug(
+                        f"Order action verb + 'order' detected: boosting order intent "
+                        f"from {original:.3f} to {intent_scores['order']['similarity']:.3f}"
+                    )
+
+        # RULE 2: If query has action verb for ordering, penalize delivery intent unless it has tracking keywords
+        if has_order_action and has_order_keyword:
+            has_tracking_keywords = bool(query_words.intersection({'track', 'status', 'where', 'eta'}))
+
+            if not has_tracking_keywords and 'delivery' in intent_scores:
+                penalty = 0.15  # 15% penalty
+                original = intent_scores['delivery']['similarity']
+                intent_scores['delivery']['similarity'] = max(0.0, original - penalty)
+
+                if self.enable_logging:
+                    self.logger.debug(
+                        f"Order context without tracking keywords: penalizing delivery intent "
+                        f"from {original:.3f} to {intent_scores['delivery']['similarity']:.3f}"
+                    )
+
+        # RULE 3: Negative sentiment words strongly indicate COMPLAINT
+        negative_words = {'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing'}
+        has_negative = bool(query_words.intersection(negative_words))
+        if has_negative:
+            if 'complaint' in intent_scores:
+                boost = 0.20
+                original = intent_scores['complaint']['similarity']
+                intent_scores['complaint']['similarity'] = min(1.0, original + boost)
+
+        # RULE 4: "price/prices" + pizza size strongly indicates MENU_INQUIRY
+        has_price_keyword = bool(query_words.intersection({'price', 'prices', 'cost', 'much'}))
+        has_size_keyword = bool(query_words.intersection({'small', 'medium', 'large'}))
+        if has_price_keyword and has_size_keyword:
+            if 'menu_inquiry' in intent_scores:
+                boost = 0.25  # Strong boost
+                original = intent_scores['menu_inquiry']['similarity']
+                intent_scores['menu_inquiry']['similarity'] = min(1.0, original + boost)
+
+                if self.enable_logging:
+                    self.logger.debug(
+                        f"Price + size detected: boosting menu_inquiry from {original:.3f}"
+                    )
+
+
+        return intent_scores
+
+    def recognize(self, query: str) -> AlgorithmicResult:
+        """
+        Main method: Recognize intent from user query using algorithmic approach
 
         Args:
             query: User input string (from ASR)
 
         Returns:
-            RecognitionResult object with intent information
+            AlgorithmicResult object with intent information
         """
         # Update statistics
         self.stats['total_queries'] += 1
 
-        # Find best match
+        # Find best match using pattern matching
         intent_name, similarity, matched_pattern, breakdown = self.find_best_match(query)
 
         # Determine confidence level
@@ -478,92 +572,31 @@ class IntentRecognizer:
         self.stats['avg_confidence'].append(similarity)
 
         # Create result
-        result = RecognitionResult(
+        result = AlgorithmicResult(
             intent=intent_name,
             confidence=similarity,
             confidence_level=confidence_level,
             matched_pattern=matched_pattern,
-            processing_method=method
+            processing_method=method,
+            score_breakdown=breakdown
         )
 
         # Logging (if enabled)
         if self.enable_logging:
             self.logger.info(
-                f"Query: '{query}' → Intent: {intent_name} "
+                f"[ALGORITHMIC] Query: '{query}' → Intent: {intent_name} "
                 f"(confidence: {similarity:.3f}, level: {confidence_level}, method: {method})"
             )
 
         return result
 
-    def evaluate(self, test_data: List[Tuple[str, str]]) -> Dict:
-        """
-        Evaluate recognizer accuracy on test data
-
-        Args:
-            test_data: List of (query, expected_intent) tuples
-
-        Returns:
-            Dictionary with evaluation metrics
-        """
-        results = []
-        correct = 0
-        total = len(test_data)
-
-        for query, expected_intent in test_data:
-            result = self.recognize_intent(query)
-            is_correct = result.intent == expected_intent
-
-            if is_correct:
-                correct += 1
-
-            results.append({
-                'query': query,
-                'expected': expected_intent,
-                'predicted': result.intent,
-                'confidence': result.confidence,
-                'correct': is_correct
-            })
-
-        accuracy = correct / total if total > 0 else 0.0
-
-        # Calculate metrics by confidence level
-        high_conf = [r for r in results if r['confidence'] >= 0.8]
-        medium_conf = [r for r in results if 0.6 <= r['confidence'] < 0.8]
-        low_conf = [r for r in results if r['confidence'] < 0.6]
-
-        return {
-            'accuracy': accuracy,
-            'total_queries': total,
-            'correct': correct,
-            'incorrect': total - correct,
-            'high_confidence_count': len(high_conf),
-            'medium_confidence_count': len(medium_conf),
-            'low_confidence_count': len(low_conf),
-            'high_confidence_accuracy': sum(r['correct'] for r in high_conf) / len(high_conf) if high_conf else 0,
-            'detailed_results': results
-        }
-
     def get_statistics(self) -> Dict:
-        """Get processing statistics"""
+        """Get algorithmic recognizer statistics"""
         avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) \
             if self.stats['avg_confidence'] else 0.0
 
         return {
             'total_queries_processed': self.stats['total_queries'],
             'intent_distribution': self.stats['intent_distribution'],
-            'average_confidence': avg_conf,
+            'average_confidence': avg_conf
         }
-
-    def generate_response(self, intent_info: RecognitionResult, message: str) -> str:
-        """
-        Generate a response based on the recognized intent.
-        Simply returns the intent name.
-
-        Args:
-            intent_info: RecognitionResult object from recognize_intent
-            message: The original user message (unused but kept for compatibility)
-
-        Returns:
-            str: The recognized intent name
-        """
-        return intent_info.intent

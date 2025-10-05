@@ -66,10 +66,12 @@ function displayConversation(history) {
     if (entry.type === "assistant" && entry.intent) {
       const intentInfo = document.createElement("div");
       intentInfo.className = "intent-info";
+      const llmBadge = entry.used_llm ? ' <span class="llm-badge">LLM</span>' : '';
       intentInfo.innerHTML = `
         <small>
           Intent: <strong>${entry.intent}</strong> 
           (${entry.confidence}, ${(entry.similarity * 100).toFixed(1)}%)
+          ${llmBadge}
         </small>
       `;
       messageContent.appendChild(intentInfo);
@@ -106,15 +108,13 @@ function sendMessage() {
   }
 
   sendButton.disabled = true;
-  sendButton.textContent = "Sending";
 
   // Send message to server
   socket.emit("send_message", { message: message });
 
   setTimeout(() => {
     sendButton.disabled = false;
-    sendButton.textContent = "Send";
-  }, 500);
+  }, 200);
 }
 
 function clearHistory() {

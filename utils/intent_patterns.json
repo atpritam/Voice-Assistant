@@ -19,7 +19,8 @@
       "I'd like a large pepperoni",
       "order a medium pizza",
       "can I place an order",
-      "buy pizza"
+      "buy pizza",
+      "I would like two pizza"
     ],
     "similarity_threshold": 0.35
   },
@@ -43,7 +44,8 @@
       "want my money back",
       "pizza is burnt",
       "wrong toppings",
-      "complaint about order"
+      "complaint about order",
+      "talk to the manager"
     ],
     "similarity_threshold": 0.3
   },
