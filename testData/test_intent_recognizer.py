@@ -62,13 +62,12 @@ def run_comprehensive_test():
         print(f"  {intent:25s}: {count:3d} ({percentage:5.1f}%)")
     print()
 
-    print("\n" + "=" * 80)
-    print("Predictions (Incorrect)")
-    print("=" * 80)
-
     incorrect_results = [r for r in evaluation['detailed_results'] if not r['correct']]
 
     if incorrect_results:
+        print("\n" + "=" * 80)
+        print("Predictions (Incorrect)")
+        print("=" * 80)
         for i, result in enumerate(incorrect_results, 1):
             print(f"\n{i}. Query: '{result['query']}'")
             print(f"   Expected: {result['expected']}")
@@ -76,19 +75,6 @@ def run_comprehensive_test():
             print(f"   Confidence: {result['confidence']:.3f}")
     else:
         print("\n✓ All predictions were correct!")
-
-    # Some correct high-confidence predictions
-    print("\n" + "=" * 80)
-    print("SOME Predictions (High Confidence / Correct)")
-    print("=" * 80)
-
-    correct_high_conf = [r for r in evaluation['detailed_results']
-                         if r['correct'] and r['confidence'] >= 0.8][:5]
-
-    for i, result in enumerate(correct_high_conf, 1):
-        print(f"\n{i}. Query: '{result['query']}'")
-        print(f"   Intent: {result['predicted']}")
-        print(f"   Confidence: {result['confidence']:.3f}")
 
     print()
 

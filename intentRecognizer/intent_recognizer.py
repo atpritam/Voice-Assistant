@@ -11,6 +11,13 @@ from dataclasses import dataclass
 from intentRecognizer.algorithmic_recognizer import AlgorithmicRecognizer
 from intentRecognizer.llm_recognizer import LLMRecognizer
 
+DEFAULT_MIN_CONFIDENCE = 0.5
+DEFAULT_LLM_FALLBACK_THRESHOLD = 0.45
+DEFAULT_MODEL = "gpt-5-nano"
+
+# Confidence level thresholds
+HIGH_CONFIDENCE_THRESHOLD = 0.8
+MEDIUM_CONFIDENCE_THRESHOLD = 0.6
 
 @dataclass
 class RecognitionResult:
@@ -38,11 +45,11 @@ class IntentRecognizer:
             self,
             patterns_file: str = None,
             enable_logging: bool = False,
-            min_confidence: float = 0.5,
+            min_confidence: float = DEFAULT_MIN_CONFIDENCE,
             enable_llm_fallback: bool = True,
-            llm_fallback_threshold: float = 0.45,
+            llm_fallback_threshold: float = DEFAULT_LLM_FALLBACK_THRESHOLD,
             api_key: Optional[str] = None,
-            model: str = "gpt-4o-mini"
+            model: str = DEFAULT_MODEL
     ):
         """
         Initialize the cascade intent recognizer
@@ -50,17 +57,16 @@ class IntentRecognizer:
         Args:
             patterns_file: Path to JSON file with intent patterns
             enable_logging: Enable detailed logging for analysis
-            min_confidence: Minimum confidence threshold (default: 0.5)
+            min_confidence: Minimum confidence threshold
             enable_llm_fallback: Enable LLM fallback for unmatched queries
-            llm_fallback_threshold: Confidence below which LLM is used (default: 0.45)
+            llm_fallback_threshold: Confidence below which LLM is used
             api_key: OpenAI API key (optional, will load from env)
-            model: OpenAI model to use (default: gpt-4o-mini)
+            model: OpenAI model to use
         """
         # Configuration
         if patterns_file is None:
             utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
             patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
-
 
         self.patterns_file = patterns_file
         self.min_confidence = min_confidence
@@ -86,19 +92,7 @@ class IntentRecognizer:
         # Initialize LLM Recognizer (Fallback)
         self.llm_recognizer = None
         if self.enable_llm_fallback:
-            try:
-                self.llm_recognizer = LLMRecognizer(
-                    api_key=api_key,
-                    model=model,
-                    enable_logging=enable_logging,
-                    min_confidence=min_confidence
-                )
-                if self.enable_logging:
-                    self.logger.info("LLM fallback enabled in cascade architecture")
-            except Exception as e:
-                if self.enable_logging:
-                    self.logger.warning(f"Failed to initialize LLM recognizer: {e}")
-                self.enable_llm_fallback = False
+            self.llm_recognizer = self._initialize_llm_recognizer(api_key, model)
 
         # Load patterns for LLM
         self.patterns = self.algorithmic_recognizer.patterns
@@ -111,6 +105,33 @@ class IntentRecognizer:
             'intent_distribution': {},
             'avg_confidence': []
         }
+
+    def _initialize_llm_recognizer(self, api_key: Optional[str], model: str) -> Optional[LLMRecognizer]:
+        """
+        Initialize LLM recognizer with error handling
+
+        Args:
+            api_key: OpenAI API key
+            model: Model name to use
+
+        Returns:
+            LLMRecognizer instance or None if initialization fails
+        """
+        try:
+            llm_recognizer = LLMRecognizer(
+                api_key=api_key,
+                model=model,
+                enable_logging=self.enable_logging,
+                min_confidence=self.min_confidence
+            )
+            if self.enable_logging:
+                self.logger.info("LLM fallback enabled in cascade architecture")
+            return llm_recognizer
+
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.warning(f"Failed to initialize LLM recognizer: {e}")
+            return None
 
     def recognize_intent(self, query: str) -> RecognitionResult:
         """
@@ -133,80 +154,90 @@ class IntentRecognizer:
         algo_result = self.algorithmic_recognizer.recognize(query)
 
         # Check if algorithmic result is confident enough
-        use_llm_fallback = (
+        should_use_llm = (
             self.enable_llm_fallback and
-            self.llm_recognizer and
-            (algo_result.intent == "unknown" or algo_result.confidence < self.llm_fallback_threshold)
+            self.llm_recognizer is not None and
+            (algo_result.intent == "unknown" or
+             algo_result.confidence < self.llm_fallback_threshold)
         )
 
         # STEP 2: LLM Fallback (if needed)
-        if use_llm_fallback:
-            if self.enable_logging:
-                self.logger.info(
-                    f"Algorithmic confidence too low ({algo_result.confidence:.3f}), "
-                    f"using LLM fallback for: '{query}'"
-                )
-
-            try:
-                llm_result = self.llm_recognizer.recognize(query, self.patterns)
-
-                # Use LLM result if it has higher confidence and no error
-                if not llm_result.error and llm_result.confidence > algo_result.confidence:
-                    # Update statistics
-                    self.stats['llm_fallback_used'] += 1
-                    self.stats['intent_distribution'][llm_result.intent] = \
-                        self.stats['intent_distribution'].get(llm_result.intent, 0) + 1
-                    self.stats['avg_confidence'].append(llm_result.confidence)
-
-                    # Create unified result from LLM
-                    result = RecognitionResult(
-                        intent=llm_result.intent,
-                        confidence=llm_result.confidence,
-                        confidence_level=llm_result.confidence_level,
-                        matched_pattern="LLM Classification",
-                        processing_method='llm',
-                        used_llm=True,
-                        llm_explanation=llm_result.explanation,
-                        score_breakdown={}
-                    )
-
-                    if self.enable_logging:
-                        self.logger.info(
-                            f"[CASCADE] Using LLM result: {llm_result.intent} "
-                            f"(confidence: {llm_result.confidence:.3f})"
-                        )
-
-                    return result
-
-            except Exception as e:
-                if self.enable_logging:
-                    self.logger.error(f"LLM fallback failed: {e}")
+        if should_use_llm:
+            llm_result_obj = self._try_llm_fallback(query, algo_result)
+            if llm_result_obj is not None:
+                return llm_result_obj
 
         # STEP 3: Use Algorithmic Result (Default)
-        self.stats['algorithmic_success'] += 1
-        self.stats['intent_distribution'][algo_result.intent] = \
-            self.stats['intent_distribution'].get(algo_result.intent, 0) + 1
-        self.stats['avg_confidence'].append(algo_result.confidence)
+        return self._create_result(algo_result, used_llm=False)
 
-        # Create unified result from algorithmic
-        result = RecognitionResult(
-            intent=algo_result.intent,
-            confidence=algo_result.confidence,
-            confidence_level=algo_result.confidence_level,
-            matched_pattern=algo_result.matched_pattern,
-            processing_method=algo_result.processing_method,
-            used_llm=False,
-            llm_explanation="",
-            score_breakdown=algo_result.score_breakdown
-        )
+    def _try_llm_fallback(self, query: str, algo_result) -> Optional[RecognitionResult]:
+        """
+        Attempt LLM fallback recognition
 
+        Args:
+            query: User query
+            algo_result: Algorithmic recognition result
+
+        Returns:
+            RecognitionResult from LLM if successful, None otherwise
+        """
         if self.enable_logging:
             self.logger.info(
-                f"[CASCADE] Using algorithmic result: {algo_result.intent} "
-                f"(confidence: {algo_result.confidence:.3f})"
+                f"Algorithmic confidence too low ({algo_result.confidence:.3f}), "
+                f"using LLM fallback for: '{query}'"
             )
 
-        return result
+        try:
+            llm_result = self.llm_recognizer.recognize(query, self.patterns)
+
+            # Use LLM result if it has higher confidence and no error
+            if not llm_result.error and llm_result.confidence > algo_result.confidence:
+                return self._create_result(llm_result, used_llm=True)
+
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.error(f"LLM fallback failed: {e}")
+
+        return None
+
+    def _create_result(self, result, used_llm: bool = False) -> RecognitionResult:
+        """
+        Unified RecognitionResult from algorithmic or LLM result
+
+        Args:
+            result: AlgorithmicResult or LLMResult object
+            used_llm: Whether LLM was used for this result
+
+        Returns:
+            RecognitionResult object
+        """
+        # Update statistics
+        if used_llm:
+            self.stats['llm_fallback_used'] += 1
+        else:
+            self.stats['algorithmic_success'] += 1
+
+        self.stats['intent_distribution'][result.intent] = \
+            self.stats['intent_distribution'].get(result.intent, 0) + 1
+        self.stats['avg_confidence'].append(result.confidence)
+
+        if self.enable_logging:
+            method_name = "LLM" if used_llm else "algorithmic"
+            self.logger.info(
+                f"[CASCADE] Using {method_name} result: {result.intent} "
+                f"(confidence: {result.confidence:.3f})"
+            )
+
+        return RecognitionResult(
+            intent=result.intent,
+            confidence=result.confidence,
+            confidence_level=result.confidence_level,
+            matched_pattern=getattr(result, 'matched_pattern', 'LLM Classification'),
+            processing_method=getattr(result, 'processing_method', 'llm'),
+            used_llm=used_llm,
+            llm_explanation=getattr(result, 'explanation', ''),
+            score_breakdown=getattr(result, 'score_breakdown', {})
+        )
 
     def generate_response(self, intent_info: RecognitionResult, message: str) -> str:
         """
@@ -217,7 +248,7 @@ class IntentRecognizer:
             message: The original user message
 
         Returns:
-            str: Generated response (currently returns intent name)
+            Generated response (currently returns intent name)
         """
         # Simple response - returns intent name
         # In production, this would generate contextual responses
@@ -237,6 +268,7 @@ class IntentRecognizer:
         correct = 0
         total = len(test_data)
 
+        # Run evaluation on all test cases
         for query, expected_intent in test_data:
             result = self.recognize_intent(query)
             is_correct = result.intent == expected_intent
@@ -253,12 +285,13 @@ class IntentRecognizer:
                 'correct': is_correct
             })
 
+        # Calculate overall accuracy
         accuracy = correct / total if total > 0 else 0.0
 
         # Calculate metrics by confidence level
-        high_conf = [r for r in results if r['confidence'] >= 0.8]
-        medium_conf = [r for r in results if 0.6 <= r['confidence'] < 0.8]
-        low_conf = [r for r in results if r['confidence'] < 0.6]
+        high_conf = [r for r in results if r['confidence'] >= HIGH_CONFIDENCE_THRESHOLD]
+        medium_conf = [r for r in results if MEDIUM_CONFIDENCE_THRESHOLD <= r['confidence'] < HIGH_CONFIDENCE_THRESHOLD]
+        low_conf = [r for r in results if r['confidence'] < MEDIUM_CONFIDENCE_THRESHOLD]
 
         # Calculate metrics by processing method
         llm_results = [r for r in results if r['used_llm']]

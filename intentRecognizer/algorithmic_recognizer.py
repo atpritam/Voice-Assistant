@@ -7,9 +7,68 @@ Optimized for ASR (Automatic Speech Recognition) input
 import json
 import os
 import logging
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 import Levenshtein
+
+# Similarity calculation weights
+KEYWORD_WEIGHT = 0.50
+LEVENSHTEIN_WEIGHT = 0.50
+EXACT_OVERLAP_WEIGHT = 0.7
+SYNONYM_WEIGHT = 0.3
+
+# Boost values
+ORDER_ACTION_BOOST = 0.20
+ORDER_DELIVERY_PENALTY = 0.15
+NEGATIVE_SENTIMENT_BOOST = 0.20
+PRICE_SIZE_BOOST = 0.25
+TIME_LOCATION_BOOST = 0.20
+ESCALATION_BOOST = 0.30
+
+# Phrase matching bonuses
+PHRASE_3_WORD_BONUS = 0.10
+PHRASE_2_WORD_BONUS = 0.05
+
+# Keyword bonuses
+FIRST_KEYWORD_BONUS = 0.08
+ADDITIONAL_KEYWORD_BONUS = 0.04
+MAX_KEYWORD_BONUS = 0.20
+
+# Length pre-filter thresholds
+MAX_LENGTH_DIFF_LONG_STRINGS = 30
+MIN_LENGTH_RATIO = 0.4
+MAX_LENGTH_RATIO = 2.5
+LONG_STRING_THRESHOLD = 15
+
+# Confidence levels
+HIGH_CONFIDENCE_THRESHOLD = 0.8
+MEDIUM_CONFIDENCE_THRESHOLD = 0.6
+HIGH_SIMILARITY_EARLY_EXIT = 0.92
+
+@dataclass
+class SimilarityMetrics:
+    """Container for all similarity calculation metrics"""
+    keyword_similarity: float
+    exact_overlap: float
+    synonym_similarity: float
+    levenshtein_similarity: float
+    phrase_bonus: float
+    keyword_bonus: float
+    base_score: float
+    final_score: float
+
+    def to_dict(self) -> Dict:
+        """Convert to dictionary for compatibility"""
+        return {
+            'keyword_similarity': self.keyword_similarity,
+            'exact_overlap': self.exact_overlap,
+            'synonym_similarity': self.synonym_similarity,
+            'levenshtein_similarity': self.levenshtein_similarity,
+            'phrase_bonus': self.phrase_bonus,
+            'keyword_bonus': self.keyword_bonus,
+            'base_score': self.base_score,
+            'final_score': self.final_score
+        }
 
 
 @dataclass
@@ -17,39 +76,396 @@ class AlgorithmicResult:
     """Result from algorithmic recognition"""
     intent: str
     confidence: float
-    confidence_level: str  # 'high', 'medium', 'low'
+    confidence_level: str
     matched_pattern: str
-    processing_method: str  # 'keyword', 'levenshtein', 'combined'
+    processing_method: str
     score_breakdown: Dict
 
+
+@dataclass
+class IntentEvaluation:
+    """Result of evaluating a single intent"""
+    similarity: float
+    pattern: str
+    breakdown: Dict
+
+class TextNormalizer:
+    """Handles all text normalization and preprocessing"""
+
+    def __init__(self, filler_words: Set[str]):
+        self.filler_words = filler_words
+
+    def normalize(self, text: str) -> str:
+        """
+        Normalize text for comparison - optimized for ASR input
+
+        Args:
+            text: Input text string
+
+        Returns:
+            Normalized text string
+        """
+        if not text:
+            return ""
+
+        # Convert to lowercase and strip
+        text = text.lower().strip()
+
+        # Remove common punctuation
+        punctuation = '!?.,;:\'"()[]{}/'
+        text = text.translate(str.maketrans('', '', punctuation))
+
+        # Normalize whitespace
+        text = ' '.join(text.split())
+
+        return text
+
+    def extract_words(self, text: str) -> List[str]:
+        """Extract words from normalized text"""
+        return text.split()
+
+    def remove_filler_words(self, words: List[str]) -> List[str]:
+        """Remove filler words common in speech"""
+        return [w for w in words if w not in self.filler_words]
+
+    def extract_filtered_words(self, text: str) -> List[str]:
+        """Extract and filter words in one step"""
+        normalized = self.normalize(text)
+        words = self.extract_words(normalized)
+        return self.remove_filler_words(words)
+
+
+class SimilarityCalculator:
+    """Handles all similarity metric calculations"""
+
+    def __init__(self, text_normalizer: TextNormalizer, synonym_lookup: Dict):
+        self.normalizer = text_normalizer
+        self.synonym_lookup = synonym_lookup
+
+    def passes_length_prefilter(self, query_norm: str, pattern_norm: str) -> bool:
+        """Quick length-based filter to skip expensive calculations"""
+        len_query = len(query_norm)
+        len_pattern = len(pattern_norm)
+
+        # Only apply filter for long strings
+        if len_query <= LONG_STRING_THRESHOLD or len_pattern <= LONG_STRING_THRESHOLD:
+            return True
+
+        len_diff = abs(len_query - len_pattern)
+        len_ratio = len_query / len_pattern if len_pattern > 0 else 0
+
+        # Filter out if too different
+        if len_diff > MAX_LENGTH_DIFF_LONG_STRINGS:
+            return False
+
+        if len_ratio < MIN_LENGTH_RATIO or len_ratio > MAX_LENGTH_RATIO:
+            return False
+
+        return True
+
+    def calculate_keyword_similarity(self, query_set: Set[str], pattern_set: Set[str]) -> Tuple[float, float, float]:
+        """
+        Calculate keyword-based similarity metrics
+
+        Returns:
+            Tuple of (combined_keyword_similarity, exact_similarity, synonym_similarity)
+        """
+        # Exact word overlap
+        exact_overlap = len(query_set.intersection(pattern_set))
+        union_size = len(query_set.union(pattern_set))
+        exact_similarity = exact_overlap / union_size if union_size > 0 else 0.0
+
+        # Synonym-expanded overlap
+        query_expanded = self._expand_with_synonyms(query_set)
+        pattern_expanded = self._expand_with_synonyms(pattern_set)
+        synonym_overlap = len(query_expanded.intersection(pattern_expanded))
+        expanded_union_size = len(query_expanded.union(pattern_expanded))
+        synonym_similarity = synonym_overlap / expanded_union_size if expanded_union_size > 0 else 0.0
+
+        # Combined keyword score
+        keyword_similarity = EXACT_OVERLAP_WEIGHT * exact_similarity + SYNONYM_WEIGHT * synonym_similarity
+
+        return keyword_similarity, exact_similarity, synonym_similarity
+
+    def _expand_with_synonyms(self, words: Set[str]) -> Set[str]:
+        """Expand word set with known synonyms"""
+        expanded = set(words)
+        for word in words:
+            if word in self.synonym_lookup:
+                expanded.update(self.synonym_lookup[word])
+        return expanded
+
+    def calculate_levenshtein_similarity(self, query_norm: str, pattern_norm: str) -> float:
+        """Calculate normalized Levenshtein distance"""
+        return Levenshtein.ratio(query_norm, pattern_norm)
+
+    def calculate_phrase_bonus(self, query_words: List[str], pattern_words: List[str]) -> float:
+        """
+        Calculate bonus for matching consecutive word phrases
+
+        Returns:
+            Bonus score (0.0 to 0.10)
+        """
+        if len(pattern_words) < 2:
+            return 0.0
+
+        max_phrase_length = 0
+        query_text = ' '.join(query_words)
+
+        # Check for 2-word and 3-word phrase matches
+        for n in [2, 3]:
+            if len(pattern_words) < n:
+                continue
+
+            for i in range(len(pattern_words) - n + 1):
+                phrase = ' '.join(pattern_words[i:i + n])
+                if phrase in query_text:
+                    max_phrase_length = max(max_phrase_length, n)
+
+        # Return scaled bonus
+        if max_phrase_length >= 3:
+            return PHRASE_3_WORD_BONUS
+        elif max_phrase_length == 2:
+            return PHRASE_2_WORD_BONUS
+
+        return 0.0
+
+    def calculate_keyword_bonus(self, query_set: Set[str], intent_name: Optional[str],
+                               intent_critical_keywords: Dict) -> float:
+        """
+        Calculate bonus for matching critical intent keywords
+
+        Returns:
+            Bonus score (0.0 to 0.20)
+        """
+        max_bonus = 0.0
+
+        # If we know the intent, check directly
+        if intent_name and intent_name in intent_critical_keywords:
+            critical_keywords = intent_critical_keywords[intent_name]
+            query_critical = query_set.intersection(critical_keywords)
+
+            if query_critical:
+                num_matches = len(query_critical)
+                bonus = min(MAX_KEYWORD_BONUS,
+                           FIRST_KEYWORD_BONUS + (num_matches - 1) * ADDITIONAL_KEYWORD_BONUS)
+                return bonus
+
+        # If intent unknown, find best matching category
+        else:
+            for category_name, critical_keywords in intent_critical_keywords.items():
+                query_critical = query_set.intersection(critical_keywords)
+                if query_critical:
+                    num_matches = len(query_critical)
+                    bonus = min(MAX_KEYWORD_BONUS,
+                               FIRST_KEYWORD_BONUS + (num_matches - 1) * ADDITIONAL_KEYWORD_BONUS)
+                    max_bonus = max(max_bonus, bonus)
+
+        return max_bonus
+
+    def calculate_similarity(self, query: str, pattern: str, intent_name: Optional[str],
+                           pattern_norm: Optional[str], intent_critical_keywords: Dict) -> Tuple[float, SimilarityMetrics]:
+        """
+        Main similarity calculation coordinator
+
+        Returns:
+            Tuple of (final_score, metrics_object)
+        """
+        # Normalize texts
+        query_norm = self.normalizer.normalize(query)
+        if pattern_norm is None:
+            pattern_norm = self.normalizer.normalize(pattern)
+
+        if not query_norm or not pattern_norm:
+            return 0.0, self._empty_metrics()
+
+        # Length pre-filter
+        if not self.passes_length_prefilter(query_norm, pattern_norm):
+            return 0.0, self._empty_metrics()
+
+        # Extract and filter words
+        query_words = self.normalizer.extract_filtered_words(query)
+        pattern_words = self.normalizer.extract_filtered_words(pattern)
+
+        if not query_words or not pattern_words:
+            return 0.0, self._empty_metrics()
+
+        query_set = set(query_words)
+        pattern_set = set(pattern_words)
+
+        # Calculate all metrics
+        keyword_sim, exact_sim, synonym_sim = self.calculate_keyword_similarity(query_set, pattern_set)
+        levenshtein_sim = self.calculate_levenshtein_similarity(query_norm, pattern_norm)
+        phrase_bonus = self.calculate_phrase_bonus(query_words, pattern_words)
+        keyword_bonus = self.calculate_keyword_bonus(query_set, intent_name, intent_critical_keywords)
+
+        # Combine scores
+        base_score = KEYWORD_WEIGHT * keyword_sim + LEVENSHTEIN_WEIGHT * levenshtein_sim
+        final_score = min(1.0, base_score + phrase_bonus + keyword_bonus)
+
+        # Create metrics object
+        metrics = SimilarityMetrics(
+            keyword_similarity=keyword_sim,
+            exact_overlap=exact_sim,
+            synonym_similarity=synonym_sim,
+            levenshtein_similarity=levenshtein_sim,
+            phrase_bonus=phrase_bonus,
+            keyword_bonus=keyword_bonus,
+            base_score=base_score,
+            final_score=final_score
+        )
+
+        return final_score, metrics
+
+    def _empty_metrics(self) -> SimilarityMetrics:
+        """Return empty metrics object"""
+        return SimilarityMetrics(
+            keyword_similarity=0.0,
+            exact_overlap=0.0,
+            synonym_similarity=0.0,
+            levenshtein_similarity=0.0,
+            phrase_bonus=0.0,
+            keyword_bonus=0.0,
+            base_score=0.0,
+            final_score=0.0
+        )
+
+
+class BoostRuleEngine:
+    """Applies contextual boost rules to intent scores"""
+
+    def __init__(self, intent_critical_keywords: Dict, enable_logging: bool = False):
+        self.intent_critical_keywords = intent_critical_keywords
+        self.enable_logging = enable_logging
+        if enable_logging:
+            self.logger = logging.getLogger(__name__)
+
+    def apply_all_boosts(self, query_words: Set[str], intent_scores: Dict) -> Dict:
+        """Apply all boost rules to intent scores"""
+        self._apply_order_action_boost(query_words, intent_scores)
+        self._apply_negative_sentiment_boost(query_words, intent_scores)
+        self._apply_price_size_boost(query_words, intent_scores)
+        self._apply_time_location_boost(query_words, intent_scores)
+        self._apply_escalation_boost(query_words, intent_scores)
+        return intent_scores
+
+    def _apply_order_action_boost(self, query_words: Set[str], intent_scores: Dict):
+        """RULE 1 & 2: Order action verb handling"""
+        has_order_action = bool(query_words.intersection(
+            self.intent_critical_keywords.get('order', set())
+        ))
+        has_order_keyword = 'order' in query_words
+
+        if has_order_action and has_order_keyword:
+            # Boost order intent
+            if 'order' in intent_scores:
+                original = intent_scores['order']['similarity']
+                intent_scores['order']['similarity'] = min(1.0, original + ORDER_ACTION_BOOST)
+
+                if self.enable_logging:
+                    self.logger.debug(
+                        f"Order boost: {original:.3f} → {intent_scores['order']['similarity']:.3f}"
+                    )
+
+            # Penalize delivery unless tracking keywords present
+            has_tracking = bool(query_words.intersection({'track', 'status', 'where', 'eta'}))
+            if not has_tracking and 'delivery' in intent_scores:
+                original = intent_scores['delivery']['similarity']
+                intent_scores['delivery']['similarity'] = max(0.0, original - ORDER_DELIVERY_PENALTY)
+
+                if self.enable_logging:
+                    self.logger.debug(
+                        f"Delivery penalty: {original:.3f} → {intent_scores['delivery']['similarity']:.3f}"
+                    )
+
+    def _apply_negative_sentiment_boost(self, query_words: Set[str], intent_scores: Dict):
+        """RULE 3: Negative sentiment for complaints"""
+        negative_words = {
+            'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain',
+            'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold', 'late', 'issue'
+        }
+
+        if query_words.intersection(negative_words) and 'complaint' in intent_scores:
+            original = intent_scores['complaint']['similarity']
+            intent_scores['complaint']['similarity'] = min(1.0, original + NEGATIVE_SENTIMENT_BOOST)
+
+            if self.enable_logging:
+                self.logger.debug(
+                    f"Negative sentiment boost: {original:.3f} → {intent_scores['complaint']['similarity']:.3f}"
+                )
+
+    def _apply_price_size_boost(self, query_words: Set[str], intent_scores: Dict):
+        """RULE 4: Price + size indicates menu inquiry"""
+        has_price = bool(query_words.intersection({'price', 'prices', 'cost', 'much'}))
+        has_size = bool(query_words.intersection({'small', 'medium', 'large'}))
+
+        if has_price and has_size and 'menu_inquiry' in intent_scores:
+            original = intent_scores['menu_inquiry']['similarity']
+            intent_scores['menu_inquiry']['similarity'] = min(1.0, original + PRICE_SIZE_BOOST)
+
+            if self.enable_logging:
+                self.logger.debug(
+                    f"Price+size boost: {original:.3f} → {intent_scores['menu_inquiry']['similarity']:.3f}"
+                )
+
+    def _apply_time_location_boost(self, query_words: Set[str], intent_scores: Dict):
+        """RULE 5: Time/location questions boost hours_location"""
+        time_location_context = {
+            'when', 'what time', 'how long', 'until when', 'from when',
+            'where', 'which', 'what address', 'how far'
+        }
+        hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store'}
+
+        has_question = bool(query_words.intersection(time_location_context))
+        has_hours = bool(query_words.intersection(hours_keywords))
+
+        if has_question and has_hours and 'hours_location' in intent_scores:
+            original = intent_scores['hours_location']['similarity']
+            intent_scores['hours_location']['similarity'] = min(1.0, original + TIME_LOCATION_BOOST)
+
+            if self.enable_logging:
+                self.logger.debug(
+                    f"Time/location boost: {original:.3f} → {intent_scores['hours_location']['similarity']:.3f}"
+                )
+
+    def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
+        """RULE 6: Escalation keywords strongly indicate complaint"""
+        escalation_keywords = {
+            'refund', 'manager', 'supervisor', 'speak to', 'talk to',
+            'compensation', 'money back', 'unacceptable', 'ridiculous'
+        }
+
+        query_norm = ' '.join(query_words)
+        has_escalation = any(keyword in query_norm for keyword in escalation_keywords)
+
+        if has_escalation and 'complaint' in intent_scores:
+            original = intent_scores['complaint']['similarity']
+            intent_scores['complaint']['similarity'] = min(1.0, original + ESCALATION_BOOST)
+
+            if self.enable_logging:
+                self.logger.debug(
+                    f"Escalation boost: {original:.3f} → {intent_scores['complaint']['similarity']:.3f}"
+                )
+
+
+# MAIN RECOGNIZER CLASS
 
 class AlgorithmicRecognizer:
     """Pattern-based intent recognition using keywords and string similarity"""
 
-    def __init__(
-            self,
-            patterns_file: str = None,
-            enable_logging: bool = False,
-            min_confidence: float = 0.5
-    ):
-        """
-        Initialize the algorithmic recognizer
-
-        Args:
-            patterns_file: Path to JSON file with intent patterns
-            enable_logging: Enable detailed logging
-            min_confidence: Minimum confidence threshold (default: 0.5)
-        """
-        # Paths
+    def __init__(self, patterns_file: str = None, enable_logging: bool = False,
+                 min_confidence: float = 0.5):
+        """Initialize the algorithmic recognizer"""
+        # Configuration
         if patterns_file is None:
             utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
             patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
 
         self.patterns_file = patterns_file
         self.min_confidence = min_confidence
+        self.enable_logging = enable_logging
 
         # Setup logging
-        self.enable_logging = enable_logging
         if enable_logging:
             logging.basicConfig(
                 level=logging.INFO,
@@ -57,16 +473,29 @@ class AlgorithmicRecognizer:
             )
             self.logger = logging.getLogger(__name__)
 
+        # Load patterns
         self.patterns = self._load_patterns()
-
-        # Performance optimization caches
-        self._intent_keywords_cache = {}
 
         # Initialize linguistic resources
         self._initialize_linguistic_resources()
+
+        # Create helper components
+        self.text_normalizer = TextNormalizer(self.filler_words)
+        self.similarity_calculator = SimilarityCalculator(
+            self.text_normalizer,
+            self._synonym_lookup
+        )
+        self.boost_engine = BoostRuleEngine(
+            self.intent_critical_keywords,
+            enable_logging
+        )
+
+        # Preprocess patterns
+        self._intent_keywords_cache = {}
+        self._normalized_patterns_cache = {}
         self._preprocess_patterns()
 
-        # Statistics tracking
+        # Statistics
         self.stats = {
             'total_queries': 0,
             'intent_distribution': {},
@@ -78,20 +507,10 @@ class AlgorithmicRecognizer:
         try:
             with open(self.patterns_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-
-            # Support both formats: direct intents or nested structure
-            if 'intents' in data:
-                return data['intents']
-            return data
-
-        except FileNotFoundError:
+            return data.get('intents', data)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
             if self.enable_logging:
-                self.logger.error(f"Patterns file not found: {self.patterns_file}")
-            return self._get_default_patterns()
-
-        except json.JSONDecodeError as e:
-            if self.enable_logging:
-                self.logger.error(f"Error parsing patterns file: {e}")
+                self.logger.error(f"Error loading patterns: {e}")
             return self._get_default_patterns()
 
     def _get_default_patterns(self) -> Dict:
@@ -106,8 +525,7 @@ class AlgorithmicRecognizer:
 
     def _initialize_linguistic_resources(self):
         """Initialize synonyms, filler words, and keyword mappings"""
-
-        # Synonym groups for semantic expansion
+        # Synonym groups
         self.synonyms = {
             'order': {'order', 'buy', 'purchase', 'get', 'want', 'place'},
             'complaint': {'complaint', 'complain', 'wrong', 'issue', 'problem',
@@ -121,14 +539,20 @@ class AlgorithmicRecognizer:
             'specialty': {'specialty', 'special', 'signature', 'featured', 'premium'}
         }
 
-        # Common filler words in speech (to be removed)
+        # Build synonym lookup
+        self._synonym_lookup = {}
+        for syn_group in self.synonyms.values():
+            for word in syn_group:
+                self._synonym_lookup[word] = syn_group
+
+        # Filler words
         self.filler_words = {
             'um', 'uh', 'umm', 'uhh', 'like', 'you know', 'basically', 'actually',
             'literally', 'just', 'really', 'very', 'so', 'well', 'i mean',
             'kind of', 'sort of', 'please'
         }
 
-        # Critical keywords that strongly indicate specific intents
+        # Critical keywords
         self.intent_critical_keywords = {
             'order': {'order', 'buy', 'purchase', 'want', 'get', 'place', 'make'},
             'complaint': {'wrong', 'cold', 'late', 'missing', 'burnt', 'complaint',
@@ -148,414 +572,131 @@ class AlgorithmicRecognizer:
             if intent_name == "unknown":
                 continue
 
-            # Extract keywords from all patterns for this intent
             keywords = set()
+            normalized_patterns = []
 
             for pattern in intent_data.get("patterns", []):
-                normalized = self._normalize_text(pattern)
+                normalized = self.text_normalizer.normalize(pattern)
                 words = normalized.split()
                 keywords.update(words)
+                normalized_patterns.append(normalized)
 
             self._intent_keywords_cache[intent_name] = keywords
+            self._normalized_patterns_cache[intent_name] = normalized_patterns
 
         if self.enable_logging:
             self.logger.info(f"Preprocessed {len(self.patterns)} intent categories")
 
-    def _normalize_text(self, text: str) -> str:
-        """
-        Normalize text for comparison - optimized for ASR input
+    def _evaluate_single_intent(self, intent_name: str, intent_data: Dict,
+                               query: str, query_words: Set[str]) -> Optional[IntentEvaluation]:
+        """Evaluate query against one intent's patterns"""
+        # Quick keyword pre-filter
+        if intent_name in self._intent_keywords_cache:
+            intent_keywords = self._intent_keywords_cache[intent_name]
+            if not query_words.intersection(intent_keywords):
+                return None
 
-        Args:
-            text: Input text string
+        patterns = intent_data.get("patterns", [])
+        normalized_patterns = self._normalized_patterns_cache.get(intent_name, [])
 
-        Returns:
-            Normalized text string
-        """
-        if not text:
-            return ""
+        max_similarity = 0.0
+        best_pattern = ""
+        best_breakdown = {}
 
-        # Convert to lowercase
-        text = text.lower().strip()
+        # Find best matching pattern
+        for i, pattern in enumerate(patterns):
+            pattern_norm = normalized_patterns[i] if i < len(normalized_patterns) else None
+            similarity, metrics = self.similarity_calculator.calculate_similarity(
+                query, pattern, intent_name, pattern_norm, self.intent_critical_keywords
+            )
 
-        # Remove common punctuation
-        punctuation = '!?.,;:\'"()[]{}/'
-        text = text.translate(str.maketrans('', '', punctuation))
+            if similarity > max_similarity:
+                max_similarity = similarity
+                best_pattern = pattern
+                best_breakdown = metrics.to_dict()
 
-        # Normalize whitespace
-        text = ' '.join(text.split())
+            # Early exit for high confidence
+            if similarity > HIGH_SIMILARITY_EARLY_EXIT:
+                break
 
-        return text
+        return IntentEvaluation(max_similarity, best_pattern, best_breakdown)
 
-    def _remove_filler_words(self, words: List[str]) -> List[str]:
-        """
-        Remove filler words common in speech
-
-        Args:
-            words: List of words
-
-        Returns:
-            Filtered list of words
-        """
-        return [w for w in words if w not in self.filler_words]
-
-    def _expand_with_synonyms(self, words: Set[str]) -> Set[str]:
-        """
-        Expand word set with known synonyms
-
-        Args:
-            words: Set of words to expand
-
-        Returns:
-            Expanded set including synonyms
-        """
-        expanded = set(words)
-        for word in words:
-            for syn_group in self.synonyms.values():
-                if word in syn_group:
-                    expanded.update(syn_group)
-                    break
-        return expanded
-
-    def _calculate_similarity(self, query: str, pattern: str, intent_name: str = None) -> Tuple[float, Dict]:
-        """
-        Calculate multi-metric similarity score between query and pattern
-
-        Args:
-            query: User input string (from ASR)
-            pattern: Pattern string to compare against
-
-        Returns:
-            Tuple of (final_similarity_score, score_breakdown_dict)
-        """
-        if not query or not pattern:
-            return 0.0, {}
-
-        # Normalize both strings
-        query_norm = self._normalize_text(query)
-        pattern_norm = self._normalize_text(pattern)
-
-        if not query_norm or not pattern_norm:
-            return 0.0, {}
-
-        # Extract and filter words
-        query_words = query_norm.split()
-        pattern_words = pattern_norm.split()
-
-        query_words_filtered = self._remove_filler_words(query_words)
-        pattern_words_filtered = self._remove_filler_words(pattern_words)
-
-        if not query_words_filtered or not pattern_words_filtered:
-            return 0.0, {}
-
-        # Convert to sets
-        query_set = set(query_words_filtered)
-        pattern_set = set(pattern_words_filtered)
-
-        # METRIC 1: KEYWORD SIMILARITY
-        # Exact word overlap
-        exact_overlap = len(query_set.intersection(pattern_set))
-        union_size = len(query_set.union(pattern_set))
-        exact_similarity = exact_overlap / union_size if union_size > 0 else 0.0
-
-        # Synonym-expanded overlap
-        query_expanded = self._expand_with_synonyms(query_set)
-        pattern_expanded = self._expand_with_synonyms(pattern_set)
-        synonym_overlap = len(query_expanded.intersection(pattern_expanded))
-        expanded_union_size = len(query_expanded.union(pattern_expanded))
-        synonym_similarity = synonym_overlap / expanded_union_size if expanded_union_size > 0 else 0.0
-
-        # Combined keyword score (70% exact, 30% synonyms)
-        keyword_similarity = 0.7 * exact_similarity + 0.3 * synonym_similarity
-
-        # METRIC 2: LEVENSHTEIN DISTANCE
-        # Normalized Levenshtein ratio (0 to 1)
-        levenshtein_similarity = Levenshtein.ratio(query_norm, pattern_norm)
-
-        # METRIC 3: PHRASE MATCHING BONUS
-        phrase_bonus = self._calculate_phrase_bonus(query_words_filtered, pattern_words_filtered)
-
-        # METRIC 4: CRITICAL KEYWORD BONUS
-        keyword_bonus = self._calculate_keyword_bonus(query_set, pattern_set, intent_name)
-
-        # FINAL WEIGHTED COMBINATION
-        base_similarity = (
-                0.40 * keyword_similarity +
-                0.60 * levenshtein_similarity #primary
-        )
-
-        # Add bonuses (capped at 1.0)
-        final_similarity = min(1.0, base_similarity + phrase_bonus + keyword_bonus)
-
-        breakdown = {
-            'keyword_similarity': keyword_similarity,
-            'exact_overlap': exact_similarity,
-            'synonym_similarity': synonym_similarity,
-            'levenshtein_similarity': levenshtein_similarity,
-            'phrase_bonus': phrase_bonus,
-            'keyword_bonus': keyword_bonus,
-            'base_score': base_similarity,
-            'final_score': final_similarity
-        }
-
-        return final_similarity, breakdown
-
-    def _calculate_phrase_bonus(self, query_words: List[str], pattern_words: List[str]) -> float:
-        """
-        Calculate bonus for matching consecutive word phrases
-
-        Args:
-            query_words: Filtered query words
-            pattern_words: Filtered pattern words
-
-        Returns:
-            Bonus score (0.0 to 0.10)
-        """
-        if len(pattern_words) < 2:
-            return 0.0
-
-        max_phrase_length = 0
-        query_text = ' '.join(query_words)
-
-        # Check for 2-word and 3-word phrase matches
-        for n in [2, 3]:
-            if len(pattern_words) < n:
-                continue
-
-            for i in range(len(pattern_words) - n + 1):
-                phrase = ' '.join(pattern_words[i:i + n])
-
-                if phrase in query_text:
-                    max_phrase_length = max(max_phrase_length, n)
-
-        # Return scaled bonus
-        if max_phrase_length >= 3:
-            return 0.10  # 10% bonus for 3+ word phrases
-        elif max_phrase_length == 2:
-            return 0.05  # 5% bonus for 2-word phrases
-
-        return 0.0
-
-    def _calculate_keyword_bonus(self, query_set: Set[str], pattern_set: Set[str],
-                                 intent_name: str = None) -> float:
-        """
-        Calculate bonus for matching critical intent keywords
-
-        Strategy: Check if query contains critical keywords for the intent category
-        being evaluated, regardless of whether the pattern contains them.
-
-        Args:
-            query_set: Set of query words
-            pattern_set: Set of pattern words (used for context)
-            intent_name: The intent category being evaluated (if known)
-
-        Returns:
-            Bonus score (0.0 to 0.20)
-        """
-        max_bonus = 0.0
-
-        # STRATEGY 1: If we know which intent we're evaluating, check directly
-        if intent_name and intent_name in self.intent_critical_keywords:
-            critical_keywords = self.intent_critical_keywords[intent_name]
-            query_critical = query_set.intersection(critical_keywords)
-
-            if query_critical:
-                # More critical keywords = stronger signal
-                num_matches = len(query_critical)
-
-                # Base bonus: 0.08 for first match
-                # Additional: 0.04 per additional match (capped at 0.20)
-                bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
-
-                return bonus
-
-        # STRATEGY 2: If intent unknown, find best matching intent category
-        else:
-            for category_name, critical_keywords in self.intent_critical_keywords.items():
-                query_critical = query_set.intersection(critical_keywords)
-
-                if query_critical:
-                    num_matches = len(query_critical)
-                    bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
-                    max_bonus = max(max_bonus, bonus)
-
-        return max_bonus
-
-    def find_best_match(self, query: str) -> Tuple[str, float, str, Dict]:
-        """
-        Find the best matching intent for a given query
-
-        Args:
-            query: User input string (from ASR)
-
-        Returns:
-            Tuple of (intent_name, similarity_score, matched_pattern, score_breakdown)
-        """
-        if not query or not self.patterns:
-            return "unknown", 0.0, "", {}
-
-        # Normalize query once
-        query_norm = self._normalize_text(query)
-        query_words = set(self._remove_filler_words(query_norm.split()))
-
-        if not query_words:
-            return "unknown", 0.0, "", {}
-
-        # Intent scores for potential reranking
+    def _evaluate_all_intents(self, query: str, query_words: Set[str]) -> Dict:
+        """Evaluate query against all intent patterns"""
         intent_scores = {}
 
-        # Evaluate each intent category
         for intent_name, intent_data in self.patterns.items():
             if intent_name == "unknown":
                 continue
 
-            # Quick pre-filter: check for any keyword overlap
-            if intent_name in self._intent_keywords_cache:
-                intent_keywords = self._intent_keywords_cache[intent_name]
-                keyword_overlap = len(query_words.intersection(intent_keywords))
+            evaluation = self._evaluate_single_intent(intent_name, intent_data, query, query_words)
+            if evaluation and evaluation.similarity > 0:
+                intent_scores[intent_name] = {
+                    'similarity': evaluation.similarity,
+                    'pattern': evaluation.pattern,
+                    'breakdown': evaluation.breakdown
+                }
 
-                # Skip if no keyword overlap (performance optimization)
-                if keyword_overlap == 0:
-                    continue
+        return intent_scores
 
-            patterns = intent_data.get("patterns", [])
-
-            # Find best matching pattern in this category
-            max_similarity_in_category = 0.0
-            best_pattern_in_category = ""
-            best_breakdown_in_category = {}
-
-            for pattern in patterns:
-                similarity, breakdown = self._calculate_similarity(query, pattern, intent_name=intent_name)
-
-                if similarity > max_similarity_in_category:
-                    max_similarity_in_category = similarity
-                    best_pattern_in_category = pattern
-                    best_breakdown_in_category = breakdown
-
-                # Early exit for very high confidence
-                if similarity > 0.95:
-                    break
-
-            # Store this intent's score
-            intent_scores[intent_name] = {
-                'similarity': max_similarity_in_category,
-                'pattern': best_pattern_in_category,
-                'breakdown': best_breakdown_in_category
-            }
-
+    def _select_best_intent(self, intent_scores: Dict) -> Tuple[str, float, str, Dict]:
+        """Select best intent from scores and apply threshold"""
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
-        # INTENT-LEVEL BOOSTING: Apply contextual bonuses
-        intent_scores = self._apply_intent_level_boosts(query_words, intent_scores)
-
-        # Find best intent after boosting
         best_intent = max(intent_scores.items(), key=lambda x: x[1]['similarity'])
         best_intent_name = best_intent[0]
         best_similarity = best_intent[1]['similarity']
         best_pattern = best_intent[1]['pattern']
         best_breakdown = best_intent[1]['breakdown']
 
-        # Check if best match meets minimum threshold
-        threshold = self.patterns.get(best_intent_name, {}).get('similarity_threshold', self.min_confidence)
+        # Check threshold
+        threshold = self.patterns.get(best_intent_name, {}).get(
+            'similarity_threshold', self.min_confidence
+        )
 
         if best_similarity < threshold:
             return "unknown", best_similarity, best_pattern, best_breakdown
 
         return best_intent_name, best_similarity, best_pattern, best_breakdown
 
-    def _apply_intent_level_boosts(self, query_words: Set[str], intent_scores: Dict) -> Dict:
-        """
-        Apply intent-level contextual boosts based on query structure
+    def find_best_match(self, query: str) -> Tuple[str, float, str, Dict]:
+        """Find the best matching intent for a given query"""
+        if not query or not self.patterns:
+            return "unknown", 0.0, "", {}
 
-        Args:
-            query_words: Set of normalized query words
-            intent_scores: Dictionary of intent scores
+        # Preprocess query
+        query_words = set(self.text_normalizer.extract_filtered_words(query))
+        if not query_words:
+            return "unknown", 0.0, "", {}
 
-        Returns:
-            Updated intent_scores dictionary
-        """
-        # RULE 1: "place/make/start + order" strongly indicates ORDER intent
-        has_order_action = bool(query_words.intersection(self.intent_critical_keywords.get('order', set())))
-        has_order_keyword = 'order' in query_words
-        if has_order_action and has_order_keyword:
-            if 'order' in intent_scores:
-                boost = 0.20  # 20% boost
-                original = intent_scores['order']['similarity']
-                intent_scores['order']['similarity'] = min(1.0, original + boost)
+        # Evaluate all intents
+        intent_scores = self._evaluate_all_intents(query, query_words)
+        if not intent_scores:
+            return "unknown", 0.0, "", {}
 
-                if self.enable_logging:
-                    self.logger.debug(
-                        f"Order action verb + 'order' detected: boosting order intent "
-                        f"from {original:.3f} to {intent_scores['order']['similarity']:.3f}"
-                    )
+        # Apply boost rules
+        intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores)
 
-        # RULE 2: If query has action verb for ordering, penalize delivery intent unless it has tracking keywords
-        if has_order_action and has_order_keyword:
-            has_tracking_keywords = bool(query_words.intersection({'track', 'status', 'where', 'eta'}))
-
-            if not has_tracking_keywords and 'delivery' in intent_scores:
-                penalty = 0.15  # 15% penalty
-                original = intent_scores['delivery']['similarity']
-                intent_scores['delivery']['similarity'] = max(0.0, original - penalty)
-
-                if self.enable_logging:
-                    self.logger.debug(
-                        f"Order context without tracking keywords: penalizing delivery intent "
-                        f"from {original:.3f} to {intent_scores['delivery']['similarity']:.3f}"
-                    )
-
-        # RULE 3: Negative sentiment words strongly indicate COMPLAINT
-        negative_words = {'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain', 'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing'}
-        has_negative = bool(query_words.intersection(negative_words))
-        if has_negative:
-            if 'complaint' in intent_scores:
-                boost = 0.20
-                original = intent_scores['complaint']['similarity']
-                intent_scores['complaint']['similarity'] = min(1.0, original + boost)
-
-        # RULE 4: "price/prices" + pizza size strongly indicates MENU_INQUIRY
-        has_price_keyword = bool(query_words.intersection({'price', 'prices', 'cost', 'much'}))
-        has_size_keyword = bool(query_words.intersection({'small', 'medium', 'large'}))
-        if has_price_keyword and has_size_keyword:
-            if 'menu_inquiry' in intent_scores:
-                boost = 0.25  # Strong boost
-                original = intent_scores['menu_inquiry']['similarity']
-                intent_scores['menu_inquiry']['similarity'] = min(1.0, original + boost)
-
-                if self.enable_logging:
-                    self.logger.debug(
-                        f"Price + size detected: boosting menu_inquiry from {original:.3f}"
-                    )
-
-
-        return intent_scores
+        # Select best intent
+        return self._select_best_intent(intent_scores)
 
     def recognize(self, query: str) -> AlgorithmicResult:
-        """
-        Main method: Recognize intent from user query using algorithmic approach
-
-        Args:
-            query: User input string (from ASR)
-
-        Returns:
-            AlgorithmicResult object with intent information
-        """
-        # Update statistics
+        """Main recognition method"""
         self.stats['total_queries'] += 1
 
-        # Find best match using pattern matching
+        # Find best match
         intent_name, similarity, matched_pattern, breakdown = self.find_best_match(query)
 
         # Determine confidence level
-        if similarity >= 0.8:
+        if similarity >= HIGH_CONFIDENCE_THRESHOLD:
             confidence_level = 'high'
-        elif similarity >= 0.6:
+        elif similarity >= MEDIUM_CONFIDENCE_THRESHOLD:
             confidence_level = 'medium'
         else:
             confidence_level = 'low'
 
-        # Determine primary matching method
+        # Determine processing method
         if breakdown:
             if breakdown['keyword_similarity'] > 0.7:
                 method = 'keyword'
@@ -571,8 +712,14 @@ class AlgorithmicRecognizer:
             self.stats['intent_distribution'].get(intent_name, 0) + 1
         self.stats['avg_confidence'].append(similarity)
 
-        # Create result
-        result = AlgorithmicResult(
+        # Logging
+        if self.enable_logging:
+            self.logger.info(
+                f"[ALGORITHMIC] Query: '{query}' → Intent: {intent_name} "
+                f"(confidence: {similarity:.3f}, level: {confidence_level}, method: {method})"
+            )
+
+        return AlgorithmicResult(
             intent=intent_name,
             confidence=similarity,
             confidence_level=confidence_level,
@@ -581,19 +728,10 @@ class AlgorithmicRecognizer:
             score_breakdown=breakdown
         )
 
-        # Logging (if enabled)
-        if self.enable_logging:
-            self.logger.info(
-                f"[ALGORITHMIC] Query: '{query}' → Intent: {intent_name} "
-                f"(confidence: {similarity:.3f}, level: {confidence_level}, method: {method})"
-            )
-
-        return result
-
     def get_statistics(self) -> Dict:
-        """Get algorithmic recognizer statistics"""
-        avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) \
-            if self.stats['avg_confidence'] else 0.0
+        """Get recognizer statistics"""
+        avg_conf = (sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence'])
+                   if self.stats['avg_confidence'] else 0.0)
 
         return {
             'total_queries_processed': self.stats['total_queries'],
