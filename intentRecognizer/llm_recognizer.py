@@ -38,7 +38,6 @@ class LLMRecognizer:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         model: str = DEFAULT_MODEL,
         enable_logging: bool = False,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
@@ -49,7 +48,7 @@ class LLMRecognizer:
         load_dotenv()
 
         # API configuration
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError(
                 "OpenAI API key not found. Set OPENAI_API_KEY environment variable."

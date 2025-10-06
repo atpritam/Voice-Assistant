@@ -48,7 +48,6 @@ class IntentRecognizer:
             min_confidence: float = DEFAULT_MIN_CONFIDENCE,
             enable_llm_fallback: bool = True,
             llm_fallback_threshold: float = DEFAULT_LLM_FALLBACK_THRESHOLD,
-            api_key: Optional[str] = None,
             model: str = DEFAULT_MODEL
     ):
         """
@@ -60,7 +59,6 @@ class IntentRecognizer:
             min_confidence: Minimum confidence threshold
             enable_llm_fallback: Enable LLM fallback for unmatched queries
             llm_fallback_threshold: Confidence below which LLM is used
-            api_key: OpenAI API key (optional, will load from env)
             model: OpenAI model to use
         """
         # Configuration
@@ -92,7 +90,7 @@ class IntentRecognizer:
         # Initialize LLM Recognizer (Fallback)
         self.llm_recognizer = None
         if self.enable_llm_fallback:
-            self.llm_recognizer = self._initialize_llm_recognizer(api_key, model)
+            self.llm_recognizer = self._initialize_llm_recognizer(model)
 
         # Load patterns for LLM
         self.patterns = self.algorithmic_recognizer.patterns
@@ -106,12 +104,11 @@ class IntentRecognizer:
             'avg_confidence': []
         }
 
-    def _initialize_llm_recognizer(self, api_key: Optional[str], model: str) -> Optional[LLMRecognizer]:
+    def _initialize_llm_recognizer(self, model: str) -> Optional[LLMRecognizer]:
         """
         Initialize LLM recognizer with error handling
 
         Args:
-            api_key: OpenAI API key
             model: Model name to use
 
         Returns:
@@ -119,7 +116,6 @@ class IntentRecognizer:
         """
         try:
             llm_recognizer = LLMRecognizer(
-                api_key=api_key,
                 model=model,
                 enable_logging=self.enable_logging,
                 min_confidence=self.min_confidence

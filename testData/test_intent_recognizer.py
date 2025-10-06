@@ -13,12 +13,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from intentRecognizer.intent_recognizer import IntentRecognizer
 from testData.test_data import get_test_dataset
 
+utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+
+ENABLE_LOGGING = True
+ENABLE_LLM_FALLBACK = True
+MIN_CONFIDENCE = 0.5
+LLM_FALLBACK_THRESHOLD = 0.45
+MODEL = "gpt-5-nano"
+PATTERN_FILE = os.path.join(utils_dir, 'intent_patterns.json')
 
 def run_comprehensive_test():
     """Run comprehensive tests on the intent recognizer"""
 
     # Recognizer with logging enabled
-    recognizer = IntentRecognizer(enable_logging=True, min_confidence=0.5)
+    recognizer = IntentRecognizer(
+        enable_logging=ENABLE_LOGGING,
+        enable_llm_fallback=ENABLE_LLM_FALLBACK,
+        llm_fallback_threshold=LLM_FALLBACK_THRESHOLD,
+        model=MODEL,
+        min_confidence=MIN_CONFIDENCE,
+        patterns_file=PATTERN_FILE
+    )
     print()
 
     # Comprehensive test dataset
