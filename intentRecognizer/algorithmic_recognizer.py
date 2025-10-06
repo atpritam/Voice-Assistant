@@ -506,7 +506,7 @@ class AlgorithmicRecognizer:
                     )
 
         # RULE 3: Negative sentiment words strongly indicate COMPLAINT
-        negative_words = {'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing'}
+        negative_words = {'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain', 'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing'}
         has_negative = bool(query_words.intersection(negative_words))
         if has_negative:
             if 'complaint' in intent_scores:
