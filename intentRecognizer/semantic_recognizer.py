@@ -4,8 +4,6 @@ Handles semantic similarity-based intent recognition using local Sentence Transf
 Includes embedding cache to avoid recomputing on every initialization
 """
 
-import json
-import os
 import logging
 import hashlib
 import pickle
@@ -14,17 +12,14 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
+from intentRecognizer.intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+
 try:
     from sentence_transformers import SentenceTransformer
     from sklearn.metrics.pairwise import cosine_similarity
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
-
-# Confidence thresholds
-HIGH_CONFIDENCE_THRESHOLD = 0.8
-MEDIUM_CONFIDENCE_THRESHOLD = 0.6
-DEFAULT_MIN_CONFIDENCE = 0.5
 
 # Default model
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
@@ -80,8 +75,7 @@ class SemanticRecognizer:
 
         # Configuration
         if patterns_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
-            patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
+            patterns_file = IntentRecognizerUtils.get_default_patterns_file()
 
         self.patterns_file = patterns_file
         self.model_name = model_name
@@ -94,8 +88,11 @@ class SemanticRecognizer:
             self.logger = logging.getLogger(__name__)
         logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
-        # Load patterns
-        self.patterns = self._load_patterns()
+        # Load patterns using shared utility
+        self.patterns = IntentRecognizerUtils.load_patterns_from_file(
+            patterns_file,
+            enable_logging
+        )
 
         # Initialize model
         self.model = self._load_model()
@@ -115,21 +112,18 @@ class SemanticRecognizer:
             'model_name': model_name
         }
 
-    def _load_patterns(self) -> Dict:
-        """Load intent patterns from JSON file"""
-        try:
-            with open(self.patterns_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get('intents', data)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            if self.enable_logging:
-                self.logger.error(f"Error loading patterns: {e}")
-            return {}
-
     def _load_model(self) -> SentenceTransformer:
         """Load sentence transformer model"""
         try:
-            model = SentenceTransformer(self.model_name)
+            import torch
+            print("ML Model Device: " + torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+            model = SentenceTransformer(self.model_name, device=device)
+
+            if self.enable_logging:
+                self.logger.info(f"Model loaded on device: {device}")
+
             return model
         except Exception as e:
             if self.enable_logging:
@@ -390,13 +384,7 @@ class SemanticRecognizer:
                     best_similarity
                 )
 
-            # Determine confidence level
-            if best_similarity >= HIGH_CONFIDENCE_THRESHOLD:
-                confidence_level = 'high'
-            elif best_similarity >= MEDIUM_CONFIDENCE_THRESHOLD:
-                confidence_level = 'medium'
-            else:
-                confidence_level = 'low'
+            confidence_level = IntentRecognizerUtils.determine_confidence_level(best_similarity)
 
             # Update statistics
             self.stats['intent_distribution'][best_intent_name] = \

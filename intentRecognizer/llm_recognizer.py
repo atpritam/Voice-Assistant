@@ -11,12 +11,9 @@ from dataclasses import dataclass
 from openai import OpenAI
 from dotenv import load_dotenv
 
-DEFAULT_MODEL = "gpt-5-nano"
-DEFAULT_MIN_CONFIDENCE = 0.5
+from intentRecognizer.intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
-# Confidence level thresholds
-HIGH_CONFIDENCE_THRESHOLD = 0.8
-MEDIUM_CONFIDENCE_THRESHOLD = 0.6
+DEFAULT_MODEL = "gpt-5-nano"
 
 # Intent validation
 INVALID_INTENT_CONFIDENCE_PENALTY = 0.7
@@ -181,12 +178,8 @@ class LLMRecognizer:
         intent = validated_result["intent"]
         confidence = validated_result["confidence"]
         explanation = validated_result["explanation"]
-        confidence_level = "low"
 
-        if confidence >= HIGH_CONFIDENCE_THRESHOLD:
-            confidence_level = "high"
-        elif confidence >= MEDIUM_CONFIDENCE_THRESHOLD:
-            confidence_level = "medium"
+        confidence_level = IntentRecognizerUtils.determine_confidence_level(confidence)
 
         return LLMResult(
             intent=intent,

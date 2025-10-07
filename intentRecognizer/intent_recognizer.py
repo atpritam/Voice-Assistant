@@ -10,19 +10,15 @@ import logging
 from typing import Dict, Optional
 from dataclasses import dataclass
 
-from intentRecognizer.algorithmic_recognizer import AlgorithmicRecognizer
-from intentRecognizer.semantic_recognizer import SemanticRecognizer
-from intentRecognizer.llm_recognizer import LLMRecognizer
-
+# Shared Constants
+HIGH_CONFIDENCE_THRESHOLD = 0.8
+MEDIUM_CONFIDENCE_THRESHOLD = 0.6
 DEFAULT_MIN_CONFIDENCE = 0.5
 DEFAULT_ALGORITHMIC_THRESHOLD = 0.6
 DEFAULT_SEMANTIC_THRESHOLD = 0.5
 DEFAULT_LLM_MODEL = "gpt-5-nano"
 DEFAULT_SEMANTIC_MODEL = "all-MiniLM-L6-v2"
 
-# Confidence level thresholds
-HIGH_CONFIDENCE_THRESHOLD = 0.8
-MEDIUM_CONFIDENCE_THRESHOLD = 0.6
 
 @dataclass
 class RecognitionResult:
@@ -35,6 +31,65 @@ class RecognitionResult:
     layer_used: str  # 'algorithmic', 'semantic', or 'llm'
     llm_explanation: str = ""
     score_breakdown: Dict = None
+
+
+class IntentRecognizerUtils:
+    """Shared utilities for all recognizer layers"""
+
+    @staticmethod
+    def determine_confidence_level(confidence: float) -> str:
+        """
+        Determine confidence level based on thresholds
+
+        Args:
+            confidence: Confidence score (0.0 to 1.0)
+
+        Returns:
+            'high', 'medium', or 'low'
+        """
+        if confidence >= HIGH_CONFIDENCE_THRESHOLD:
+            return 'high'
+        elif confidence >= MEDIUM_CONFIDENCE_THRESHOLD:
+            return 'medium'
+        return 'low'
+
+    @staticmethod
+    def load_patterns_from_file(patterns_file: str, enable_logging: bool = False) -> Dict:
+        """
+        Load intent patterns from JSON file
+
+        Args:
+            patterns_file: Path to JSON file
+            enable_logging: Whether to log errors
+
+        Returns:
+            Dictionary of intent patterns
+        """
+        try:
+            with open(patterns_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data.get('intents', data) if 'intents' in data else data
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            if enable_logging:
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error loading patterns: {e}")
+            return {}
+
+    @staticmethod
+    def get_default_patterns_file() -> str:
+        """
+        Get default path to patterns file
+
+        Returns:
+            Path to intent_patterns.json
+        """
+        utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+        return os.path.join(utils_dir, 'intent_patterns.json')
+
+
+from intentRecognizer.algorithmic_recognizer import AlgorithmicRecognizer
+from intentRecognizer.semantic_recognizer import SemanticRecognizer
+from intentRecognizer.llm_recognizer import LLMRecognizer
 
 
 class IntentRecognizer:
@@ -95,8 +150,7 @@ class IntentRecognizer:
             )
 
         if patterns_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
-            patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
+            patterns_file = IntentRecognizerUtils.get_default_patterns_file()
 
         self.patterns_file = patterns_file
         self.min_confidence = min_confidence
@@ -145,20 +199,10 @@ class IntentRecognizer:
         if self.enable_llm:
             self.llm_recognizer = self._initialize_llm_recognizer(llm_model)
 
-        self.patterns = self._load_patterns()
-
-    def _load_patterns(self) -> Dict:
-        """Load patterns from JSON file"""
-        try:
-            with open(self.patterns_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            patterns = data.get('intents', data) if 'intents' in data else data
-
-            return patterns
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            if self.enable_logging:
-                self.logger.error(f"Error loading patterns: {e}")
-            return {}
+        self.patterns = IntentRecognizerUtils.load_patterns_from_file(
+            self.patterns_file,
+            self.enable_logging
+        )
 
     def _initialize_algorithmic_recognizer(self) -> AlgorithmicRecognizer:
         """Initialize algorithmic keyword pattern matching layer"""
@@ -254,7 +298,7 @@ class IntentRecognizer:
             if result is not None:
                 return result
 
-        # Technically, it should never reach this poit but for absolute worst
+        # Technically, it should never reach this point but for absolute worst
         return self._create_unknown_result("No layers produced a result")
 
 

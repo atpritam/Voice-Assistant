@@ -4,12 +4,12 @@ Handles pattern matching, keyword analysis, and Levenshtein distance-based recog
 Optimized for ASR (Automatic Speech Recognition) input
 """
 
-import json
-import os
 import logging
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 import Levenshtein
+
+from intentRecognizer.intent_recognizer import IntentRecognizerUtils
 
 # Similarity calculation weights
 KEYWORD_WEIGHT = 0.50
@@ -40,9 +40,7 @@ MIN_LENGTH_RATIO = 0.4
 MAX_LENGTH_RATIO = 2.5
 LONG_STRING_THRESHOLD = 15
 
-# Confidence levels
-HIGH_CONFIDENCE_THRESHOLD = 0.8
-MEDIUM_CONFIDENCE_THRESHOLD = 0.6
+# High similarity early exit
 HIGH_SIMILARITY_EARLY_EXIT = 0.92
 
 @dataclass
@@ -458,8 +456,7 @@ class AlgorithmicRecognizer:
         """Initialize the algorithmic recognizer"""
         # Configuration
         if patterns_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
-            patterns_file = os.path.join(utils_dir, 'intent_patterns.json')
+            patterns_file = IntentRecognizerUtils.get_default_patterns_file()
 
         self.patterns_file = patterns_file
         self.min_confidence = min_confidence
@@ -470,7 +467,10 @@ class AlgorithmicRecognizer:
             self.logger = logging.getLogger(__name__)
 
         # Load patterns
-        self.patterns = self._load_patterns()
+        self.patterns = IntentRecognizerUtils.load_patterns_from_file(
+            patterns_file,
+            enable_logging
+        )
 
         # Initialize linguistic resources
         self._initialize_linguistic_resources()
@@ -496,27 +496,6 @@ class AlgorithmicRecognizer:
             'total_queries': 0,
             'intent_distribution': {},
             'avg_confidence': []
-        }
-
-    def _load_patterns(self) -> Dict:
-        """Load intent patterns from JSON file"""
-        try:
-            with open(self.patterns_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get('intents', data)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            if self.enable_logging:
-                self.logger.error(f"Error loading patterns: {e}")
-            return self._get_default_patterns()
-
-    def _get_default_patterns(self) -> Dict:
-        """Fallback patterns if file not found"""
-        return {
-            "unknown": {
-                "patterns": [],
-                "similarity_threshold": 0.0,
-                "description": "Fallback for unrecognized intents"
-            }
         }
 
     def _initialize_linguistic_resources(self):
@@ -681,13 +660,7 @@ class AlgorithmicRecognizer:
         # Find best match
         intent_name, similarity, matched_pattern, breakdown = self.find_best_match(query)
 
-        # Determine confidence level
-        if similarity >= HIGH_CONFIDENCE_THRESHOLD:
-            confidence_level = 'high'
-        elif similarity >= MEDIUM_CONFIDENCE_THRESHOLD:
-            confidence_level = 'medium'
-        else:
-            confidence_level = 'low'
+        confidence_level = IntentRecognizerUtils.determine_confidence_level(similarity)
 
         # Determine processing method
         if breakdown:
