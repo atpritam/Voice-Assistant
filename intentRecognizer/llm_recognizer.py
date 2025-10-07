@@ -6,7 +6,7 @@ Handles LLM-based intent recognition using OpenAI API
 import os
 import json
 import logging
-from typing import Dict, Optional
+from typing import Dict
 from dataclasses import dataclass
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -14,8 +14,6 @@ from dotenv import load_dotenv
 from intentRecognizer.intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 DEFAULT_MODEL = "gpt-5-nano"
-
-# Intent validation
 INVALID_INTENT_CONFIDENCE_PENALTY = 0.7
 FALLBACK_CONFIDENCE = 0.4
 ERROR_FALLBACK_CONFIDENCE = 0.3
@@ -25,7 +23,7 @@ class LLMResult:
     """Result from LLM recognition"""
     intent: str
     confidence: float
-    confidence_level: str  # 'high', 'medium', 'low'
+    confidence_level: str
     explanation: str
     matched_pattern: str = "LLM Classification"
     processing_method: str = "llm"
@@ -41,12 +39,8 @@ class LLMRecognizer:
         enable_logging: bool = False,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     ):
-        """
-        Initialize LLM Recognizer
-        """
         load_dotenv()
 
-        # API configuration
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError(
@@ -56,9 +50,8 @@ class LLMRecognizer:
         self.model = model
         self.min_confidence = min_confidence
         self.client = OpenAI(api_key=self.api_key)
-
-        # Logging setup
         self.enable_logging = enable_logging
+
         if enable_logging:
             logging.basicConfig(
                 level=logging.INFO,
@@ -66,7 +59,6 @@ class LLMRecognizer:
             )
             self.logger = logging.getLogger(__name__)
 
-        # Statistics tracking
         self.stats = {
             "total_queries": 0,
             "successful_queries": 0,
@@ -78,34 +70,27 @@ class LLMRecognizer:
         }
 
     def recognize(self, query: str, intent_patterns: Dict) -> LLMResult:
-        """
-        Recognize intent using LLM
-        """
+        """Recognize intent using LLM"""
         self.stats["total_queries"] += 1
         self.stats["total_api_calls"] += 1
 
         try:
             response = self._call_openai_api(query, intent_patterns)
-            result = self._parse_api_response(response)
-            validated_result = self._validate_intent(result, intent_patterns)
-            llm_result = self._create_llm_result(validated_result)
+            result = self._process_api_response(response, intent_patterns)
 
-            # Update statistics
             self.stats["successful_queries"] += 1
-            self.stats["intent_distribution"][llm_result.intent] = (
-                self.stats["intent_distribution"].get(llm_result.intent, 0) + 1
-            )
-            self.stats["avg_confidence"].append(llm_result.confidence)
+            self.stats["intent_distribution"][result.intent] = \
+                self.stats["intent_distribution"].get(result.intent, 0) + 1
+            self.stats["avg_confidence"].append(result.confidence)
 
-            # Logging
             if self.enable_logging:
                 self.logger.info(
-                    f"[LLM] Intent: {llm_result.intent} "
-                    f"(confidence: {llm_result.confidence:.3f}, level: {llm_result.confidence_level})"
+                    f"[LLM] Intent: {result.intent} "
+                    f"(confidence: {result.confidence:.3f}, level: {result.confidence_level})"
                 )
-                self.logger.debug(f"[LLM] Explanation: {llm_result.explanation}")
+                self.logger.debug(f"[LLM] Explanation: {result.explanation}")
 
-            return llm_result
+            return result
 
         except json.JSONDecodeError as e:
             if self.enable_logging:
@@ -120,9 +105,7 @@ class LLMRecognizer:
             return self._get_fallback_result(f"API error: {str(e)}")
 
     def _call_openai_api(self, query: str, intent_patterns: Dict):
-        """
-        Call OpenAI API for intent classification
-        """
+        """Call OpenAI API for intent classification"""
         system_prompt = self._get_system_prompt(intent_patterns)
         user_prompt = f'Classify this user query: "{query}"'
 
@@ -136,48 +119,23 @@ class LLMRecognizer:
             verbosity="low"
         )
 
-    def _parse_api_response(self, response) -> Dict:
-        """
-        Parse API response and extract result
-        """
+    def _process_api_response(self, response, intent_patterns: Dict) -> LLMResult:
+        """Parse and validate API response, creating LLMResult"""
         result_text = response.choices[0].message.content
         result = json.loads(result_text)
 
         if hasattr(response, "usage"):
             self.stats["total_tokens_used"] += response.usage.total_tokens
 
-        return result
-
-    @staticmethod
-    def _validate_intent(result: Dict, intent_patterns: Dict) -> Dict:
-        """
-        Validate intent and adjust if needed
-        """
         intent = result.get("intent", "unknown")
         confidence = result.get("confidence", 0.5)
         explanation = result.get("explanation", "LLM classification")
 
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
-
         if intent not in valid_intents:
             intent = "unknown"
             confidence = max(FALLBACK_CONFIDENCE, confidence * INVALID_INTENT_CONFIDENCE_PENALTY)
             explanation = f"Invalid intent detected, defaulting to unknown. {explanation}"
-
-        return {
-            "intent": intent,
-            "confidence": confidence,
-            "explanation": explanation
-        }
-
-    @staticmethod
-    def _create_llm_result(validated_result: Dict) -> LLMResult:
-        """
-        Create LLMResult object from validated data
-        """
-        intent = validated_result["intent"]
-        confidence = validated_result["confidence"]
-        explanation = validated_result["explanation"]
 
         confidence_level = IntentRecognizerUtils.determine_confidence_level(confidence)
 
@@ -194,12 +152,10 @@ class LLMRecognizer:
 
     @staticmethod
     def _get_system_prompt(intent_patterns: Dict) -> str:
-        """
-        Generate system prompt for intent classification
-        """
+        """Generate system prompt for intent classification"""
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
 
-        system_prompt = f"""You are an intent classification assistant for a pizza restaurant chatbot.
+        return f"""You are an intent classification assistant for a pizza restaurant chatbot.
 
 Your task:
 1. Classify the user's query into ONE of these intents: {', '.join(valid_intents)}
@@ -222,13 +178,10 @@ Respond ONLY with valid JSON in this exact format:
     "explanation": "Brief explanation of why this intent was chosen"
 }}
 """
-        return system_prompt
 
     @staticmethod
     def _get_fallback_result(error_msg: str) -> LLMResult:
-        """
-        Return fallback result when LLM API fails
-        """
+        """Return fallback result when LLM API fails"""
         return LLMResult(
             intent="unknown",
             confidence=ERROR_FALLBACK_CONFIDENCE,
@@ -244,14 +197,12 @@ Respond ONLY with valid JSON in this exact format:
         """Get LLM recognizer statistics with calculated metrics."""
         avg_conf = (
             sum(self.stats["avg_confidence"]) / len(self.stats["avg_confidence"])
-            if self.stats.get("avg_confidence")
-            else 0.0
+            if self.stats.get("avg_confidence") else 0.0
         )
 
         success_rate = (
             self.stats["successful_queries"] / self.stats["total_queries"]
-            if self.stats.get("total_queries", 0) > 0
-            else 0.0
+            if self.stats.get("total_queries", 0) > 0 else 0.0
         )
 
         return {
