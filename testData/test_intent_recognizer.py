@@ -1,109 +1,161 @@
 """
 Test script for Intent Recognizer
-Runs test dataset and displays statistics
-Activate VENV first: source .venv/bin/activate
-Run: python -m testData.test_intent_recognizer
+Run:
+  python -m testData.test_intent_recognizer
+  python -m testData.test_intent_recognizer --comparative
 """
 
-import sys
-import os
-
+import sys, os, time, argparse, traceback
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from intentRecognizer.intent_recognizer import IntentRecognizer
 from testData.test_data import get_test_dataset
 
+# === CONFIG ===
 utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
-
-ENABLE_LOGGING = True
-ENABLE_LLM_FALLBACK = True
-MIN_CONFIDENCE = 0.5
-LLM_FALLBACK_THRESHOLD = 0.45
-MODEL = "gpt-5-nano"
 PATTERN_FILE = os.path.join(utils_dir, 'intent_patterns.json')
+MIN_CONFIDENCE = 0.5
+SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+LLM_MODEL = "gpt-5-nano"
+
+# Default pipeline
+ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
+THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
+
+def format_time(s):
+    return f"{s*1000:.1f}ms" if s < 1 else f"{s:.2f}s"
+
+
+def describe_pipeline(a, s, l):
+    return " → ".join([n for n, e in zip(["Algorithmic", "Semantic", "LLM"], [a, s, l]) if e]) or "NO LAYERS"
+
+
+def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_SEMANTIC):
+    return IntentRecognizer(
+        enable_logging=log,
+        enable_algorithmic=a, enable_semantic=s, enable_llm=l,
+        algorithmic_threshold=ta or 0.6, semantic_threshold=ts or 0.5,
+        semantic_model=SEMANTIC_MODEL, llm_model=LLM_MODEL,
+        min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE
+    )
+
 
 def run_comprehensive_test():
-    """Run comprehensive tests on the intent recognizer"""
+    print(f"\nPipeline: {describe_pipeline(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM)}\n")
 
-    # Recognizer with logging enabled
-    recognizer = IntentRecognizer(
-        enable_logging=ENABLE_LOGGING,
-        enable_llm_fallback=ENABLE_LLM_FALLBACK,
-        llm_fallback_threshold=LLM_FALLBACK_THRESHOLD,
-        model=MODEL,
-        min_confidence=MIN_CONFIDENCE,
-        patterns_file=PATTERN_FILE
-    )
-    print()
+    try:
+        start = time.time()
+        recognizer = init_recognizer(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM, log=True)
+        print(f"\n✓ Initialized in {format_time(time.time() - start)}\n")
+    except Exception as e:
+        print(f"INIT ERROR: {e}")
+        traceback.print_exc()
+        return None, None
 
-    # Comprehensive test dataset
     test_data = get_test_dataset()
+    print(f"Running tests on {len(test_data)} queries...\n")
 
-    print(f"Running tests on {len(test_data)} queries...")
-    print()
+    start = time.time()
+    ev = recognizer.evaluate(test_data)
+    dur = time.time() - start
 
-    evaluation = recognizer.evaluate(test_data)
+    print("\nOVERALL RESULTS\n" + "-" * 80)
+    print(f"Accuracy: {ev['accuracy']:.2%}")
+    print(f"Correct: {ev['correct']} / {ev['total_queries']}")
+    print(f"Avg Query Time: {format_time(dur / len(test_data))}")
+    print(f"Queries/s: {len(test_data) / dur:.1f}\n")
 
-    print("\n" + "=" * 80)
-    print("OVERALL RESULTS")
-    print("=" * 80)
-    print(f"Accuracy: {evaluation['accuracy']:.2%}")
-    print(f"Total Queries: {evaluation['total_queries']}")
-    print(f"Correct: {evaluation['correct']}")
-    print(f"Incorrect: {evaluation['incorrect']}")
-    print()
+    print("LAYER USAGE\n" + "-" * 80)
+    for layer, key in [("Algorithmic", "algo"), ("Semantic", "semantic"), ("LLM", "llm")]:
+        if ev.get(f"{key}_used_count"):
+            c = ev[f"{key}_used_count"]
+            print(f"{layer:<12}: {c:3d} ({c/len(test_data)*100:5.1f}%)  Acc: {ev[f'{key}_accuracy']:.2%}")
 
-    print("CONFIDENCE DISTRIBUTION")
-    print("-" * 80)
-    print(f"High Confidence (≥0.8): {evaluation['high_confidence_count']} queries")
-    print(f"  Accuracy: {evaluation['high_confidence_accuracy']:.2%}")
-    print(f"Medium Confidence (0.6-0.8): {evaluation['medium_confidence_count']} queries")
-    print(f"Low Confidence (<0.6): {evaluation['low_confidence_count']} queries")
-    print()
+    print("\nCONFIDENCE LEVELS\n" + "-" * 80)
+    for level, rng in [("High (≥0.8)", "high"), ("Medium (0.6–0.8)", "medium"), ("Low (<0.6)", "low")]:
+        c = ev[f"{rng}_confidence_count"]
+        print(f"{level:<22}: {c:3d} ({c/len(test_data)*100:5.1f}%)")
 
-    # Statistics
-    stats = recognizer.get_statistics()
-
-    print("PROCESSING STATISTICS")
-    print("-" * 80)
-    print(f"Total Queries Processed: {stats['total_queries_processed']}")
-    print(f"Average Confidence: {stats['average_confidence']:.3f}")
-    print()
-
-    print("INTENT DISTRIBUTION")
-    print("-" * 80)
-    for intent, count in sorted(stats['intent_distribution'].items(), key=lambda x: x[1], reverse=True):
-        percentage = (count / stats['total_queries_processed']) * 100
-        print(f"  {intent:25s}: {count:3d} ({percentage:5.1f}%)")
-    print()
-
-    incorrect_results = [r for r in evaluation['detailed_results'] if not r['correct']]
-
-    if incorrect_results:
-        print("\n" + "=" * 80)
-        print("Predictions (Incorrect)")
-        print("=" * 80)
-        for i, result in enumerate(incorrect_results, 1):
-            print(f"\n{i}. Query: '{result['query']}'")
-            print(f"   Expected: {result['expected']}")
-            print(f"   Predicted: {result['predicted']}")
-            print(f"   Confidence: {result['confidence']:.3f}")
+    wrong = [r for r in ev["detailed_results"] if not r["correct"]]
+    if not wrong:
+        print("\n✓ ALL CORRECT!\n")
     else:
-        print("\n✓ All predictions were correct!")
+        print("\nINCORRECT PREDICTIONS\n" + "-" * 80)
+        for i, r in enumerate(wrong, 1):
+            print(f"\n{i}. '{r['query']}' → {r['predicted']} (exp: {r['expected']}, conf: {r['confidence']:.2f}, layer: {r['layer_used']})")
 
+    return ev, recognizer.get_statistics()
+
+
+def run_comparative_analysis():
+    test_data = get_test_dataset()
+    print(f"\nTesting multiple pipeline configurations for comparative results")
+    print(f"\nRunning tests on {len(test_data)} queries...\n")
+    configs = [
+        ("Full Pipeline", True, True, True),
+        ("Algorithmic -> LLM", True, False, True),
+        ("Semantic -> LLM", False, True, True),
+        ("Algorithmic Only", True, False, False),
+        ("Semantic Only", False, True, False),
+    ]
+
+    results = []
+    for name, a, s, l in configs:
+        print(f"\n{'─'*80}\n{name}\n{'─'*80}")
+        try:
+            rec = init_recognizer(a, s, l, log=False)
+            t0 = time.time()
+            ev = rec.evaluate(test_data)
+            t = time.time() - t0
+            results.append({
+                "name": name,
+                "acc": ev["accuracy"],
+                "time": t,
+                "qps": len(test_data)/t,
+                "algo": ev.get("algo_used_count", 0),
+                "sem": ev.get("semantic_used_count", 0),
+                "llm": ev.get("llm_used_count", 0)
+            })
+            print(f"✓ Accuracy: {ev['accuracy']:.2%} \nTime: {format_time(t)}")
+        except Exception as e:
+            print(f"✗ {name} failed: {e}")
+            results.append({"name": name, "acc": 0, "time": 0, "qps": 0, "algo": 0, "sem": 0, "llm": 0})
+
+    print("\n" + "=" * 80 + "\n")
+    print("\nPipeline Comparison\n" + "-"*80)
+    print(f"{'Configuration':<25} {'Accuracy':<10} {'Total Time':<12} {'Avg Time':<10} {'Q/s':<10}")
+    print("-" * 80)
+    for r in results:
+        avg_time = r['time'] / len(test_data) if len(test_data) else 0
+        print(
+            f"{r['name']:<25} {r['acc']:>8.2%}  {format_time(r['time']):>10}  {format_time(avg_time):>8}  {r['qps']:>8.1f}")
+
+    print("\nLAYER USAGE COMPARISON\n" + "-"*80)
+    print(f"{'Configuration':<25} {'Algo':<8} {'Semantic':<10} {'LLM':<8}")
+    print("-"*80)
+    for r in results:
+        print(f"{r['name']:<25} {r['algo']:>6}  {r['sem']:>8}  {r['llm']:>6}")
     print()
-
-    return evaluation, stats
 
 
 if __name__ == "__main__":
-    try:
-        evaluation, stats = run_comprehensive_test()
-    except FileNotFoundError as e:
-        print(f"Error: Could not find intent_patterns.json file")
-        print(f"Please ensure the file exists in the utils directory")
-    except Exception as e:
-        print(f"Error running tests: {e}")
-        import traceback
+    parser = argparse.ArgumentParser(description="Test Intent Recognizer")
+    parser.add_argument("--comparative", action="store_true", help="Run comparative analysis")
+    args = parser.parse_args()
 
+    try:
+        if args.comparative:
+
+            run_comparative_analysis()
+        else:
+            run_comprehensive_test()
+    except FileNotFoundError:
+        print("\nERROR: intent_patterns.json not found in utils/\n")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nTest interrupted by user\n")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\nERROR: {e}\n")
         traceback.print_exc()
+        sys.exit(1)

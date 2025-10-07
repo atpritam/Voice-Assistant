@@ -15,14 +15,58 @@ app.config['SECRET_KEY'] = 'hjbasfbue76t34g76wgv3bywyu47'
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
 
-# Conversation history
 conversation_history = []
 
-# Initialize intent recognizer with LLM fallback enabled
-intent_recognizer = IntentRecognizer(
-    enable_logging=True,
-    enable_llm_fallback=True
-)
+# PIPELINE CONFIGURATION
+ENABLE_ALGORITHMIC = True  # Keyword pattern matching + Levenshtein distance
+ENABLE_SEMANTIC = True  # Sentence Transformers (local ML model)
+ENABLE_LLM = True  # OpenAI GPT (fallback layer)
+
+# Layer Thresholds - confidence below which next active layer is tried
+ALGORITHMIC_THRESHOLD = 0.6
+SEMANTIC_THRESHOLD = 0.5
+
+# Model Configuration
+SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+LLM_MODEL = "gpt-5-nano"
+
+# General Settings
+ENABLE_LOGGING = True
+MIN_CONFIDENCE = 0.5
+
+
+# Initialize intent recognizer
+try:
+    intent_recognizer = IntentRecognizer(
+        enable_logging=ENABLE_LOGGING,
+        enable_algorithmic=ENABLE_ALGORITHMIC,
+        enable_semantic=ENABLE_SEMANTIC,
+        enable_llm=ENABLE_LLM,
+        algorithmic_threshold=ALGORITHMIC_THRESHOLD,
+        semantic_threshold=SEMANTIC_THRESHOLD,
+        semantic_model=SEMANTIC_MODEL,
+        llm_model=LLM_MODEL,
+        min_confidence=MIN_CONFIDENCE
+    )
+
+    print()
+    print(f"  Pipeline: ", end="")
+    layers = []
+    if ENABLE_ALGORITHMIC:
+        layers.append("Algorithmic")
+    if ENABLE_SEMANTIC:
+        layers.append("Semantic")
+    if ENABLE_LLM:
+        layers.append("LLM")
+    print(" → ".join(layers) + "\n")
+
+except ValueError as e:
+    print(f"\nConfiguration Error: {e}\n")
+    sys.exit(1)
+except Exception as e:
+    print(f"\nInitialization Error: {e}\n")
+    sys.exit(1)
+
 
 @socketio.on('connect')
 def handle_connect():
@@ -57,7 +101,7 @@ def handle_message(data):
             'intent': intent_info.intent,
             'confidence': intent_info.confidence_level,
             'similarity': intent_info.confidence,
-            'used_llm': intent_info.used_llm,
+            'layer_used': intent_info.layer_used,
             'processing_method': intent_info.processing_method
         })
 
@@ -70,11 +114,12 @@ def handle_message(data):
                 'intent': intent_info.intent,
                 'confidence': intent_info.confidence_level,
                 'similarity': intent_info.confidence,
-                'used_llm': intent_info.used_llm,
+                'layer_used': intent_info.layer_used,
                 'processing_method': intent_info.processing_method,
                 'llm_explanation': intent_info.llm_explanation
             }
         })
+
 
 @socketio.on('recognize_intent')
 def handle_recognize_intent(data):
@@ -84,12 +129,21 @@ def handle_recognize_intent(data):
         intent_info = intent_recognizer.recognize_intent(message)
         emit('intent_recognition', {
             'message': message,
-            'intent_info': intent_info
+            'intent_info': {
+                'intent': intent_info.intent,
+                'confidence': intent_info.confidence_level,
+                'similarity': intent_info.confidence,
+                'layer_used': intent_info.layer_used,
+                'processing_method': intent_info.processing_method,
+                'llm_explanation': intent_info.llm_explanation
+            }
         })
+
 
 @socketio.on('clear_history')
 def handle_clear_history():
     conversation_history.clear()
+
 
 @app.route('/')
 def index():
@@ -99,7 +153,7 @@ def index():
 
 @app.route('/statistics')
 def get_statistics():
-    """Get system statistics including LLM usage"""
+    """Get system statistics including layer usage"""
     from flask import jsonify
     stats = intent_recognizer.get_statistics()
     return jsonify(stats)

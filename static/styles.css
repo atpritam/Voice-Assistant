@@ -1,4 +1,3 @@
-
 * {
   margin: 0;
   padding: 0;
@@ -133,23 +132,35 @@ header h1 {
 }
 
 .intent-info {
-  margin-top: 5px;
-  padding: 4px 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
   border-radius: 8px;
   font-size: 0.7rem;
   background: #222222;
   color: #AAAAAA;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .message.user .intent-info {
   background: #EAEAEA;
   color: #444444;
 }
+
 .message.assistant .intent-info {
   background: #222222;
   color: #AAAAAA;
 }
 
+.layer-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
 
 .input-container {
   padding: 20px;
@@ -278,5 +289,11 @@ header h1 {
 
   .input-group button {
     width: 100%;
+  }
+  
+  .layer-badge {
+      margin-left: 4px;
+      font-size: 0.6rem;
+      padding: 1px 6px;
   }
 }

@@ -30,7 +30,9 @@ class LLMResult:
     confidence: float
     confidence_level: str  # 'high', 'medium', 'low'
     explanation: str
+    matched_pattern: str = "LLM Classification"
     processing_method: str = "llm"
+    score_breakdown: Dict = None
     error: bool = False
 
 class LLMRecognizer:
@@ -101,7 +103,7 @@ class LLMRecognizer:
             # Logging
             if self.enable_logging:
                 self.logger.info(
-                    f"[LLM] Query: '{query}' → Intent: {llm_result.intent} "
+                    f"[LLM] Intent: {llm_result.intent} "
                     f"(confidence: {llm_result.confidence:.3f}, level: {llm_result.confidence_level})"
                 )
                 self.logger.debug(f"[LLM] Explanation: {llm_result.explanation}")
@@ -191,7 +193,9 @@ class LLMRecognizer:
             confidence=confidence,
             confidence_level=confidence_level,
             explanation=explanation,
+            matched_pattern="LLM Classification",
             processing_method="llm",
+            score_breakdown={"llm_explanation": explanation},
             error=False,
         )
 
@@ -237,7 +241,9 @@ Respond ONLY with valid JSON in this exact format:
             confidence=ERROR_FALLBACK_CONFIDENCE,
             confidence_level="low",
             explanation=f"LLM API failed: {error_msg}",
+            matched_pattern="Error",
             processing_method="llm_fallback",
+            score_breakdown={"error": error_msg},
             error=True,
         )
 

@@ -54,7 +54,7 @@ function displayConversation(history) {
     return;
   }
 
-  history.forEach((entry, index) => {
+  history.forEach((entry) => {
     const messageDiv = document.createElement("div");
     messageDiv.className = `message ${entry.type}`;
 
@@ -66,12 +66,19 @@ function displayConversation(history) {
     if (entry.type === "assistant" && entry.intent) {
       const intentInfo = document.createElement("div");
       intentInfo.className = "intent-info";
-      const llmBadge = entry.used_llm ? ' <span class="llm-badge">LLM</span>' : '';
+
+      let layerBadge = '';
+      if (entry.layer_used) {
+        let layerName = entry.layer_used.charAt(0).toUpperCase() + entry.layer_used.slice(1);
+        const layerClass = `layer-badge`;
+        layerBadge = ` <span class="${layerClass}">${layerName}</span>`;
+      }
+
       intentInfo.innerHTML = `
         <small>
           Intent: <strong>${entry.intent}</strong> 
           (${entry.confidence}, ${(entry.similarity * 100).toFixed(1)}%)
-          ${llmBadge}
+          ${layerBadge}
         </small>
       `;
       messageContent.appendChild(intentInfo);
@@ -129,7 +136,7 @@ function clearHistory() {
 function showIntentRecognition(intentInfo) {
   const result = `Intent: ${intentInfo.intent}\nConfidence: ${
     intentInfo.confidence
-  }\nSimilarity: ${(intentInfo.similarity * 100).toFixed(1)}%`;
+  }\nSimilarity: ${(intentInfo.similarity * 100).toFixed(1)}%\nLayer: ${intentInfo.layer_used}`;
   alert(`Intent Recognition Result:\n\n${result}`);
 }
 

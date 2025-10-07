@@ -467,10 +467,6 @@ class AlgorithmicRecognizer:
 
         # Setup logging
         if enable_logging:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
             self.logger = logging.getLogger(__name__)
 
         # Load patterns
@@ -583,9 +579,6 @@ class AlgorithmicRecognizer:
 
             self._intent_keywords_cache[intent_name] = keywords
             self._normalized_patterns_cache[intent_name] = normalized_patterns
-
-        if self.enable_logging:
-            self.logger.info(f"Preprocessed {len(self.patterns)} intent categories")
 
     def _evaluate_single_intent(self, intent_name: str, intent_data: Dict,
                                query: str, query_words: Set[str]) -> Optional[IntentEvaluation]:
@@ -703,7 +696,7 @@ class AlgorithmicRecognizer:
             elif breakdown['levenshtein_similarity'] > 0.7:
                 method = 'levenshtein'
             else:
-                method = 'combined'
+                method = 'keyword + levenshtein'
         else:
             method = 'none'
 
@@ -715,7 +708,7 @@ class AlgorithmicRecognizer:
         # Logging
         if self.enable_logging:
             self.logger.info(
-                f"[ALGORITHMIC] Query: '{query}' → Intent: {intent_name} "
+                f"[ALGORITHMIC] Intent: {intent_name} "
                 f"(confidence: {similarity:.3f}, level: {confidence_level}, method: {method})"
             )
 
