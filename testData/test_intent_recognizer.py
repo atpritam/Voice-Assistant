@@ -18,6 +18,8 @@ MIN_CONFIDENCE = 0.5
 SEMANTIC_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "gpt-5-nano"
 
+INCLUDE_EDGE_CASES = False
+
 # Default pipeline
 ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
 THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
@@ -52,7 +54,7 @@ def run_comprehensive_test():
         traceback.print_exc()
         return None, None
 
-    test_data = get_test_dataset()
+    test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"Running tests on {len(test_data)} queries...\n")
 
     start = time.time()
@@ -88,7 +90,7 @@ def run_comprehensive_test():
 
 
 def run_comparative_analysis():
-    test_data = get_test_dataset()
+    test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"\nTesting multiple pipeline configurations for comparative results")
     print(f"\nRunning tests on {len(test_data)} queries...\n")
     configs = [
