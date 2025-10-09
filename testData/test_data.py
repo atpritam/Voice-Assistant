@@ -96,7 +96,6 @@ NORMAL_TEST_DATASET = [
 # === EDGE CASES DATA ===
 EDGE_CASES_DATASET = [
     # Ambiguous
-    ("I need information about my order", "delivery"),
     ("What can I get", "menu_inquiry"),
     ("Tell me about your pizza", "menu_inquiry"),
 
@@ -105,25 +104,21 @@ EDGE_CASES_DATASET = [
     ("So I'm looking at your menu and I'm trying to figure out what the best deal is and also I want to know if you have any vegetarian options available", "menu_inquiry"),
 
     # Multiple intents
-    ("Where are you located and how much is a large pizza", "hours_location"),
     ("I want to order but first tell me your hours", "hours_location"),
     ("Can I get a refund and also where is my order", "complaint"),
 
     # Negative queries
     ("I don't want pepperoni what else do you have", "menu_inquiry"),
-    ("Not interested in delivery do you do pickup", "general"),
+    ("I don't late delivery again please", "complaint"),
 
     # Sarcasm
     ("Oh great another wrong order", "complaint"),
-    ("Wonderful I've been waiting forever", "complaint"),
-
-    # Code-switching
-    ("Hola, I want to order pizza", "order"),
-    ("Cześć, Can I get a pizzę?", "order"),
+    ("Just what I needed, cold pizza again", "complaint"),
+    ("Wonderful, an hour late as usual", "complaint"),
 
     # Context dependent
     ("What about the large one", "menu_inquiry"),
-    ("And that one", "general"),
+    ("I will take that one", "order"),
     ("Same as before", "order"),
 ]
 

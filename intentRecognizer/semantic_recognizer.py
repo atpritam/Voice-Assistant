@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
-from intentRecognizer.intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -88,12 +88,7 @@ class SemanticRecognizer:
     def _load_model(self) -> SentenceTransformer:
         """Load sentence transformer model"""
         try:
-            import torch
-            print("ML Model Device: " + torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            model = SentenceTransformer(self.model_name, device=device)
-            if self.enable_logging:
-                self.logger.info(f"Model loaded on device: {device}")
+            model = SentenceTransformer(self.model_name, device='cuda')
             return model
         except Exception as e:
             if self.enable_logging:

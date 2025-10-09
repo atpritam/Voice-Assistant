@@ -2,15 +2,17 @@
 Optimized Algorithmic Intent Recognizer
 Handles pattern matching, keyword analysis, and Levenshtein distance-based recognition
 Optimized for ASR (Automatic Speech Recognition) input with multi-stage filtering
+Enhanced with optional TF-IDF weighted inverted index
 """
 
 import logging
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 from collections import defaultdict
+import math
 import Levenshtein
 
-from intentRecognizer.intent_recognizer import IntentRecognizerUtils
+from .intent_recognizer import IntentRecognizerUtils
 
 # Similarity calculation weights
 KEYWORD_WEIGHT = 0.50
@@ -48,6 +50,8 @@ HIGH_SIMILARITY_EARLY_EXIT = 0.92
 MIN_KEYWORD_OVERLAP = 1
 LEVENSHTEIN_SKIP_THRESHOLD = 0.20
 LENGTH_DIFF_FILTER_ENABLED = True
+INVERTED_INDEX_ENABLED = True  # Toggle TF-IDF weighted inverted index
+
 
 @dataclass
 class SimilarityMetrics:
@@ -94,22 +98,30 @@ class IntentEvaluation:
 
 
 class InvertedIndex:
-    """Inverted index for fast intent candidate selection"""
+    """Inverted index with TF-IDF weighting for fast intent candidate selection"""
 
     def __init__(self, patterns: Dict, text_normalizer):
         self.normalizer = text_normalizer
         self.index = defaultdict(set)
         self.intent_keyword_scores = {}
+        self.term_document_freq = defaultdict(int)
+        self.total_intents = 0
+        self.intent_total_terms = {}
+        self.idf_weights = {}
+
         self._build_index(patterns)
+        self._calculate_idf_weights()
 
     def _build_index(self, patterns: Dict):
-        """Build inverted index from patterns"""
-        for intent_name, intent_data in patterns.items():
-            if intent_name == "unknown":
-                continue
+        """Build inverted index with term frequency tracking"""
+        intents_with_patterns = [name for name in patterns.keys() if name != "unknown" and patterns[name].get("patterns")]
+        self.total_intents = len(intents_with_patterns)
 
+        for intent_name in intents_with_patterns:
+            intent_data = patterns[intent_name]
             word_freq = defaultdict(int)
             total_words = 0
+            unique_words = set()
 
             for pattern in intent_data.get("patterns", []):
                 words = self.normalizer.extract_filtered_words(pattern)
@@ -117,28 +129,54 @@ class InvertedIndex:
                     self.index[word].add(intent_name)
                     word_freq[word] += 1
                     total_words += 1
+                    unique_words.add(word)
+
+            # Track which terms appear in this intent (for IDF calculation)
+            for word in unique_words:
+                self.term_document_freq[word] += 1
 
             if total_words > 0:
+                # Store normalized term frequencies
                 self.intent_keyword_scores[intent_name] = {
                     word: count / total_words for word, count in word_freq.items()
                 }
+                self.intent_total_terms[intent_name] = total_words
+
+    def _calculate_idf_weights(self):
+        """Calculate IDF (Inverse Document Frequency) weights for terms"""
+        for term, doc_freq in self.term_document_freq.items():
+            # IDF = log(total_documents / documents_containing_term)
+            self.idf_weights[term] = math.log((self.total_intents + 1) / (doc_freq + 1))
 
     def get_candidate_intents(self, query_words: Set[str], min_overlap: int = 0) -> List[Tuple[str, float]]:
-        """Get candidate intents ranked by relevance"""
+        """
+        Get candidate intents ranked by TF-IDF weighted relevance
+
+        Returns:
+            List of (intent_name, relevance_score) tuples, sorted by relevance
+        """
         if not query_words:
             return [(intent, 0.0) for intent in self.intent_keyword_scores.keys()]
 
-        intent_matches = defaultdict(float)
+        intent_scores = defaultdict(float)
+
+        # Calculate TF-IDF weighted scores
         for word in query_words:
             if word in self.index:
-                for intent_name in self.index[word]:
-                    score = self.intent_keyword_scores.get(intent_name, {}).get(word, 0.1)
-                    intent_matches[intent_name] += score
+                idf = self.idf_weights.get(word, 1.0)
 
-        if not intent_matches:
+                for intent_name in self.index[word]:
+                    # TF (from intent) * IDF (global)
+                    tf = self.intent_keyword_scores.get(intent_name, {}).get(word, 0.1)
+                    intent_scores[intent_name] += tf * idf
+
+        if not intent_scores:
             return [(intent, 0.0) for intent in self.intent_keyword_scores.keys()]
 
-        return sorted(intent_matches.items(), key=lambda x: x[1], reverse=True)
+        # Sort by relevance score (descending)
+        candidates = sorted(intent_scores.items(), key=lambda x: x[1], reverse=True)
+
+        return candidates
 
 
 class PatternFilter:
@@ -461,7 +499,11 @@ class AlgorithmicRecognizer:
             self.intent_critical_keywords, enable_logging
         )
 
-        self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer)
+        if INVERTED_INDEX_ENABLED:
+            self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer)
+        else:
+            self.inverted_index = None
+
         self.pattern_filter = PatternFilter(self.text_normalizer)
 
         self._intent_keywords_cache = {}
@@ -592,10 +634,16 @@ class AlgorithmicRecognizer:
         return IntentEvaluation(max_similarity, best_pattern, best_breakdown)
 
     def _evaluate_all_intents_optimized(self, query: str, query_words: Set[str]) -> Dict:
-        """Optimized intent evaluation using inverted index with fallback"""
-        candidate_intents = self.inverted_index.get_candidate_intents(
-            query_words, min_overlap=MIN_KEYWORD_OVERLAP
-        )
+        """Optimized intent evaluation using inverted index (if enabled)"""
+
+        # Use inverted index if enabled, otherwise check all intents
+        if INVERTED_INDEX_ENABLED and self.inverted_index:
+            candidate_intents = self.inverted_index.get_candidate_intents(
+                query_words, min_overlap=MIN_KEYWORD_OVERLAP
+            )
+        else:
+            # Fallback to checking all intents
+            candidate_intents = [(intent, 0.0) for intent in self.patterns.keys() if intent != 'unknown']
 
         if not candidate_intents:
             candidate_intents = [(intent, 0.0) for intent in self.patterns.keys() if intent != 'unknown']

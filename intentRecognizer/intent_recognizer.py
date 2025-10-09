@@ -1,13 +1,13 @@
 """
 Main Intent Recognition System - Configurable Pipeline Architecture
 Pipeline: Algorithmic → Semantic → LLM (default)
-Each layer is tried when previous layer fails or has below threshold confidence
+Each layer is tried when the previous layer fails or has the below threshold confidence
 """
 
 import os
 import json
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from dataclasses import dataclass
 
 HIGH_CONFIDENCE_THRESHOLD = 0.8
@@ -17,6 +17,7 @@ DEFAULT_ALGORITHMIC_THRESHOLD = 0.6
 DEFAULT_SEMANTIC_THRESHOLD = 0.5
 DEFAULT_LLM_MODEL = "gpt-5-nano"
 DEFAULT_SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+LLM_OVERRIDE_THRESHOLD = 0.8 # active when test mode is off
 
 
 @dataclass
@@ -28,6 +29,7 @@ class RecognitionResult:
     matched_pattern: str
     processing_method: str
     layer_used: str
+    response: str = ""
     llm_explanation: str = ""
     score_breakdown: Dict = None
 
@@ -64,9 +66,9 @@ class IntentRecognizerUtils:
         return os.path.join(utils_dir, 'intent_patterns.json')
 
 
-from intentRecognizer.algorithmic_recognizer import AlgorithmicRecognizer
-from intentRecognizer.semantic_recognizer import SemanticRecognizer
-from intentRecognizer.llm_recognizer import LLMRecognizer
+from .algorithmic_recognizer import AlgorithmicRecognizer
+from .semantic_recognizer import SemanticRecognizer
+from .llm_recognizer import LLMRecognizer
 
 
 class IntentRecognizer:
@@ -91,6 +93,9 @@ class IntentRecognizer:
             semantic_threshold: float = DEFAULT_SEMANTIC_THRESHOLD,
             semantic_model: str = DEFAULT_SEMANTIC_MODEL,
             llm_model: str = DEFAULT_LLM_MODEL,
+            test_mode: bool = False,
+            use_local_llm: bool = False,
+            ollama_base_url: str = None,
     ):
         if not (enable_algorithmic or enable_semantic or enable_llm):
             raise ValueError("Invalid configuration: At least one layer must be enabled.")
@@ -100,9 +105,12 @@ class IntentRecognizer:
         self.enable_algorithmic = enable_algorithmic
         self.enable_semantic = enable_semantic
         self.enable_llm = enable_llm
+        self.test_mode = test_mode
         self.algorithmic_threshold = algorithmic_threshold if (enable_semantic or enable_llm) else 0
         self.semantic_threshold = semantic_threshold if enable_llm else 0
         self.enable_logging = enable_logging
+        self.use_local_llm = use_local_llm
+        self.ollama_base_url = ollama_base_url
 
         if enable_logging:
             logging.basicConfig(
@@ -116,6 +124,7 @@ class IntentRecognizer:
             'algorithmic_used': 0,
             'semantic_used': 0,
             'llm_used': 0,
+            'llm_overrides': 0,
             'intent_distribution': {},
             'avg_confidence': [],
             'layer_configuration': {
@@ -177,23 +186,27 @@ class IntentRecognizer:
                 self.llm_recognizer = LLMRecognizer(
                     model=llm_model,
                     enable_logging=self.enable_logging,
-                    min_confidence=self.min_confidence
+                    min_confidence=self.min_confidence,
+                    use_local_llm=self.use_local_llm,
+                    ollama_base_url=self.ollama_base_url,
                 )
+                provider_type = "Ollama" if self.use_local_llm else "OpenAI"
                 if self.enable_logging:
-                    self.logger.info(f" LLM layer initialized (model: {llm_model})")
+                    self.logger.info(f" LLM layer initialized ({provider_type}, model: {llm_model})")
             except Exception as e:
                 if self.enable_logging:
                     self.logger.error(f" LLM layer initialization failed: {e}")
                 raise
 
-    def recognize_intent(self, query: str) -> RecognitionResult:
+    def recognize_intent(self, query: str,
+                        conversation_history: Optional[List[Dict]] = None) -> RecognitionResult:
         """
         Main recognition method - routes through enabled layers
 
         Pipeline Flow:
         1. Try first enabled layer
         2. If confidence below threshold, try next enabled layer
-        3. Return best result
+        3. Return best result with generated response
         """
         self.stats['total_queries'] += 1
 
@@ -202,24 +215,35 @@ class IntentRecognizer:
             self.logger.info(f"Processing Query: '{query}'")
             self.logger.info("-"*50)
 
+        recognized_intent = None
+
         if self.enable_algorithmic:
-            result = self._try_algorithmic_layer(query)
+            result = self._try_algorithmic_layer(query, conversation_history)
             if result is not None:
                 return result
+            if self.algorithmic_recognizer:
+                algo_result = self.algorithmic_recognizer.recognize(query)
+                if algo_result.intent != "unknown":
+                    recognized_intent = algo_result.intent
 
         if self.enable_semantic:
-            result = self._try_semantic_layer(query)
+            result = self._try_semantic_layer(query, conversation_history)
             if result is not None:
                 return result
+            if self.semantic_recognizer:
+                semantic_result = self.semantic_recognizer.recognize(query)
+                if semantic_result.intent != "unknown":
+                    recognized_intent = semantic_result.intent
 
         if self.enable_llm:
-            result = self._try_llm_layer(query)
+            result = self._try_llm_layer(query, conversation_history, recognized_intent)
             if result is not None:
                 return result
 
         return self._create_unknown_result("No layers produced a result")
 
-    def _try_algorithmic_layer(self, query: str) -> Optional[RecognitionResult]:
+    def _try_algorithmic_layer(self, query: str,
+                               conversation_history: Optional[List[Dict]] = None) -> Optional[RecognitionResult]:
         """Try algorithmic pattern matching layer"""
         algo_result = self.algorithmic_recognizer.recognize(query)
 
@@ -232,9 +256,14 @@ class IntentRecognizer:
             return None
 
         self.stats['algorithmic_used'] += 1
-        return self._create_result(query, algo_result, layer='algorithmic')
+        return self._create_result(
+            query, algo_result, layer='algorithmic',
+            conversation_history=conversation_history,
+            original_confidence=algo_result.confidence
+        )
 
-    def _try_semantic_layer(self, query: str) -> Optional[RecognitionResult]:
+    def _try_semantic_layer(self, query: str,
+                           conversation_history: Optional[List[Dict]] = None) -> Optional[RecognitionResult]:
         """Try semantic similarity layer"""
         semantic_result = self.semantic_recognizer.recognize(query)
 
@@ -247,16 +276,90 @@ class IntentRecognizer:
             return None
 
         self.stats['semantic_used'] += 1
-        return self._create_result(query, semantic_result, layer='semantic')
+        return self._create_result(
+            query, semantic_result, layer='semantic',
+            conversation_history=conversation_history,
+            original_confidence=semantic_result.confidence
+        )
 
-    def _try_llm_layer(self, query: str) -> RecognitionResult:
-        """Try LLM fallback layer (always returns a result)"""
-        llm_result = self.llm_recognizer.recognize(query, self.patterns)
+    def _try_llm_layer(self, query: str,
+                      conversation_history: Optional[List[Dict]] = None,
+                      recognized_intent: Optional[str] = None) -> RecognitionResult:
+        """Try LLM fallback layer"""
+        llm_result = self.llm_recognizer.recognize(
+            query, self.patterns, conversation_history, recognized_intent
+        )
         self.stats['llm_used'] += 1
-        return self._create_result(query, llm_result, layer='llm')
+        return self._create_result(
+            query, llm_result, layer='llm',
+            conversation_history=conversation_history
+        )
 
-    def _create_result(self, query, result, layer: str) -> RecognitionResult:
-        """Create unified RecognitionResult from any layer"""
+    def _create_result(self, query, result, layer: str,
+                       conversation_history: Optional[List[Dict]] = None,
+                       original_confidence: float = None) -> RecognitionResult:
+        """Create unified RecognitionResult from any layer with LLM override capability"""
+
+        # Store original intent and confidence for potential override
+        original_intent = result.intent
+        original_conf = original_confidence if original_confidence is not None else result.confidence
+
+        response = getattr(result, 'response', '')
+
+        if self.test_mode:
+            # TEST MODE: Skip all response generation for faster intent testing
+            response = ""
+        elif not response and self.enable_llm and layer != 'llm':
+            # Use LLM for response generation
+            if self.enable_logging:
+                self.logger.info(f"  - Using LLM for response generation")
+
+            try:
+                llm_result = self.llm_recognizer.recognize(
+                    query, self.patterns, conversation_history, result.intent
+                )
+
+                # Check if LLM should override the intent
+                if (llm_result.confidence >= LLM_OVERRIDE_THRESHOLD and
+                    llm_result.confidence > original_conf and
+                    llm_result.intent != original_intent and
+                    llm_result.intent != "unknown"):
+
+                    if self.enable_logging:
+                        self.logger.info(
+                            f"  - LLM OVERRIDE: Changing intent from '{original_intent}' "
+                            f"({original_conf:.3f}) to '{llm_result.intent}' ({llm_result.confidence:.3f})"
+                        )
+
+                    # Update intent and confidence to LLM's classification
+                    result.intent = llm_result.intent
+                    result.confidence = llm_result.confidence
+                    result.confidence_level = llm_result.confidence_level
+                    self.stats['llm_overrides'] += 1
+
+                response = llm_result.response
+
+                # Check if LLM response is valid
+                if not response or response.strip() == "":
+                    if self.enable_logging:
+                        self.logger.warning(f"LLM returned empty response, using fallback")
+                    response = self._generate_simple_response(result.intent, query, conversation_history)
+                else:
+                    if self.enable_logging:
+                        self.logger.debug(f"[LLM Response] Generated: {response[:100]}...")
+            except json.JSONDecodeError as e:
+                if self.enable_logging:
+                    self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
+                response = self._generate_simple_response(result.intent)
+            except Exception as e:
+                if self.enable_logging:
+                    self.logger.warning(f"LLM response generation failed: {e}, using fallback")
+                response = self._generate_simple_response(result.intent)
+        elif not response and not self.test_mode:
+            # Fallback to simple response if LLM not configured or not available
+            response = self._generate_simple_response(result.intent)
+
+        # Update stats
         self.stats['intent_distribution'][result.intent] = \
             self.stats['intent_distribution'].get(result.intent, 0) + 1
         self.stats['avg_confidence'].append(result.confidence)
@@ -264,7 +367,7 @@ class IntentRecognizer:
         if self.enable_logging:
             self.logger.info(
                 f" Accepted from {layer.upper()} layer: "
-                f"Query: '{query}' → "
+                f"Query: '{query}' -> "
                 f"{result.intent} (confidence: {result.confidence:.3f}, "
                 f"level: {result.confidence_level})"
             )
@@ -276,9 +379,23 @@ class IntentRecognizer:
             matched_pattern=getattr(result, 'matched_pattern', 'ML Classification'),
             processing_method=getattr(result, 'processing_method', layer),
             layer_used=layer,
+            response=response,
             llm_explanation=getattr(result, 'explanation', ''),
             score_breakdown=getattr(result, 'score_breakdown', {})
         )
+
+    def _generate_simple_response(self, intent: str) -> str:
+        """Generate simple response for non-LLM layers"""
+        responses = {
+            'order': "I'd be happy to help you place an order! What size pizza would you like?",
+            'complaint': "I apologize for any inconvenience. Can you please tell me more about the issue?",
+            'hours_location': "We're open Monday to Friday eleven AM to ten PM, Saturday eleven AM to eleven PM, Sunday twelve PM to nine PM. Located at one twenty three Main Street, Downtown.",
+            'menu_inquiry': "Our menu features various pizzas in Small, Medium, Large, and Family sizes. We have thin, regular, thick, and gluten-free crusts. What would you like to know more about?",
+            'delivery': "I can help you with delivery information. Our delivery fee is three dollars, and typical delivery time is thirty to forty five minutes.",
+            'general': "Hello! How can I help you today?",
+            'unknown': "I'm here to help! Could you please clarify what you'd like to know about our pizza restaurant?"
+        }
+        return responses.get(intent, responses['unknown'])
 
     def _create_unknown_result(self, reason: str) -> RecognitionResult:
         """Create unknown result with given reason"""
@@ -289,13 +406,17 @@ class IntentRecognizer:
             matched_pattern='',
             processing_method='error',
             layer_used='none',
+            response="I'm here to help! Could you please clarify what you'd like to know?",
             llm_explanation=reason,
             score_breakdown={'error': reason}
         )
 
     def generate_response(self, intent_info: RecognitionResult, message: str) -> str:
-        """Generate a response based on the recognized intent"""
-        return intent_info.intent
+        """
+        Generate a response based on the recognized intent
+        (Deprecated - response is now generated during recognition)
+        """
+        return intent_info.response if intent_info.response else intent_info.intent
 
     def evaluate(self, test_data: list) -> Dict:
         """Evaluate recognizer accuracy on test data"""
@@ -374,7 +495,8 @@ class IntentRecognizer:
                 'llm': {
                     'count': self.stats['llm_used'],
                     'percentage': (self.stats['llm_used'] / total * 100) if total > 0 else 0
-                }
+                },
+                'llm_overrides': self.stats.get('llm_overrides', 0)
             },
             'intent_distribution': self.stats['intent_distribution'],
             'average_confidence': avg_conf

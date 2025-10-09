@@ -16,20 +16,35 @@ utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
 PATTERN_FILE = os.path.join(utils_dir, 'intent_patterns.json')
 MIN_CONFIDENCE = 0.5
 SEMANTIC_MODEL = "all-MiniLM-L6-v2"
-LLM_MODEL = "gpt-5-nano"
 
-INCLUDE_EDGE_CASES = False
+# LLM Configuration
+USE_LOCAL_LLM = True  # Set to True for Ollama, False for OpenAI
+LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
+OLLAMA_BASE_URL = "http://localhost:11434"
+
+INCLUDE_EDGE_CASES = True
 
 # Default pipeline
 ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
 THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
+
+# CRITICAL: Enable TEST_MODE for pure intent recognition testing
+TEST_MODE = True
 
 def format_time(s):
     return f"{s*1000:.1f}ms" if s < 1 else f"{s:.2f}s"
 
 
 def describe_pipeline(a, s, l):
-    return " → ".join([n for n, e in zip(["Algorithmic", "Semantic", "LLM"], [a, s, l]) if e]) or "NO LAYERS"
+    llm_label = "LLM (Ollama)" if USE_LOCAL_LLM else "LLM (OpenAI)"
+    layers = []
+    if a:
+        layers.append("Algorithmic")
+    if s:
+        layers.append("Semantic")
+    if l:
+        layers.append(llm_label)
+    return " -> ".join(layers) or "NO LAYERS"
 
 
 def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_SEMANTIC):
@@ -38,12 +53,20 @@ def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_
         enable_algorithmic=a, enable_semantic=s, enable_llm=l,
         algorithmic_threshold=ta or 0.6, semantic_threshold=ts or 0.5,
         semantic_model=SEMANTIC_MODEL, llm_model=LLM_MODEL,
-        min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE
+        min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE,
+        test_mode=TEST_MODE,
+        use_local_llm=USE_LOCAL_LLM,
+        ollama_base_url=OLLAMA_BASE_URL
     )
 
 
 def run_comprehensive_test():
-    print(f"\nPipeline: {describe_pipeline(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM)}\n")
+    print(f"\nPipeline: {describe_pipeline(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM)}")
+    if ENABLE_SEMANTIC:
+        print(f"Semantic Model: {SEMANTIC_MODEL}")
+    if ENABLE_LLM:
+        print(f"LLM Model: {LLM_MODEL}")
+    print(f"Mode: {'TEST MODE (intent recognition only)' if TEST_MODE else 'PRODUCTION MODE (with responses)'}\n")
 
     try:
         start = time.time()
@@ -56,6 +79,8 @@ def run_comprehensive_test():
 
     test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"Running tests on {len(test_data)} queries...\n")
+    if INCLUDE_EDGE_CASES:
+        print("Edge Cases Included")
 
     start = time.time()
     ev = recognizer.evaluate(test_data)
@@ -74,7 +99,7 @@ def run_comprehensive_test():
             print(f"{layer:<12}: {c:3d} ({c/len(test_data)*100:5.1f}%)  Acc: {ev[f'{key}_accuracy']:.2%}")
 
     print("\nCONFIDENCE LEVELS\n" + "-" * 80)
-    for level, rng in [("High (≥0.8)", "high"), ("Medium (0.6–0.8)", "medium"), ("Low (<0.6)", "low")]:
+    for level, rng in [("High (≥0.8)", "high"), ("Medium (0.6-0.8)", "medium"), ("Low (<0.6)", "low")]:
         c = ev[f"{rng}_confidence_count"]
         print(f"{level:<22}: {c:3d} ({c/len(test_data)*100:5.1f}%)")
 
@@ -84,7 +109,7 @@ def run_comprehensive_test():
     else:
         print("\nINCORRECT PREDICTIONS\n" + "-" * 80)
         for i, r in enumerate(wrong, 1):
-            print(f"\n{i}. '{r['query']}' → {r['predicted']} (exp: {r['expected']}, conf: {r['confidence']:.2f}, layer: {r['layer_used']})")
+            print(f"\n{i}. '{r['query']}' -> {r['predicted']} (exp: {r['expected']}, conf: {r['confidence']:.2f}, layer: {r['layer_used']})")
 
     return ev, recognizer.get_statistics()
 
@@ -92,13 +117,21 @@ def run_comprehensive_test():
 def run_comparative_analysis():
     test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"\nTesting multiple pipeline configurations for comparative results")
+    print(f"Semantic Model: {SEMANTIC_MODEL}")
+    print(f"LLM Model: {LLM_MODEL}")
+    print(f"Mode: {'TEST MODE (intent recognition only)' if TEST_MODE else 'Test Mode Disabled'}")
     print(f"\nRunning tests on {len(test_data)} queries...\n")
+    if INCLUDE_EDGE_CASES:
+        print("Edge Cases Included")
+
     configs = [
         ("Full Pipeline", True, True, True),
+        ("Algorithmic -> Semantic", True, True, False),
         ("Algorithmic -> LLM", True, False, True),
         ("Semantic -> LLM", False, True, True),
         ("Algorithmic Only", True, False, False),
         ("Semantic Only", False, True, False),
+        # ("LLM Only", False, False, True)
     ]
 
     results = []
@@ -147,7 +180,6 @@ if __name__ == "__main__":
 
     try:
         if args.comparative:
-
             run_comparative_analysis()
         else:
             run_comprehensive_test()
