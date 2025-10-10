@@ -62,10 +62,6 @@ class LLMRecognizer:
                 self.res_info = self._load_res_info(res_info_file)
 
         if enable_logging:
-            logging.basicConfig(
-                level=logging.INFO,
-                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            )
             self.logger = logging.getLogger(__name__)
 
         self._initialize_client()

@@ -6,7 +6,7 @@ Handles semantic similarity-based intent recognition using local Sentence Transf
 import logging
 import hashlib
 import pickle
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -19,6 +19,8 @@ try:
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
+    if TYPE_CHECKING:
+        from sentence_transformers import SentenceTransformer
 
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
 CACHE_DIR = Path.home() / ".cache" / "voice-assistant" / "embeddings"
@@ -79,8 +81,11 @@ class SemanticRecognizer:
             'model_name': model_name
         }
 
-    def _load_model(self) -> SentenceTransformer:
+    def _load_model(self):
         """Load sentence transformer model"""
+        if not DEPENDENCIES_AVAILABLE:
+            raise ImportError("SentenceTransformer not available")
+
         try:
             return SentenceTransformer(self.model_name, device='cuda')
         except Exception as e:
