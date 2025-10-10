@@ -8,6 +8,9 @@ const DOM = {
   clearButton: null
 };
 
+let currentStreamingMessage = null;
+let streamingMessageElement = null;
+
 function initializeDOM() {
   DOM.messageInput = document.getElementById('messageInput');
   DOM.sendButton = document.getElementById('sendButton');
@@ -34,6 +37,7 @@ function initializeEventListeners() {
   socket.on('disconnect', handleDisconnect);
   socket.on('message_response', handleMessageResponse);
   socket.on('intent_recognition', handleIntentRecognition);
+  socket.on('stream_chunk', handleStreamChunk);
 }
 
 // SOCKET EVENT HANDLERS
@@ -47,11 +51,39 @@ function handleDisconnect() {
   updateConnectionStatus(false);
 }
 
+function handleStreamChunk(data) {
+
+  if (data.type === 'response_chunk') {
+    if (!currentStreamingMessage) {
+      // Initialize streaming message
+      currentStreamingMessage = data.data;
+      streamingMessageElement = createStreamingMessageElement();
+
+      // Remove typing indicator if present
+      removeTypingIndicator();
+
+      // Add streaming message to DOM
+      DOM.conversationHistory.appendChild(streamingMessageElement);
+      console.log('Created streaming message element');
+      scrollToBottom();
+    } else {
+      // Append to existing streaming message
+      currentStreamingMessage += data.data;
+      updateStreamingMessage(currentStreamingMessage);
+      scrollToBottom();
+    }
+  }
+}
+
 function handleMessageResponse(data) {
   console.log('Received message response:', data);
 
   try {
-    removeTypingIndicator();
+    if (currentStreamingMessage) {
+      finalizeStreamingMessage();
+    } else {
+      removeTypingIndicator();
+    }
 
     if (data && data.conversation_history) {
       displayConversation(data.conversation_history);
@@ -77,6 +109,44 @@ function handleIntentRecognition(data) {
   if (data && data.intent_info) {
     showIntentRecognition(data.intent_info);
   }
+}
+
+// STREAMING MESSAGE FUNCTIONS
+function createStreamingMessageElement() {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message assistant streaming';
+  messageDiv.id = 'streaming-message';
+
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content';
+  messageContent.id = 'streaming-content';
+
+  messageDiv.appendChild(messageContent);
+
+  return messageDiv;
+}
+
+function updateStreamingMessage(text) {
+  const contentElement = document.getElementById('streaming-content');
+  if (contentElement) {
+    contentElement.textContent = text;
+  }
+}
+
+function finalizeStreamingMessage() {
+  const streamingElement = document.getElementById('streaming-message');
+  if (streamingElement) {
+    streamingElement.classList.remove('streaming');
+    streamingElement.removeAttribute('id');
+  }
+
+  const contentElement = document.getElementById('streaming-content');
+  if (contentElement) {
+    contentElement.removeAttribute('id');
+  }
+
+  currentStreamingMessage = null;
+  streamingMessageElement = null;
 }
 
 // UI UPDATE FUNCTIONS
@@ -171,6 +241,7 @@ function showTypingIndicator() {
 
   const typingDiv = document.createElement('div');
   typingDiv.className = 'message assistant typing';
+  typingDiv.id = 'typing-indicator';
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'message-content';
@@ -187,8 +258,7 @@ function showTypingIndicator() {
 }
 
 function removeTypingIndicator() {
-  const typingIndicator = DOM.conversationHistory.querySelector('.message.assistant.typing');
-
+  const typingIndicator = document.getElementById('typing-indicator');
   if (typingIndicator) {
     typingIndicator.remove();
   }
@@ -214,6 +284,10 @@ function sendMessage() {
     alert('Not connected to server. Please wait for connection.');
     return;
   }
+
+  // Reset streaming state
+  currentStreamingMessage = null;
+  streamingMessageElement = null;
 
   removeNoMessagesPlaceholder();
   addUserMessageToUI(message);
@@ -252,6 +326,10 @@ function clearHistory() {
   if (!confirm('Are you sure you want to clear the conversation history?')) {
     return;
   }
+
+  // Reset streaming state
+  currentStreamingMessage = null;
+  streamingMessageElement = null;
 
   showNoMessages();
   socket.emit('clear_history');

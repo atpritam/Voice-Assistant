@@ -97,6 +97,7 @@ except Exception as e:
 def handle_connect():
     print('Client connected')
 
+
 @socketio.on('disconnect')
 def handle_disconnect():
     print('Client disconnected')
@@ -104,7 +105,7 @@ def handle_disconnect():
 
 @socketio.on('send_message')
 def handle_message(data):
-    """Handle incoming text messages with intent recognition and response generation"""
+    """Handle incoming text messages with intent recognition and streaming response"""
     message = data.get('message', '')
     if message:
         # Add user message to conversation history
@@ -114,14 +115,27 @@ def handle_message(data):
             'timestamp': int(time.time() * 1000)
         })
 
-        intent_info = intent_recognizer.recognize_intent(message, conversation_history)
+        # Recognize intent with streaming callback
+        def stream_callback(chunk_type, chunk_data):
+            """Callback for streaming chunks from LLM"""
+            socketio.emit('stream_chunk', {
+                'type': chunk_type,
+                'data': chunk_data
+            })
+
+        intent_info = intent_recognizer.recognize_intent(
+            message,
+            conversation_history,
+            stream_callback=stream_callback
+        )
+
         response = intent_info.response
 
         # Add assistant response to conversation history
         conversation_history.append({
             'type': 'assistant',
             'message': response,
-            'timestamp': int(time.time() * 1000) ,
+            'timestamp': int(time.time() * 1000),
             'intent': intent_info.intent,
             'confidence': intent_info.confidence_level,
             'similarity': intent_info.confidence,
@@ -129,7 +143,7 @@ def handle_message(data):
             'processing_method': intent_info.processing_method
         })
 
-        # Send response back to client
+        # Send final response back to client
         emit('message_response', {
             'user_message': message,
             'assistant_response': response,

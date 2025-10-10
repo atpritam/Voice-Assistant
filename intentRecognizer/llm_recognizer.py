@@ -1,13 +1,13 @@
 """
-LLM Intent Recognizer with Response Generation
-Supports both OpenAI API and Local Ollama models
+LLM Intent Recognizer with Streaming Response Generation
+Supports both OpenAI API and Local Ollama models with streaming
 """
 
 import os
 import json
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
@@ -33,7 +33,7 @@ class LLMResult:
 
 
 class LLMRecognizer:
-    """LLM-based intent recognition and response generation - supports OpenAI and Ollama"""
+    """LLM-based intent recognition and response generation - supports OpenAI and Ollama with streaming"""
 
     def __init__(
         self,
@@ -126,14 +126,25 @@ class LLMRecognizer:
 
     def recognize(self, query: str, intent_patterns: Dict,
                   conversation_history: Optional[List[Dict]] = None,
-                  recognized_intent: Optional[str] = None) -> LLMResult:
-        """Recognize intent and generate response using LLM"""
+                  recognized_intent: Optional[str] = None,
+                  stream_callback: Optional[Callable] = None) -> LLMResult:
+        """Recognize intent and generate response using LLM with streaming support"""
         self.stats["total_queries"] += 1
         self.stats["total_api_calls"] += 1
 
         try:
-            response = self._call_llm_api(query, intent_patterns, conversation_history, recognized_intent)
-            result = self._process_api_response(response, intent_patterns, recognized_intent)
+            if stream_callback:
+                response, full_response = self._call_llm_api_streaming(
+                    query, intent_patterns, conversation_history,
+                    recognized_intent, stream_callback
+                )
+            else:
+                response = self._call_llm_api(query, intent_patterns,
+                                             conversation_history, recognized_intent)
+                full_response = None
+
+            result = self._process_api_response(response, intent_patterns,
+                                               recognized_intent, full_response)
 
             if not result.response or result.response.strip() == "":
                 if self.enable_logging:
@@ -164,10 +175,254 @@ class LLMRecognizer:
             self.stats["failed_queries"] += 1
             return self._get_fallback_result(f"API error: {str(e)}")
 
+    def _call_llm_api_streaming(self, query: str, intent_patterns: Dict,
+                               conversation_history: Optional[List[Dict]] = None,
+                               recognized_intent: Optional[str] = None,
+                               stream_callback: Optional[Callable] = None):
+        """Call LLM API with streaming (Ollama or OpenAI)"""
+        system_prompt = self._get_system_prompt(intent_patterns, recognized_intent)
+        user_prompt = self._build_user_prompt(query, conversation_history)
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        accumulated_text = ""
+        json_started = False
+        in_response_field = False
+        response_buffer = ""
+
+        if self.enable_logging:
+            self.logger.info("[LLM] Starting streaming response...")
+            if stream_callback:
+                self.logger.info("[LLM] Stream callback is set")
+            else:
+                self.logger.warning("[LLM] Stream callback is None!")
+
+        if self.use_local_llm:
+            # Ollama streaming
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "stream": True,
+                "format": "json"
+            }
+
+            response = self.requests.post(
+                f"{self.ollama_base_url}/api/chat",
+                json=payload,
+                stream=True,
+                timeout=30
+            )
+            response.raise_for_status()
+
+            chunk_count = 0
+            for line in response.iter_lines():
+                if line:
+                    chunk_count += 1
+                    chunk_data = json.loads(line)
+                    if "message" in chunk_data and "content" in chunk_data["message"]:
+                        chunk_text = chunk_data["message"]["content"]
+                        accumulated_text += chunk_text
+
+                        if self.enable_logging and chunk_count <= 5:
+                            self.logger.info(f"[LLM Stream] Chunk {chunk_count}: '{chunk_text}'")
+
+                        # Parse and stream response field character by character
+                        for char in chunk_text:
+                            response_buffer += char
+
+                            # Detect JSON start
+                            if not json_started and char == '{':
+                                json_started = True
+                                if self.enable_logging:
+                                    self.logger.info("[LLM Stream] JSON started")
+                                continue
+
+                            if json_started and not in_response_field:
+                                # Look for "response": (with flexible whitespace)
+                                if '"response"' in response_buffer:
+                                    # Look for colon after response
+                                    idx = response_buffer.find('"response"')
+                                    after = response_buffer[idx + len('"response"'):]
+                                    # Check for : and " pattern (allowing whitespace)
+                                    colon_idx = after.find(':')
+                                    if colon_idx != -1:
+                                        after_colon = after[colon_idx + 1:].lstrip()
+                                        if after_colon.startswith('"'):
+                                            in_response_field = True
+                                            if self.enable_logging:
+                                                self.logger.info("[LLM Stream] Entered response field")
+                                            # Get text after opening quote
+                                            text_after_quote = after_colon[1:]
+                                            if text_after_quote and text_after_quote[0] != '"':
+                                                if stream_callback:
+                                                    if self.enable_logging:
+                                                        self.logger.info(f"[LLM Stream] Initial text: '{text_after_quote}'")
+                                                    stream_callback("response_chunk", text_after_quote)
+                                            response_buffer = ""
+                            elif in_response_field:
+                                # Stream each character until closing quote
+                                if char == '"' and (len(response_buffer) <= 1 or response_buffer[-2] != '\\'):
+                                    in_response_field = False
+                                    if self.enable_logging:
+                                        self.logger.info("[LLM Stream] Exited response field")
+                                    response_buffer = ""
+                                elif char != '\\':
+                                    if stream_callback:
+                                        stream_callback("response_chunk", char)
+                                    response_buffer = ""
+
+            if self.enable_logging:
+                self.logger.info(f"[LLM Stream] Total chunks received: {chunk_count}")
+
+            # Return complete response for parsing
+            return {"message": {"content": accumulated_text}}, accumulated_text
+
+        else:
+            # OpenAI streaming
+            stream = self.client.chat.completions.create( # type: ignore
+                model=self.model,
+                messages=messages,
+                response_format={"type": "json_object"},  # type: ignore
+                stream=True
+            )
+
+            chunk_count = 0
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    chunk_count += 1
+                    chunk_text = chunk.choices[0].delta.content
+                    accumulated_text += chunk_text
+
+                    if self.enable_logging and chunk_count <= 5:
+                        self.logger.info(f"[LLM Stream] Chunk {chunk_count}: '{chunk_text}'")
+
+                    # Parse and stream response field character by character
+                    for char in chunk_text:
+                        response_buffer += char
+
+                        # Detect JSON start
+                        if not json_started and char == '{':
+                            json_started = True
+                            if self.enable_logging:
+                                self.logger.info("[LLM Stream] JSON started")
+                            continue
+
+                        if json_started and not in_response_field:
+                            # Look for "response": (with flexible whitespace)
+                            if '"response"' in response_buffer:
+                                # Look for colon after response
+                                idx = response_buffer.find('"response"')
+                                after = response_buffer[idx + len('"response"'):]
+                                # Check for : and " pattern (allowing whitespace)
+                                colon_idx = after.find(':')
+                                if colon_idx != -1:
+                                    after_colon = after[colon_idx + 1:].lstrip()
+                                    if after_colon.startswith('"'):
+                                        in_response_field = True
+                                        if self.enable_logging:
+                                            self.logger.info("[LLM Stream] Entered response field")
+                                        # Get text after opening quote
+                                        text_after_quote = after_colon[1:]
+                                        if text_after_quote and text_after_quote[0] != '"':
+                                            if stream_callback:
+                                                if self.enable_logging:
+                                                    self.logger.info(f"[LLM Stream] Initial text: '{text_after_quote}'")
+                                                stream_callback("response_chunk", text_after_quote)
+                                        response_buffer = ""
+                        elif in_response_field:
+                            # Stream each character until closing quote
+                            if char == '"' and (len(response_buffer) <= 1 or response_buffer[-2] != '\\'):
+                                in_response_field = False
+                                if self.enable_logging:
+                                    self.logger.info("[LLM Stream] Exited response field")
+                                response_buffer = ""
+                            elif char != '\\':
+                                if stream_callback:
+                                    stream_callback("response_chunk", char)
+                                response_buffer = ""
+
+            if self.enable_logging:
+                self.logger.info(f"[LLM Stream] Total chunks received: {chunk_count}")
+
+            # Create mock response object for parsing
+            class MockResponse:
+                def __init__(self, content):
+                    self.choices = [type('obj', (object,), {
+                        'message': type('obj', (object,), {'content': content})()
+                    })()]
+
+            if self.enable_logging:
+                self.logger.info("[LLM] Streaming complete")
+
+            return MockResponse(accumulated_text), accumulated_text
+
+    def _extract_response_chunk(self, chunk_text: str, json_started: bool,
+                               in_response_field: bool, response_buffer: str) -> Optional[Dict]:
+        """Extract response text from JSON stream - simplified for character-by-character streaming"""
+        result = {
+            "json_started": json_started,
+            "in_response_field": in_response_field,
+            "buffer": response_buffer,
+            "text": ""
+        }
+
+        for char in chunk_text:
+            response_buffer += char
+
+            # Detect JSON start
+            if not json_started and char == '{':
+                json_started = True
+                result["json_started"] = True
+                continue
+
+            if json_started:
+                # Look for "response": " pattern
+                if not in_response_field:
+                    # Check if we've found the response field opening
+                    if '"response"' in response_buffer:
+                        # Look for the colon and opening quote
+                        idx = response_buffer.rfind('"response"')
+                        after_response = response_buffer[idx + len('"response"'):]
+
+                        # Check if we have ": " pattern
+                        colon_quote_match = after_response.find(':"')
+                        if colon_quote_match != -1:
+                            in_response_field = True
+                            result["in_response_field"] = True
+
+                            # Get any text after the opening quote
+                            text_start = colon_quote_match + 2
+                            if text_start < len(after_response):
+                                initial_text = after_response[text_start:]
+                                if initial_text and initial_text[0] != '"':
+                                    result["text"] = initial_text
+
+                            response_buffer = ""
+                else:
+                    # We're inside response field - stream each character
+                    # Check for unescaped closing quote
+                    if char == '"' and (len(response_buffer) == 0 or response_buffer[-1] != '\\'):
+                        # End of response field
+                        in_response_field = False
+                        result["in_response_field"] = False
+                        response_buffer = ""
+                    else:
+                        # Stream this character immediately
+                        if char != '\\' or (len(response_buffer) > 1 and response_buffer[-2] == '\\'):
+                            result["text"] = char
+                        response_buffer = ""
+
+        result["buffer"] = response_buffer
+
+        return result if result["text"] else None
+
     def _call_llm_api(self, query: str, intent_patterns: Dict,
                      conversation_history: Optional[List[Dict]] = None,
                      recognized_intent: Optional[str] = None):
-        """Call LLM API (Ollama or OpenAI)"""
+        """Call LLM API without streaming (Ollama or OpenAI)"""
         system_prompt = self._get_system_prompt(intent_patterns, recognized_intent)
         user_prompt = self._build_user_prompt(query, conversation_history)
 
@@ -191,7 +446,6 @@ class LLMRecognizer:
                 model=self.model,
                 messages=messages,  # type: ignore
                 response_format={"type": "json_object"},  # type: ignore
-                verbosity="low"
             )
 
     def _build_user_prompt(self, query: str, conversation_history: Optional[List[Dict]] = None) -> str:
@@ -261,9 +515,13 @@ The previous layer does not have full conversational context, if you are highly 
         prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your natural, helpful response here"}}'
         return prompt
 
-    def _process_api_response(self, response, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> LLMResult:
+    def _process_api_response(self, response, intent_patterns: Dict,
+                              recognized_intent: Optional[str] = None,
+                              full_response_text: Optional[str] = None) -> LLMResult:
         """Parse and validate API response, creating LLMResult"""
-        if self.use_local_llm:
+        if full_response_text:
+            result_text = full_response_text
+        elif self.use_local_llm:
             result_text = response.get("message", {}).get("content", "{}")
             if "eval_count" in response:
                 self.stats["total_tokens_used"] += response.get("eval_count", 0)
