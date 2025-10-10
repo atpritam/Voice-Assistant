@@ -36,7 +36,8 @@
       "I'd like a gluten free pizza",
       "Can I order a vegan pizza"
     ],
-    "similarity_threshold": 0.40
+    "similarity_threshold": 0.40,
+    "default_response": "I'd be happy to help you place an order! What size pizza would you like?"
   },
   "complaint": {
     "patterns": [
@@ -80,7 +81,8 @@
       "The ingredients are stale",
       "This doesn't match the menu description"
     ],
-    "similarity_threshold": 0.40
+    "similarity_threshold": 0.40,
+    "default_response": "I apologize for any inconvenience. Can you please tell me more about the issue?"
   },
   "hours_location": {
     "patterns": [
@@ -119,7 +121,8 @@
       "What are your pickup hours?",
       "When does delivery end?"
     ],
-    "similarity_threshold": 0.40
+    "similarity_threshold": 0.40,
+    "default_response": "We're open Monday to Friday eleven AM to ten PM, Saturday eleven AM to eleven PM, Sunday twelve PM to nine PM. Located at one twenty three Main Street, Downtown."
   },
   "menu_inquiry": {
     "patterns": [
@@ -168,7 +171,8 @@
       "Describe your meat lovers pizza",
       "What goes on a veggie pizza?"
     ],
-    "similarity_threshold": 0.35
+    "similarity_threshold": 0.35,
+    "default_response": "Our menu features various pizzas in Small, Medium, Large, and Family sizes. We have thin, regular, thick, and gluten-free crusts. What would you like to know more about?"
   },
   "delivery": {
     "patterns": [
@@ -215,7 +219,8 @@
       "Do you offer contactless delivery?",
       "Can I meet the driver outside?"
     ],
-    "similarity_threshold": 0.35
+    "similarity_threshold": 0.35,
+    "default_response": "I can help you with delivery information. Our delivery fee is three dollars, and typical delivery time is thirty to forty five minutes."
   },
   "general": {
     "patterns": [
@@ -260,10 +265,12 @@
       "What are you",
       "Who are you"
     ],
-    "similarity_threshold": 0.55
+    "similarity_threshold": 0.55,
+    "default_response": "Hello! How can I help you today?"
   },
   "unknown": {
     "patterns": [],
-    "similarity_threshold": 0.0
+    "similarity_threshold": 0.0,
+    "default_response": "I'm sorry, I didn't understand that. Can you please try again?"
   }
 }

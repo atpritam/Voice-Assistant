@@ -103,7 +103,7 @@ EDGE_CASES_DATASET = [
     ("Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet", "delivery"),
     ("So I'm looking at your menu and I'm trying to figure out what the best deal is and also I want to know if you have any vegetarian options available", "menu_inquiry"),
 
-    # Multiple intents
+    # Multiple intents - should recognize top intent
     ("I want to order but first tell me your hours", "hours_location"),
     ("Can I get a refund and also where is my order", "complaint"),
 

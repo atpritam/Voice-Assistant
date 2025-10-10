@@ -1,0 +1,80 @@
+{
+  "synonyms": {
+    "order": [
+      "order", "buy", "purchase", "get", "want", "place", "make",
+      "grab", "need", "take", "request", "reserve"
+    ],
+    "complaint": [
+      "complaint", "complain", "wrong", "issue", "problem",
+      "bad", "terrible", "horrible", "disappointed", "unhappy",
+      "refund", "unsatisfied", "dissatisfied", "upset", "angry",
+      "unacceptable", "poor", "awful", "disgusting", "nasty"
+    ],
+    "delivery": [
+      "delivery", "deliver", "delivered", "delivering", "shipment",
+      "ship", "transport", "bring", "send", "arrive", "coming"
+    ],
+    "menu": [
+      "menu", "have", "sell", "offer", "available", "serve",
+      "provide", "stock", "carry", "feature", "include"
+    ],
+    "hours": [
+      "hours", "open", "close", "time", "opening", "closing",
+      "schedule", "when", "until", "from", "available"
+    ],
+    "location": [
+      "location", "address", "where", "place", "store",
+      "restaurant", "shop", "at", "situated", "find", "near"
+    ],
+    "track": [
+      "track", "status", "where", "find", "locate", "check",
+      "progress", "eta", "arriving", "coming"
+    ],
+    "price": [
+      "price", "cost", "much", "expensive", "cheap", "charge",
+      "fee", "prices", "pay", "payment", "total", "amount"
+    ],
+    "quality": [
+      "quality", "fresh", "stale", "old", "burnt", "cold",
+      "hot", "warm", "undercooked", "overcooked", "raw"
+    ],
+    "help": [
+      "help", "assist", "support", "service", "information",
+      "info", "tell", "explain", "show"
+    ]
+  },
+  "filler_words": [
+    "um", "uh", "umm", "uhh", "like", "you know", "basically", "actually",
+    "literally", "just", "really", "very", "so", "well", "i mean",
+    "kind of", "sort of", "please"
+  ],
+  "intent_critical_keywords": {
+    "order": [
+      "order", "buy", "purchase", "want", "get", "place", "make",
+      "grab", "need", "start", "begin", "ready", "like"
+    ],
+    "complaint": [
+      "wrong", "cold", "late", "missing", "burnt", "complaint",
+      "problem", "issue", "refund", "manager", "terrible",
+      "horrible", "bad", "disgusting", "disappointed", "upset",
+      "angry", "unacceptable", "poor", "awful", "nasty",
+      "supervisor", "compensation", "money", "never"
+    ],
+    "hours_location": [
+      "hours", "open", "close", "address", "location",
+      "where", "when", "time", "until", "schedule",
+      "directions", "find", "near", "situated"
+    ],
+    "menu_inquiry": [
+      "menu", "toppings", "sizes", "price", "cost",
+      "have", "options", "special", "deal", "signature",
+      "available", "serve", "offer", "what", "which",
+      "types", "kind", "variety", "selection"
+    ],
+    "delivery": [
+      "track", "status", "eta", "arrive", "fee", "charge",
+      "where", "coming", "delivering", "progress", "time",
+      "long", "wait", "minimum", "area", "zone"
+    ]
+  }
+}

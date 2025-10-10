@@ -1,7 +1,6 @@
 """
 Semantic Intent Recognizer
 Handles semantic similarity-based intent recognition using local Sentence Transformers
-Includes embedding cache to avoid recomputing on every initialization
 """
 
 import logging
@@ -52,10 +51,7 @@ class SemanticRecognizer:
         use_cache: bool = True
     ):
         if not DEPENDENCIES_AVAILABLE:
-            raise ImportError(
-                "Required packages not installed. Run: "
-                "pip install sentence-transformers scikit-learn"
-            )
+            raise ImportError("Required packages not installed. Run: pip install sentence-transformers scikit-learn")
 
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.model_name = model_name
@@ -67,9 +63,7 @@ class SemanticRecognizer:
             self.logger = logging.getLogger(__name__)
         logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
-        self.patterns = IntentRecognizerUtils.load_patterns_from_file(
-            self.patterns_file, enable_logging
-        )
+        self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
         self.model = self._load_model()
         self.intent_embeddings = {}
 
@@ -88,8 +82,7 @@ class SemanticRecognizer:
     def _load_model(self) -> SentenceTransformer:
         """Load sentence transformer model"""
         try:
-            model = SentenceTransformer(self.model_name, device='cuda')
-            return model
+            return SentenceTransformer(self.model_name, device='cuda')
         except Exception as e:
             if self.enable_logging:
                 self.logger.error(f"Error loading model: {e}")
@@ -118,7 +111,7 @@ class SemanticRecognizer:
             with open(cache_path, 'rb') as f:
                 cached_data = pickle.load(f)
 
-            if 'embeddings' not in cached_data or 'model_name' not in cached_data:
+            if not all(k in cached_data for k in ['embeddings', 'model_name']):
                 if self.enable_logging:
                     self.logger.warning("Invalid cache format, will recompute")
                 return False
@@ -131,10 +124,7 @@ class SemanticRecognizer:
             self.intent_embeddings = cached_data['embeddings']
             if self.enable_logging:
                 total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
-                self.logger.info(
-                    f"Loaded embeddings from cache for {len(self.intent_embeddings)} intents, "
-                    f"total patterns: {total_patterns}"
-                )
+                self.logger.info(f"Loaded embeddings from cache for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
             return True
 
         except Exception as e:
@@ -183,10 +173,7 @@ class SemanticRecognizer:
 
         if self.enable_logging:
             total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
-            self.logger.info(
-                f"Precomputed embeddings for {len(self.intent_embeddings)} intents, "
-                f"total patterns: {total_patterns}"
-            )
+            self.logger.info(f"Precomputed embeddings for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
 
     def _load_or_compute_embeddings(self):
         """Load embeddings from cache or compute if not available"""
@@ -208,18 +195,13 @@ class SemanticRecognizer:
             if self.enable_logging:
                 self.logger.error(f"Error clearing cache: {e}")
 
-    def _calculate_semantic_similarity(
-        self, query_embedding: np.ndarray, intent_name: str
-    ) -> Tuple[float, str, Dict]:
+    def _calculate_semantic_similarity(self, query_embedding: np.ndarray, intent_name: str) -> Tuple[float, str, Dict]:
         """Calculate semantic similarity between query and intent patterns"""
         intent_data = self.intent_embeddings[intent_name]
         pattern_embeddings = intent_data['embeddings']
         patterns = intent_data['patterns']
 
-        similarities = cosine_similarity(
-            query_embedding.reshape(1, -1), pattern_embeddings
-        )[0]
-
+        similarities = cosine_similarity(query_embedding.reshape(1, -1), pattern_embeddings)[0]
         max_idx = np.argmax(similarities)
         max_similarity = float(similarities[max_idx])
         best_pattern = patterns[max_idx]
@@ -227,9 +209,7 @@ class SemanticRecognizer:
         breakdown = {
             'semantic_similarity': max_similarity,
             'matched_pattern': best_pattern,
-            'all_similarities': {
-                patterns[i]: float(similarities[i]) for i in range(len(patterns))
-            }
+            'all_similarities': {patterns[i]: float(similarities[i]) for i in range(len(patterns))}
         }
         return max_similarity, best_pattern, breakdown
 
@@ -245,9 +225,7 @@ class SemanticRecognizer:
 
             intent_scores = {}
             for intent_name in self.intent_embeddings.keys():
-                similarity, pattern, breakdown = self._calculate_semantic_similarity(
-                    query_embedding, intent_name
-                )
+                similarity, pattern, breakdown = self._calculate_semantic_similarity(query_embedding, intent_name)
                 intent_scores[intent_name] = {
                     'similarity': similarity,
                     'pattern': pattern,
@@ -272,21 +250,15 @@ class SemanticRecognizer:
                         f"(best: {best_intent_name} with {best_similarity:.3f}, "
                         f"below threshold: {threshold:.3f})"
                     )
-                return self._create_unknown_result(
-                    f"Best match {best_intent_name} below threshold", best_similarity
-                )
+                return self._create_unknown_result(f"Best match {best_intent_name} below threshold", best_similarity)
 
             confidence_level = IntentRecognizerUtils.determine_confidence_level(best_similarity)
 
-            self.stats['intent_distribution'][best_intent_name] = \
-                self.stats['intent_distribution'].get(best_intent_name, 0) + 1
+            self.stats['intent_distribution'][best_intent_name] = self.stats['intent_distribution'].get(best_intent_name, 0) + 1
             self.stats['avg_confidence'].append(best_similarity)
 
             if self.enable_logging:
-                self.logger.info(
-                    f"[SEMANTIC] Intent: {best_intent_name} "
-                    f"(confidence: {best_similarity:.3f}, level: {confidence_level})"
-                )
+                self.logger.info(f"[SEMANTIC] Intent: {best_intent_name} (confidence: {best_similarity:.3f}, level: {confidence_level})")
 
             return SemanticResult(
                 intent=best_intent_name,
@@ -315,19 +287,14 @@ class SemanticRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get semantic recognizer statistics"""
-        avg_conf = (
-            sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence'])
-            if self.stats['avg_confidence'] else 0.0
-        )
+        avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) if self.stats['avg_confidence'] else 0.0
 
         return {
             'total_queries_processed': self.stats['total_queries'],
             'intent_distribution': self.stats['intent_distribution'],
             'average_confidence': avg_conf,
             'model_name': self.stats['model_name'],
-            'total_patterns_encoded': sum(
-                len(data['patterns']) for data in self.intent_embeddings.values()
-            ),
+            'total_patterns_encoded': sum(len(data['patterns']) for data in self.intent_embeddings.values()),
             'cache_enabled': self.use_cache,
             'cache_location': str(CACHE_DIR) if self.use_cache else None
         }
