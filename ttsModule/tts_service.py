@@ -6,6 +6,8 @@ Optimized for en/ljspeech/vits - single speaker
 import logging
 import tempfile
 import re
+import contextlib
+import io
 from pathlib import Path
 from typing import Optional
 import torch
@@ -44,10 +46,6 @@ class TTSService:
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
         if enable_logging:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
             self.logger = logging.getLogger(__name__)
 
         self.tts = None
@@ -66,7 +64,6 @@ class TTSService:
         try:
             if self.enable_logging:
                 self.logger.info(f"Initializing TTS model: {self.model_name}")
-                self.logger.info(f"GPU enabled: {self.use_gpu}")
 
             device = "cuda" if self.use_gpu else "cpu"
 
@@ -74,10 +71,12 @@ class TTSService:
             warnings.filterwarnings('ignore', category=UserWarning)
             warnings.filterwarnings('ignore', category=FutureWarning)
 
-            self.tts = TTS(model_name=self.model_name, progress_bar=False).to(device)
+            # Suppress TTS verbose initialization output
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.tts = TTS(model_name=self.model_name, progress_bar=False).to(device)
 
             if self.enable_logging:
-                self.logger.info(f"TTS model initialized successfully on {device}")
+                self.logger.info(f"TTS model initialized successfully")
 
         except Exception as e:
             if self.enable_logging:
@@ -165,11 +164,13 @@ class TTSService:
             if self.enable_logging:
                 self.logger.info(f"Generating speech for text: '{processed_text[:60]}...'")
 
-            self.tts.tts_to_file(
-                text=processed_text,
-                file_path=str(output_path),
-                speed=speed
-            )
+            # Suppress TTS verbose output during generation
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.tts.tts_to_file(
+                    text=processed_text,
+                    file_path=str(output_path),
+                    speed=speed
+                )
 
             self.stats['successful_generations'] += 1
             self.stats['total_audio_files'] += 1

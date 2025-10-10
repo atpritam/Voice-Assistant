@@ -8,37 +8,53 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
   </head>
   <body>
-    <div class="container">
-      <header>
-        <h1>Voice Assistant</h1>
-        <div class="header-controls">
-          <div class="connection-status" id="connectionStatus">
-            <span class="status-indicator" id="statusIndicator"></span>
-          </div>
+    <div class="voice-container">
+      <div class="status-bar">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
         </div>
-      </header>
+      </div>
 
-      <div class="chat-container">
-        <div class="conversation-history" id="conversationHistory">
-          <!-- Messages will be displayed here -->
+      <div class="voice-interface">
+        <div class="voice-visualizer" id="voiceVisualizer">
+          <div class="orb-container">
+            <div class="orb" id="orb"></div>
+            <div class="orb-ring"></div>
+            <div class="orb-ring ring-2"></div>
+          </div>
         </div>
 
-        <div class="input-container">
-          <div class="input-group">
-            <input
-              type="text"
-              id="messageInput"
-              placeholder="Type your message here..."
-              maxlength="500"
-            />
-            <button id="sendButton" onclick="sendMessage()">Send</button>
-          </div>
-          <div class="input-actions">
-            <button id="clearButton" onclick="clearHistory()">
-              Clear History
-            </button>
-          </div>
+        <div class="voice-status" id="voiceStatus">
+          <p class="status-message">Tap to speak</p>
         </div>
+
+        <div class="transcript-area" id="transcriptArea">
+          <div class="transcript user" id="userTranscript"></div>
+          <div class="transcript assistant" id="assistantTranscript"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="control-btn mic-btn" id="micButton">
+          <svg class="icon mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+
+        <button class="control-btn close-btn" id="closeButton">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="audio-player-container" id="audioPlayerContainer">
+        <audio id="responseAudio" preload="auto"></audio>
       </div>
     </div>
 

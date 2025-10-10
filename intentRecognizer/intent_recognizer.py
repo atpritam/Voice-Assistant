@@ -112,10 +112,6 @@ class IntentRecognizer:
         self.ollama_base_url = ollama_base_url
 
         if enable_logging:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
             self.logger = logging.getLogger(__name__)
 
         self.stats = {

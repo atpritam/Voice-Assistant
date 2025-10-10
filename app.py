@@ -1,17 +1,30 @@
-from flask import Flask
+from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import sys
 import os
 import time
+import base64
+import logging
 
-# Utils directory path
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True
+)
+
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='jieba')
+warnings.filterwarnings('ignore', message='.*is deprecated.*')
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'intentRecognizer'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ttsModule'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'asrModule'))
 
 from intentRecognizer import IntentRecognizer
 from ttsModule import TTSService
+from asrModule import ASRService
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'hjbasfbue76t34g76wgv3bywyu47'
@@ -25,29 +38,29 @@ ENABLE_ALGORITHMIC = True
 ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
-# Layer Thresholds
 ALGORITHMIC_THRESHOLD = 0.6
 SEMANTIC_THRESHOLD = 0.5
 
-# Model Configuration
 SEMANTIC_MODEL = "all-MiniLM-L6-v2"
 
-# LLM Configuration
 USE_LOCAL_LLM = True
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
-# General Settings
 ENABLE_LOGGING = True
 MIN_CONFIDENCE = 0.5
 
-# Mode Configuration
 TEST_MODE = False
 
 # TTS Configuration
 ENABLE_TTS = True
 TTS_MODEL = "tts_models/en/ljspeech/vits"
 TTS_OUTPUT_DIR = "./static/audio"
+
+# ASR Configuration
+ENABLE_ASR = True
+ASR_MODEL = "tiny.en"
+ASR_DEVICE = "auto"
 
 # Initialize intent recognizer
 try:
@@ -78,6 +91,9 @@ try:
         layers.append(llm_type)
     print(" -> ".join(layers))
 
+    if ENABLE_SEMANTIC:
+        print(f"  Semantic Model: {SEMANTIC_MODEL}")
+
     if USE_LOCAL_LLM and ENABLE_LLM:
         print(f"  LLM Provider: Ollama")
         print(f"  LLM Model: {LLM_MODEL}")
@@ -102,47 +118,94 @@ except Exception as e:
 # Initialize TTS Service
 tts_service = None
 if ENABLE_TTS:
+    print(f"  TTS Model: {TTS_MODEL}")
     try:
-        print("Initializing TTS Service...")
         tts_service = TTSService(
             model_name=TTS_MODEL,
             enable_logging=ENABLE_LOGGING,
             output_dir=TTS_OUTPUT_DIR
         )
-        print(f"  TTS Model: {TTS_MODEL}")
-        print(f"  TTS Output: {TTS_OUTPUT_DIR}")
         print()
     except ImportError as e:
+        print(f"\nTTS Import Error: {e}")
+        print("Install with: pip install -r requirements.txt\n")
         ENABLE_TTS = False
     except Exception as e:
         print(f"\nTTS Initialization Error: {e}\n")
         ENABLE_TTS = False
+
+# Initialize ASR Service
+asr_service = None
+if ENABLE_ASR:
+    print(f"  ASR Model: whisper-{ASR_MODEL}")
+    try:
+        asr_service = ASRService(
+            model_size=ASR_MODEL,
+            device=ASR_DEVICE,
+            enable_logging=ENABLE_LOGGING
+        )
+        print()
+    except ImportError:
+        print("\nASR Error: openai-whisper not installed")
+        print("Install with: pip install openai-whisper\n")
+        ENABLE_ASR = False
+    except Exception as e:
+        print(f"\nASR Initialization Error: {e}\n")
+        ENABLE_ASR = False
 
 
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
 
+
 @socketio.on('disconnect')
 def handle_disconnect():
     print('Client disconnected')
 
 
-@socketio.on('send_message')
-def handle_message(data):
-    """Handle incoming text messages with intent recognition and response generation"""
-    message = data.get('message', '')
-    if message:
-        conversation_history.append({
-            'type': 'user',
-            'message': message,
-            'timestamp': int(time.time() * 1000)
+@socketio.on('voice_input')
+def handle_voice_input(data):
+    """Handle incoming voice audio for transcription and processing"""
+    if not ENABLE_ASR or not asr_service:
+        emit('error', {'message': 'ASR service not available'})
+        return
+
+    try:
+        audio_data = data.get('audio')
+        if not audio_data:
+            emit('error', {'message': 'No audio data received'})
+            return
+
+        audio_bytes = base64.b64decode(audio_data.split(',')[1] if ',' in audio_data else audio_data)
+
+        emit('transcription_status', {'status': 'processing'})
+
+        transcribed_text, confidence = asr_service.transcribe_audio_data(audio_bytes)
+
+        if not transcribed_text:
+            emit('transcription_result', {
+                'text': '',
+                'confidence': 0.0,
+                'error': 'No speech detected'
+            })
+            return
+
+        emit('transcription_result', {
+            'text': transcribed_text,
+            'confidence': confidence
         })
 
-        intent_info = intent_recognizer.recognize_intent(message, conversation_history)
+        conversation_history.append({
+            'type': 'user',
+            'message': transcribed_text,
+            'timestamp': int(time.time() * 1000),
+            'audio': True
+        })
+
+        intent_info = intent_recognizer.recognize_intent(transcribed_text, conversation_history)
         response = intent_info.response
 
-        # Generate TTS audio
         audio_url = None
         if ENABLE_TTS and tts_service and response:
             try:
@@ -168,11 +231,12 @@ def handle_message(data):
             'similarity': intent_info.confidence,
             'layer_used': intent_info.layer_used,
             'processing_method': intent_info.processing_method,
-            'audio_url': audio_url
+            'audio_url': audio_url,
+            'audio': True
         })
 
-        emit('message_response', {
-            'user_message': message,
+        emit('voice_response', {
+            'transcribed_text': transcribed_text,
             'assistant_response': response,
             'conversation_history': conversation_history,
             'intent_info': {
@@ -185,24 +249,11 @@ def handle_message(data):
             'audio_url': audio_url
         })
 
-
-@socketio.on('recognize_intent')
-def handle_recognize_intent(data):
-    """Recognize intent for a given message without adding to conversation history"""
-    message = data.get('message', '')
-    if message:
-        intent_info = intent_recognizer.recognize_intent(message, conversation_history)
-        emit('intent_recognition', {
-            'message': message,
-            'intent_info': {
-                'intent': intent_info.intent,
-                'confidence': intent_info.confidence_level,
-                'similarity': intent_info.confidence,
-                'layer_used': intent_info.layer_used,
-                'processing_method': intent_info.processing_method,
-                'response': intent_info.response
-            }
-        })
+    except Exception as e:
+        print(f"Voice input error: {e}")
+        import traceback
+        traceback.print_exc()
+        emit('error', {'message': f'Processing error: {str(e)}'})
 
 
 @socketio.on('clear_history')
@@ -219,15 +270,18 @@ def index():
 
 @app.route('/statistics')
 def get_statistics():
-    """Get system statistics including layer usage and TTS"""
+    """Get system statistics including layer usage, TTS, and ASR"""
     from flask import jsonify
     stats = intent_recognizer.get_statistics()
 
     if ENABLE_TTS and tts_service:
         stats['tts'] = tts_service.get_statistics()
 
+    if ENABLE_ASR and asr_service:
+        stats['asr'] = asr_service.get_statistics()
+
     return jsonify(stats)
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)
