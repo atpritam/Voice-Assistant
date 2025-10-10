@@ -1,0 +1,205 @@
+"""
+Text-to-Speech Service using Coqui TTS VITS Model
+Optimized for en/ljspeech/vits - single speaker
+"""
+
+import logging
+import tempfile
+import re
+from pathlib import Path
+from typing import Optional
+import torch
+
+try:
+    from TTS.api import TTS
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+
+
+class TTSService:
+    """Text-to-Speech service using VITS model for natural speech generation"""
+
+    def __init__(
+            self,
+            model_name: str = "tts_models/en/ljspeech/vits",
+            enable_logging: bool = False,
+            use_gpu: bool = True,
+            output_dir: str = None
+    ):
+        if not TTS_AVAILABLE:
+            raise ImportError(
+                "TTS library not installed. Install with: pip install TTS torch torchaudio"
+            )
+
+        self.model_name = model_name
+        self.enable_logging = enable_logging
+        self.use_gpu = use_gpu and torch.cuda.is_available()
+
+        if output_dir:
+            self.output_dir = Path(output_dir)
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            self.output_dir = Path(tempfile.gettempdir()) / "voice-assistant-tts"
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        if enable_logging:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            self.logger = logging.getLogger(__name__)
+
+        self.tts = None
+        self.stats = {
+            'total_requests': 0,
+            'successful_generations': 0,
+            'failed_generations': 0,
+            'total_audio_files': 0
+        }
+
+        self._initialize_tts()
+        self._cleanup_on_start()
+
+    def _initialize_tts(self):
+        """Initialize VITS TTS model"""
+        try:
+            if self.enable_logging:
+                self.logger.info(f"Initializing TTS model: {self.model_name}")
+                self.logger.info(f"GPU enabled: {self.use_gpu}")
+
+            device = "cuda" if self.use_gpu else "cpu"
+
+            import warnings
+            warnings.filterwarnings('ignore', category=UserWarning)
+            warnings.filterwarnings('ignore', category=FutureWarning)
+
+            self.tts = TTS(model_name=self.model_name, progress_bar=False).to(device)
+
+            if self.enable_logging:
+                self.logger.info(f"TTS model initialized successfully on {device}")
+
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.error(f"Failed to initialize TTS model: {e}")
+            raise RuntimeError(f"TTS initialization failed: {e}")
+
+    def _cleanup_on_start(self):
+        """Clean up audio directory on service initialization"""
+        try:
+            if self.output_dir.exists():
+                audio_files = list(self.output_dir.glob("*.wav"))
+                deleted_count = 0
+
+                for file_path in audio_files:
+                    try:
+                        file_path.unlink()
+                        deleted_count += 1
+                    except Exception as e:
+                        if self.enable_logging:
+                            self.logger.warning(f"Failed to delete {file_path}: {e}")
+
+                if self.enable_logging and deleted_count > 0:
+                    self.logger.info(f"Cleaned up {deleted_count} old audio files on startup")
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.error(f"Startup cleanup failed: {e}")
+
+    def _preprocess_text(self, text: str) -> str:
+        """Preprocess text for better TTS output"""
+        text = ' '.join(text.split())
+        text = re.sub(r'([.!?])([A-Z])', r'\1 \2', text)
+        text = re.sub(r'[*_~`\[\]{}]', '', text)
+
+        replacements = {
+            r'\$(\d+)': r'\1 dollars',
+            r'(\d+)%': r'\1 percent',
+            r'\bpm\b': 'PM',
+            r'\bam\b': 'AM',
+        }
+
+        for pattern, replacement in replacements.items():
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        if text and text[-1] not in '.!?':
+            text += '.'
+
+        return text
+
+    def generate_speech(
+            self,
+            text: str,
+            output_filename: Optional[str] = None,
+            speed: float = 1.1
+    ) -> Optional[str]:
+        """
+        Generate speech from text using VITS model
+
+        Args:
+            text: Text to convert to speech
+            output_filename: Custom output filename (optional)
+            speed: Speech speed multiplier (default: 1.1)
+
+        Returns:
+            Path to generated audio file or None if failed
+        """
+        self.stats['total_requests'] += 1
+
+        if not text or not text.strip():
+            if self.enable_logging:
+                self.logger.warning("Empty text provided for TTS generation")
+            self.stats['failed_generations'] += 1
+            return None
+
+        try:
+            import warnings
+            warnings.filterwarnings('ignore')
+
+            if output_filename:
+                output_path = self.output_dir / output_filename
+            else:
+                output_path = self.output_dir / f"tts_output_{self.stats['total_requests']}.wav"
+
+            processed_text = self._preprocess_text(text)
+
+            if self.enable_logging:
+                self.logger.info(f"Generating speech for text: '{processed_text[:60]}...'")
+
+            self.tts.tts_to_file(
+                text=processed_text,
+                file_path=str(output_path),
+                speed=speed
+            )
+
+            self.stats['successful_generations'] += 1
+            self.stats['total_audio_files'] += 1
+
+            if self.enable_logging:
+                self.logger.info(f"Audio generated successfully: {output_path}")
+
+            return str(output_path)
+
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.error(f"TTS generation failed: {e}")
+            self.stats['failed_generations'] += 1
+            return None
+
+    def get_statistics(self) -> dict:
+        """Get TTS service statistics"""
+        success_rate = (
+            self.stats['successful_generations'] / self.stats['total_requests']
+            if self.stats['total_requests'] > 0
+            else 0.0
+        )
+
+        return {
+            'total_requests': self.stats['total_requests'],
+            'successful_generations': self.stats['successful_generations'],
+            'failed_generations': self.stats['failed_generations'],
+            'success_rate': success_rate,
+            'total_audio_files': self.stats['total_audio_files'],
+            'model_name': self.model_name,
+            'device': 'cuda' if self.use_gpu else 'cpu',
+            'output_directory': str(self.output_dir)
+        }

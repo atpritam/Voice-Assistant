@@ -28,7 +28,6 @@ body {
   border: 1px solid #333333;
 }
 
-
 header {
   background: #000000;
   color: white;
@@ -123,6 +122,19 @@ header h1 {
   background: #000000;
   color: #FFFFFF;
   border-bottom-left-radius: 4px;
+}
+
+.audio-player {
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.audio-player audio {
+  width: 100%;
+  max-width: 300px;
+  height: 32px;
+  border-radius: 16px;
+  outline: none;
 }
 
 .message-time {
@@ -290,11 +302,15 @@ header h1 {
   .input-group button {
     width: 100%;
   }
-  
+
   .layer-badge {
-      margin-left: 4px;
-      font-size: 0.6rem;
-      padding: 1px 6px;
+    margin-left: 4px;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+  }
+
+  .audio-player audio {
+    max-width: 100%;
   }
 }
 
