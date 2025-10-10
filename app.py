@@ -8,22 +8,24 @@ import time
 # Utils directory path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'intentRecognizer'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'ttsModule'))
 
 from intentRecognizer import IntentRecognizer
+from ttsModule import TTSService
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'hjbasfbue76t34g76wgv3bywyu47'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7)
 CORS(app)
 
 conversation_history = []
 
 # PIPELINE CONFIGURATION
-ENABLE_ALGORITHMIC = True  # Keyword pattern matching + Levenshtein distance
-ENABLE_SEMANTIC = True  # Sentence Transformers (local ML model)
-ENABLE_LLM = True  # LLM layer (OpenAI or Ollama)
+ENABLE_ALGORITHMIC = True
+ENABLE_SEMANTIC = True
+ENABLE_LLM = True
 
-# Layer Thresholds - confidence below which next active layer is tried
+# Layer Thresholds
 ALGORITHMIC_THRESHOLD = 0.6
 SEMANTIC_THRESHOLD = 0.5
 
@@ -31,7 +33,7 @@ SEMANTIC_THRESHOLD = 0.5
 SEMANTIC_MODEL = "all-MiniLM-L6-v2"
 
 # LLM Configuration
-USE_LOCAL_LLM = True  # Set to True for Ollama, False for OpenAI
+USE_LOCAL_LLM = True
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
@@ -40,7 +42,12 @@ ENABLE_LOGGING = True
 MIN_CONFIDENCE = 0.5
 
 # Mode Configuration
-TEST_MODE = False  # When True, skips response generation for faster intent testing
+TEST_MODE = False
+
+# TTS Configuration
+ENABLE_TTS = True
+TTS_MODEL = "tts_models/en/ljspeech/vits"
+TTS_OUTPUT_DIR = "./static/audio"
 
 # Initialize intent recognizer
 try:
@@ -92,6 +99,25 @@ except Exception as e:
     print(f"\nInitialization Error: {e}\n")
     sys.exit(1)
 
+# Initialize TTS Service
+tts_service = None
+if ENABLE_TTS:
+    try:
+        print("Initializing TTS Service...")
+        tts_service = TTSService(
+            model_name=TTS_MODEL,
+            enable_logging=ENABLE_LOGGING,
+            output_dir=TTS_OUTPUT_DIR
+        )
+        print(f"  TTS Model: {TTS_MODEL}")
+        print(f"  TTS Output: {TTS_OUTPUT_DIR}")
+        print()
+    except ImportError as e:
+        ENABLE_TTS = False
+    except Exception as e:
+        print(f"\nTTS Initialization Error: {e}\n")
+        ENABLE_TTS = False
+
 
 @socketio.on('connect')
 def handle_connect():
@@ -107,7 +133,6 @@ def handle_message(data):
     """Handle incoming text messages with intent recognition and response generation"""
     message = data.get('message', '')
     if message:
-        # Add user message to conversation history
         conversation_history.append({
             'type': 'user',
             'message': message,
@@ -117,19 +142,35 @@ def handle_message(data):
         intent_info = intent_recognizer.recognize_intent(message, conversation_history)
         response = intent_info.response
 
-        # Add assistant response to conversation history
+        # Generate TTS audio
+        audio_url = None
+        if ENABLE_TTS and tts_service and response:
+            try:
+                timestamp = int(time.time() * 1000)
+                audio_filename = f"response_{timestamp}.wav"
+                audio_path = tts_service.generate_speech(
+                    text=response,
+                    output_filename=audio_filename
+                )
+
+                if audio_path:
+                    audio_url = f"/static/audio/{audio_filename}"
+
+            except Exception as e:
+                print(f"TTS generation error: {e}")
+
         conversation_history.append({
             'type': 'assistant',
             'message': response,
-            'timestamp': int(time.time() * 1000) ,
+            'timestamp': int(time.time() * 1000),
             'intent': intent_info.intent,
             'confidence': intent_info.confidence_level,
             'similarity': intent_info.confidence,
             'layer_used': intent_info.layer_used,
-            'processing_method': intent_info.processing_method
+            'processing_method': intent_info.processing_method,
+            'audio_url': audio_url
         })
 
-        # Send response back to client
         emit('message_response', {
             'user_message': message,
             'assistant_response': response,
@@ -140,8 +181,8 @@ def handle_message(data):
                 'similarity': intent_info.confidence,
                 'layer_used': intent_info.layer_used,
                 'processing_method': intent_info.processing_method,
-                'llm_explanation': intent_info.llm_explanation
-            }
+            },
+            'audio_url': audio_url
         })
 
 
@@ -159,7 +200,6 @@ def handle_recognize_intent(data):
                 'similarity': intent_info.confidence,
                 'layer_used': intent_info.layer_used,
                 'processing_method': intent_info.processing_method,
-                'llm_explanation': intent_info.llm_explanation,
                 'response': intent_info.response
             }
         })
@@ -179,9 +219,13 @@ def index():
 
 @app.route('/statistics')
 def get_statistics():
-    """Get system statistics including layer usage"""
+    """Get system statistics including layer usage and TTS"""
     from flask import jsonify
     stats = intent_recognizer.get_statistics()
+
+    if ENABLE_TTS and tts_service:
+        stats['tts'] = tts_service.get_statistics()
+
     return jsonify(stats)
 
 

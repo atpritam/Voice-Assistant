@@ -31,7 +31,6 @@ class RecognitionResult:
     processing_method: str
     layer_used: str
     response: str = ""
-    llm_explanation: str = ""
     score_breakdown: Dict = None
 
 
@@ -330,7 +329,6 @@ class IntentRecognizer:
             processing_method=getattr(result, 'processing_method', layer),
             layer_used=layer,
             response=response,
-            llm_explanation=getattr(result, 'explanation', ''),
             score_breakdown=getattr(result, 'score_breakdown', {})
         )
 
@@ -351,7 +349,6 @@ class IntentRecognizer:
             processing_method='error',
             layer_used='none',
             response="I'm here to help! Could you please clarify what you'd like to know?",
-            llm_explanation=reason,
             score_breakdown={'error': reason}
         )
 

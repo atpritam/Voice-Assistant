@@ -200,7 +200,7 @@ class LLMRecognizer:
             return f'CURRENT CUSTOMER QUERY: "{query}"'
 
         prompt_parts = ["CONVERSATION HISTORY (recent messages):"]
-        recent_history = conversation_history[-10:] if len(conversation_history) > 10 else conversation_history
+        recent_history = conversation_history[-12:] if len(conversation_history) > 12 else conversation_history
 
         for entry in recent_history:
             role = "Customer" if entry['type'] == 'user' else "Assistant"
@@ -238,17 +238,16 @@ class LLMRecognizer:
             return prompt
 
         tts_rules = """Some of CRITICAL RESPONSE RULES for TTS:
-1. Keep responses SHORT (1-3 sentences max under 40 words preferably)
+1. Keep responses SHORT (1-3 sentences max under 50 words preferably)
 2. NO special formatting: no $, %, parentheses, brackets, colons, semicolons
 3. Spell out prices (e.g., 'twelve dollars' instead of $12)
-4. No multiple questions in one response
-5. Do not repeat information already mentioned unless user asks to do so"""
+4. No multiple questions in one response"""
 
         prompt = f"""You are a helpful voice customer support assistant for {self.res_info['name']}, a pizza restaurant.
 Generate ONE natural, conversational response that directly addresses the customer's query.
 This response will be used for TTS so make the response adhere to common TTS text rules.
 RESTAURANT INFO: {json.dumps(self.res_info, indent=2)}
-Offers Pick up and Delivery.
+Usual order flow: Customer picks their order → offer sides or drinks → ask pickup or delivery → get name → ask address if its a delivery -> confirm and close.
 AVAILABLE INTENTS: {', '.join(valid_intents)}
 {intent_descriptions}
 
@@ -305,7 +304,7 @@ The previous layer does not have full conversational context, if you are highly 
             response=generated_response,
             matched_pattern="LLM Classification",
             processing_method="llm",
-            score_breakdown={"llm_explanation": explanation, "response_generated": True},
+            score_breakdown={"response_generated": True},
             error=False,
         )
 

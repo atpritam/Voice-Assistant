@@ -5,8 +5,10 @@ const DOM = {
   sendButton: null,
   conversationHistory: null,
   statusIndicator: null,
-  clearButton: null
+  clearButton: null,
 };
+
+let ttsEnabled = true;
 
 function initializeDOM() {
   DOM.messageInput = document.getElementById('messageInput');
@@ -17,11 +19,9 @@ function initializeDOM() {
 }
 
 function initializeEventListeners() {
-  // Button clicks
   DOM.sendButton.addEventListener('click', sendMessage);
   DOM.clearButton.addEventListener('click', clearHistory);
 
-  // Enter key to send
   DOM.messageInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -29,14 +29,12 @@ function initializeEventListeners() {
     }
   });
 
-  // Socket event listeners
   socket.on('connect', handleConnect);
   socket.on('disconnect', handleDisconnect);
   socket.on('message_response', handleMessageResponse);
   socket.on('intent_recognition', handleIntentRecognition);
 }
 
-// SOCKET EVENT HANDLERS
 function handleConnect() {
   console.log('Connected to server');
   updateConnectionStatus(true);
@@ -64,6 +62,11 @@ function handleMessageResponse(data) {
       console.log('Intent recognized:', data.intent_info);
     }
 
+    if (data && data.audio_url) {
+      console.log('Audio URL received:', data.audio_url);
+      playAudio(data.audio_url);
+    }
+
     DOM.messageInput.focus();
   } catch (error) {
     console.error('Error handling message response:', error);
@@ -79,7 +82,6 @@ function handleIntentRecognition(data) {
   }
 }
 
-// UI UPDATE FUNCTIONS
 function updateConnectionStatus(connected) {
   if (!DOM.statusIndicator) return;
 
@@ -132,6 +134,11 @@ function createMessageContent(entry) {
     contentDiv.appendChild(intentInfo);
   }
 
+  if (entry.type === 'assistant' && entry.audio_url) {
+    const audioPlayer = createAudioPlayer(entry.audio_url);
+    contentDiv.appendChild(audioPlayer);
+  }
+
   return contentDiv;
 }
 
@@ -159,11 +166,40 @@ function createLayerBadge(layerUsed) {
   return `<span class="layer-badge">${sanitizeHTML(layerName)}</span>`;
 }
 
+function createAudioPlayer(audioUrl) {
+  const audioDiv = document.createElement('div');
+  audioDiv.className = 'audio-player';
+
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.preload = 'metadata';
+
+  const source = document.createElement('source');
+  source.src = audioUrl;
+  source.type = 'audio/wav';
+
+  audio.appendChild(source);
+  audioDiv.appendChild(audio);
+
+  return audioDiv;
+}
+
 function createMessageTime(timestamp) {
   const timeDiv = document.createElement('div');
   timeDiv.className = 'message-time';
   timeDiv.textContent = formatTimestamp(timestamp);
   return timeDiv;
+}
+
+function playAudio(audioUrl) {
+  try {
+    const audio = new Audio(audioUrl);
+    audio.play().catch(error => {
+      console.error('Error playing audio:', error);
+    });
+  } catch (error) {
+    console.error('Error creating audio:', error);
+  }
 }
 
 function showTypingIndicator() {
@@ -264,7 +300,6 @@ function removeNoMessagesPlaceholder() {
   }
 }
 
-// INTENT RECOGNITION DISPLAY
 function showIntentRecognition(intentInfo) {
   if (!intentInfo) return;
 
@@ -275,15 +310,10 @@ function showIntentRecognition(intentInfo) {
     `Layer: ${intentInfo.layer_used}`
   ];
 
-  if (intentInfo.llm_explanation) {
-    details.push(`Explanation: ${intentInfo.llm_explanation}`);
-  }
-
   const result = details.join('\n');
   alert(`Intent Recognition Result:\n\n${result}`);
 }
 
-// UTILITY FUNCTIONS
 function formatTimestamp(timestamp) {
   try {
     const date = timestamp ? new Date(timestamp) : new Date();
@@ -316,7 +346,6 @@ function scrollToBottom() {
   }
 }
 
-// APPLICATION ENTRY POINT
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Voice Assistant client initializing...');
 
