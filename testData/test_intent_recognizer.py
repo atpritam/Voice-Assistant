@@ -25,7 +25,7 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 INCLUDE_EDGE_CASES = True
 
 # Default pipeline
-ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
+ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, False, False
 USE_BOOST_ENGINE = True # Contextual boosting for Algorithmic layer
 THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
 
@@ -78,6 +78,8 @@ def run_comprehensive_test():
     if ENABLE_LLM:
         print(f"LLM Model: {LLM_MODEL}")
     print(f"Mode: {'TEST MODE (intent recognition only)' if TEST_MODE else 'PRODUCTION MODE (with responses)'}\n")
+    print(f"Boost Engine: {USE_BOOST_ENGINE}")
+    print(f"Edge Cases Included: {INCLUDE_EDGE_CASES}\n")
 
     try:
         recognizer = init_recognizer(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM, log=True)
@@ -89,8 +91,6 @@ def run_comprehensive_test():
 
     test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"Running tests on {len(test_data)} queries...\n")
-    if INCLUDE_EDGE_CASES:
-        print("Edge Cases Included")
 
     start = time.time()
     ev = recognizer.evaluate(test_data)

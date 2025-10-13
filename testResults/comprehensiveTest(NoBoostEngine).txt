@@ -1,0 +1,41 @@
+
+Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
+Semantic Model: all-MiniLM-L6-v2
+LLM Model: llama3.2:3b-instruct-q4_K_M
+Mode: TEST MODE (intent recognition only)
+
+Boost Engine: False
+Edge Cases Included: True
+
+Running tests on 90 queries...
+
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 95.56%
+Correct: 86 / 90
+Avg Query Time: 20.8ms
+Queries/s: 48.2
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic :  75 ( 83.3%)  Acc: 97.33%
+Semantic    :  13 ( 14.4%)  Acc: 84.62%
+LLM         :   2 (  2.2%)  Acc: 100.00%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           :  54 ( 60.0%)
+Medium (0.6-0.8)      :  31 ( 34.4%)
+Low (<0.6)            :   5 (  5.6%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'Prices for medium pizza' -> order (exp: menu_inquiry, conf: 0.78, layer: semantic)
+
+2. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
+
+3. 'I want to order but first tell me your hours' -> order (exp: hours_location, conf: 0.70, layer: algorithmic)
+
+4. 'Can I get a refund and also where is my order' -> order (exp: complaint, conf: 0.62, layer: algorithmic)

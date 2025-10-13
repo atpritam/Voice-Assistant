@@ -1,0 +1,43 @@
+
+Pipeline: Algorithmic
+Mode: TEST MODE (intent recognition only)
+
+Boost Engine: False
+Edge Cases Included: True
+
+Running tests on 90 queries...
+
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 92.22%
+Correct: 83 / 90
+Avg Query Time: 1.2ms
+Queries/s: 831.0
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic :  88 ( 97.8%)  Acc: 94.32%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           :  50 ( 55.6%)
+Medium (0.6-0.8)      :  25 ( 27.8%)
+Low (<0.6)            :  15 ( 16.7%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'What specials are running' -> general (exp: menu_inquiry, conf: 0.55, layer: algorithmic)
+
+2. 'Prices for medium pizza' -> order (exp: menu_inquiry, conf: 0.49, layer: algorithmic)
+
+3. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> unknown (exp: delivery, conf: 0.00, layer: none)
+
+4. 'So I'm looking at your menu and I'm trying to figure out what the best deal is and also I want to know if you have any vegetarian options available' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+5. 'I want to order but first tell me your hours' -> order (exp: hours_location, conf: 0.70, layer: algorithmic)
+
+6. 'Can I get a refund and also where is my order' -> order (exp: complaint, conf: 0.62, layer: algorithmic)
+
+7. 'What about the large one' -> hours_location (exp: menu_inquiry, conf: 0.44, layer: algorithmic)

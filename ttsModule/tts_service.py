@@ -53,7 +53,6 @@ class TTSService:
             'total_requests': 0,
             'successful_generations': 0,
             'failed_generations': 0,
-            'total_audio_files': 0
         }
 
         self._initialize_tts()
@@ -173,7 +172,6 @@ class TTSService:
                 )
 
             self.stats['successful_generations'] += 1
-            self.stats['total_audio_files'] += 1
 
             if self.enable_logging:
                 self.logger.info(f"Audio generated successfully: {output_path}")
@@ -199,8 +197,4 @@ class TTSService:
             'successful_generations': self.stats['successful_generations'],
             'failed_generations': self.stats['failed_generations'],
             'success_rate': success_rate,
-            'total_audio_files': self.stats['total_audio_files'],
-            'model_name': self.model_name,
-            'device': 'cuda' if self.use_gpu else 'cpu',
-            'output_directory': str(self.output_dir)
         }
