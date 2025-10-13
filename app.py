@@ -164,7 +164,7 @@ def perform_system_warmup():
 
     if USE_LOCAL_LLM:
         try:
-            intent_recognizer.recognize_intent("Hi", [])
+            intent_recognizer.recognize_intent("sample text", [])
         except Exception as e:
             print(f"    Warning: Intent recognizer warmup query failed: {e}")
 

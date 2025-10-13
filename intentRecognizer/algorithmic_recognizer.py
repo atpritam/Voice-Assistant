@@ -15,6 +15,7 @@ import math
 import Levenshtein
 
 from .intent_recognizer import IntentRecognizerUtils
+from .boostEngine import BoostRuleEngine
 
 # SIMILARITY CALCULATION WEIGHTS
 KEYWORD_WEIGHT = 0.50
@@ -37,14 +38,6 @@ MIN_LENGTH_RATIO = 0.4
 MAX_LENGTH_RATIO = 2.5
 LONG_STRING_THRESHOLD = 15
 
-# CONTEXTUAL BOOST VALUES
-ORDER_ACTION_BOOST = 0.20
-ORDER_DELIVERY_PENALTY = 0.15
-NEGATIVE_SENTIMENT_BOOST = 0.20
-PRICE_SIZE_BOOST = 0.25
-TIME_LOCATION_BOOST = 0.20
-ESCALATION_BOOST = 0.30
-
 # EARLY EXIT THRESHOLDS
 HIGH_SIMILARITY_EARLY_EXIT = 0.92
 
@@ -52,7 +45,6 @@ HIGH_SIMILARITY_EARLY_EXIT = 0.92
 LEVENSHTEIN_SKIP_THRESHOLD = 0.20
 LENGTH_DIFF_FILTER_ENABLED = True
 INVERTED_INDEX_ENABLED = True
-
 
 @dataclass
 class SimilarityMetrics:
@@ -317,100 +309,20 @@ class SimilarityCalculator:
         return final_score, metrics
 
 
-class BoostRuleEngine:
-    """Applies contextual boost rules to intent scores"""
-
-    def __init__(self, intent_critical_keywords: Dict, enable_logging: bool = False):
-        self.intent_critical_keywords = intent_critical_keywords
-        self.enable_logging = enable_logging
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
-
-    def apply_all_boosts(self, query_words: Set[str], intent_scores: Dict) -> Dict:
-        """Apply all boost rules to intent scores"""
-        self._apply_order_action_boost(query_words, intent_scores)
-        self._apply_negative_sentiment_boost(query_words, intent_scores)
-        self._apply_price_size_boost(query_words, intent_scores)
-        self._apply_time_location_boost(query_words, intent_scores)
-        self._apply_escalation_boost(query_words, intent_scores)
-        return intent_scores
-
-    def _boost_intent(self, intent_name: str, intent_scores: Dict, boost: float, label: str = ""):
-        """Helper to apply boost to intent with logging"""
-        if intent_name in intent_scores:
-            original = intent_scores[intent_name]['similarity']
-            intent_scores[intent_name]['similarity'] = min(1.0, original + boost)
-            if self.enable_logging and label:
-                self.logger.debug(f"{label}: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
-
-    def _penalty_intent(self, intent_name: str, intent_scores: Dict, penalty: float, label: str = ""):
-        """Helper to apply penalty to intent with logging"""
-        if intent_name in intent_scores:
-            original = intent_scores[intent_name]['similarity']
-            intent_scores[intent_name]['similarity'] = max(0.0, original - penalty)
-            if self.enable_logging and label:
-                self.logger.debug(f"{label}: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
-
-    def _apply_order_action_boost(self, query_words: Set[str], intent_scores: Dict):
-        """RULE 1 & 2: Order action verb handling"""
-        has_order_action = bool(query_words & self.intent_critical_keywords.get('order', set()))
-        has_order_keyword = 'order' in query_words
-
-        if has_order_action and has_order_keyword:
-            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Order boost")
-
-            has_tracking = bool(query_words & {'track', 'status', 'where', 'eta'})
-            if not has_tracking:
-                self._penalty_intent('delivery', intent_scores, ORDER_DELIVERY_PENALTY, "Delivery penalty")
-
-    def _apply_negative_sentiment_boost(self, query_words: Set[str], intent_scores: Dict):
-        """RULE 3: Negative sentiment for complaints"""
-        negative_words = {'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain',
-                         'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold',
-                         'late', 'issue', 'problem', 'never', 'poor', 'nasty', 'disgusting',
-                         'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale'}
-        negative_count = len(query_words & negative_words)
-
-        if negative_count > 0:
-            boost_amount = min(NEGATIVE_SENTIMENT_BOOST * min(negative_count, 3) / 2, 0.35)
-            self._boost_intent('complaint', intent_scores, boost_amount, f"Negative sentiment boost (x{negative_count})")
-
-    def _apply_price_size_boost(self, query_words: Set[str], intent_scores: Dict):
-        """RULE 4: Price + size indicates menu inquiry"""
-        has_price = bool(query_words & {'price', 'prices', 'cost', 'much'})
-        has_size = bool(query_words & {'small', 'medium', 'large', 'family'})
-
-        if has_price and has_size:
-            self._boost_intent('menu_inquiry', intent_scores, PRICE_SIZE_BOOST, "Price+size boost")
-
-    def _apply_time_location_boost(self, query_words: Set[str], intent_scores: Dict):
-        """RULE 5: Time/location questions boost hours_location"""
-        time_location_context = {'when', 'what time', 'how long', 'until when', 'from when',
-                                'where', 'which', 'what address', 'how far'}
-        hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store'}
-
-        has_question = bool(query_words & time_location_context)
-        has_hours = bool(query_words & hours_keywords)
-
-        if has_question and has_hours:
-            self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST, "Time/location boost")
-
-    def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
-        """RULE 6: Escalation keywords strongly indicate complaint"""
-        escalation_keywords = {'refund', 'manager', 'supervisor', 'speak to', 'talk to',
-                              'compensation', 'money back', 'unacceptable', 'ridiculous'}
-        query_norm = ' '.join(query_words)
-
-        if any(keyword in query_norm for keyword in escalation_keywords):
-            self._boost_intent('complaint', intent_scores, ESCALATION_BOOST, "Escalation boost")
-
-
 class AlgorithmicRecognizer:
     """Optimized pattern-based intent recognition using keywords and string similarity"""
 
     def __init__(self, patterns_file: str = None, enable_logging: bool = False,
-                 min_confidence: float = 0.5, linguistic_resources_file: str = None):
-        """Initialize the optimized algorithmic recognizer"""
+                 min_confidence: float = 0.5, linguistic_resources_file: str = None, use_boost_engine: bool = True):
+        """Initialize the optimized algorithmic recognizer
+s
+        Args:
+            patterns_file: Path to intent patterns JSON
+            enable_logging: Enable detailed logging
+            min_confidence: Minimum confidence threshold
+            linguistic_resources_file: Path to linguistic resources JSON
+            use_boost_engine: Enable domain-specific contextual boost rules
+        """
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.min_confidence = min_confidence
         self.enable_logging = enable_logging
@@ -428,7 +340,9 @@ class AlgorithmicRecognizer:
 
         self.text_normalizer = TextNormalizer(self.filler_words)
         self.similarity_calculator = SimilarityCalculator(self.text_normalizer, self.synonym_lookup)
-        self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, enable_logging)
+        self.use_boost_engine = use_boost_engine
+        if self.use_boost_engine:
+            self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, enable_logging)
 
         self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer) if INVERTED_INDEX_ENABLED else None
 
@@ -583,7 +497,9 @@ class AlgorithmicRecognizer:
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
-        intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores)
+        if self.use_boost_engine:
+            intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores, query)
+
         return self._select_best_intent(intent_scores)
 
     def recognize(self, query: str) -> AlgorithmicResult:

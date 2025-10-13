@@ -239,7 +239,7 @@ class LLMRecognizer:
 3. Spell out prices (e.g., 'twelve dollars' instead of $12)
 4. No multiple questions in one response"""
 
-        prompt = f"""You are a helpful voice customer support assistant for {self.res_info['name']}, a pizza restaurant.
+        prompt = f"""You are a helpful voice customer support assistant for {self.res_info['name']}, a {self.res_info.get('business_type', 'business')}.
 Generate ONE natural, conversational response that directly addresses the customer's query.
 This response will be used for TTS so make the response adhere to common TTS text rules.
 RESTAURANT INFO: {json.dumps(self.res_info, indent=2)}

@@ -51,7 +51,8 @@
   "intent_critical_keywords": {
     "order": [
       "order", "buy", "purchase", "want", "get", "place", "make",
-      "grab", "need", "start", "begin", "ready", "like"
+      "grab", "need", "start", "begin", "ready", "same", "usual",
+      "regular", "typical", "always", "normally"
     ],
     "complaint": [
       "wrong", "cold", "late", "missing", "burnt", "complaint",
@@ -74,7 +75,7 @@
     "delivery": [
       "track", "status", "eta", "arrive", "fee", "charge",
       "where", "coming", "delivering", "progress", "time",
-      "long", "wait", "minimum", "area", "zone"
+      "long", "wait", "minimum", "area", "zone", "estimated arrival"
     ]
   }
 }

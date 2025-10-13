@@ -119,7 +119,8 @@ EDGE_CASES_DATASET = [
     # Context dependent
     ("What about the large one", "menu_inquiry"),
     ("I will take that one", "order"),
-    ("Same as before", "order"),
+    ("Get me my regular", "order"),
+    ("Same order as before", "order")
 ]
 
 

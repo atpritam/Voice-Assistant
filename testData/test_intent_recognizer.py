@@ -26,6 +26,7 @@ INCLUDE_EDGE_CASES = True
 
 # Default pipeline
 ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
+USE_BOOST_ENGINE = True # Contextual boosting for Algorithmic layer
 THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
 
 # CRITICAL: Enable TEST_MODE for pure intent recognition testing
@@ -57,6 +58,7 @@ def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_
     return IntentRecognizer(
         enable_logging=log,
         enable_algorithmic=a, enable_semantic=s, enable_llm=l,
+        use_boost_engine=USE_BOOST_ENGINE,
         algorithmic_threshold=ta or 0.6, semantic_threshold=ts or 0.5,
         semantic_model=SEMANTIC_MODEL, llm_model=LLM_MODEL,
         min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE,
@@ -65,6 +67,9 @@ def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_
         ollama_base_url=OLLAMA_BASE_URL
     )
 
+def warmup_pipeline(recognizer):
+    if ENABLE_SEMANTIC or (ENABLE_LLM and USE_LOCAL_LLM) :
+        recognizer.recognize_intent("sample text", [])
 
 def run_comprehensive_test():
     print(f"\nPipeline: {describe_pipeline(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM)}")
@@ -75,9 +80,8 @@ def run_comprehensive_test():
     print(f"Mode: {'TEST MODE (intent recognition only)' if TEST_MODE else 'PRODUCTION MODE (with responses)'}\n")
 
     try:
-        start = time.time()
         recognizer = init_recognizer(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM, log=True)
-        print(f"\n✓ Initialized in {format_time(time.time() - start)}\n")
+        warmup_pipeline(recognizer)
     except Exception as e:
         print(f"INIT ERROR: {e}")
         traceback.print_exc()
@@ -126,6 +130,8 @@ def run_comparative_analysis():
     print(f"Semantic Model: {SEMANTIC_MODEL}")
     print(f"LLM Model: {LLM_MODEL}")
     print(f"Mode: {'TEST MODE (intent recognition only)' if TEST_MODE else 'Test Mode Disabled'}")
+    print(f"Boost Engine: {USE_BOOST_ENGINE}")
+    print(f"Edge Cases Included: {INCLUDE_EDGE_CASES}\n")
     print(f"\nRunning tests on {len(test_data)} queries...\n")
     if INCLUDE_EDGE_CASES:
         print("Edge Cases Included")
@@ -142,25 +148,32 @@ def run_comparative_analysis():
 
     results = []
     for name, a, s, l in configs:
-        print(f"\n{'─'*80}\n{name}\n{'─'*80}")
+        print(f"\n{'─' * 80}\n{name}\n{'─' * 80}")
         try:
             rec = init_recognizer(a, s, l, log=False)
+            warmup_pipeline(rec)
             t0 = time.time()
             ev = rec.evaluate(test_data)
             t = time.time() - t0
             results.append({
                 "name": name,
                 "acc": ev["accuracy"],
+                "correct": ev["correct"],
+                "unknown": sum(1 for r in ev["detailed_results"] if r["predicted"] == "unknown"),
+                "total": ev["total_queries"],
                 "time": t,
-                "qps": len(test_data)/t,
+                "qps": len(test_data) / t,
                 "algo": ev.get("algo_used_count", 0),
                 "sem": ev.get("semantic_used_count", 0),
                 "llm": ev.get("llm_used_count", 0)
             })
-            print(f"✓ Accuracy: {ev['accuracy']:.2%} \nTime: {format_time(t)}")
+            print(
+                f"✓ Accuracy: {ev['accuracy']:.2%} ({ev['correct']}/{ev['total_queries']} correct)\nTime: {format_time(t)}")
         except Exception as e:
             print(f"✗ {name} failed: {e}")
-            results.append({"name": name, "acc": 0, "time": 0, "qps": 0, "algo": 0, "sem": 0, "llm": 0})
+            results.append(
+                {"name": name, "acc": 0, "correct": 0, "total": len(test_data), "time": 0, "qps": 0, "algo": 0,
+                 "sem": 0, "llm": 0})
 
     print("\n" + "=" * 80 + "\n")
     print("\nPipeline Comparison\n" + "-"*80)
@@ -172,10 +185,10 @@ def run_comparative_analysis():
             f"{r['name']:<25} {r['acc']:>8.2%}  {format_time(r['time']):>10}  {format_time(avg_time):>8}  {r['qps']:>8.1f}")
 
     print("\nLAYER USAGE COMPARISON\n" + "-"*80)
-    print(f"{'Configuration':<25} {'Algo':<8} {'Semantic':<10} {'LLM':<8}")
+    print(f"{'Configuration':<25} {'Algo':<8} {'Semantic':<10} {'LLM':<8} {'Unrecognized Intent':<12}")
     print("-"*80)
     for r in results:
-        print(f"{r['name']:<25} {r['algo']:>6}  {r['sem']:>8}  {r['llm']:>6}")
+        print(f"{r['name']:<25} {r['algo']:>6}  {r['sem']:>8}  {r['llm']:>6} {r['unknown']:>8}")
     print()
 
 

@@ -86,6 +86,7 @@ class IntentRecognizer:
             enable_logging: bool = False,
             min_confidence: float = DEFAULT_MIN_CONFIDENCE,
             enable_algorithmic: bool = True,
+            use_boost_engine: bool = True,
             enable_semantic: bool = True,
             enable_llm: bool = True,
             algorithmic_threshold: float = DEFAULT_ALGORITHMIC_THRESHOLD,
@@ -102,6 +103,7 @@ class IntentRecognizer:
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.min_confidence = min_confidence
         self.enable_algorithmic = enable_algorithmic
+        self.use_boost_engine = use_boost_engine
         self.enable_semantic = enable_semantic
         self.enable_llm = enable_llm
         self.test_mode = test_mode
@@ -143,7 +145,8 @@ class IntentRecognizer:
             self.algorithmic_recognizer = AlgorithmicRecognizer(
                 patterns_file=self.patterns_file,
                 enable_logging=self.enable_logging,
-                min_confidence=self.min_confidence
+                min_confidence=self.min_confidence,
+                use_boost_engine=self.use_boost_engine,
             )
             if self.enable_logging:
                 self.logger.info(" Algorithmic layer initialized")
