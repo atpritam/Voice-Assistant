@@ -30,7 +30,7 @@ Each layer can be independently enabled or disabled with configurable confidence
 
 ### Prerequisites
 
-- Python >3.8 and <=3.11
+- Python >3.8 ; <=3.11
 - Virtual environment (recommended)
 - CUDA-compatible GPU (minimum 4GB of VRAM)
 - FFmpeg (required for audio processing)
@@ -62,8 +62,11 @@ sudo apt install ffmpeg espeak-ng
 ### Python Dependencies
 
 ```bash
+# Clone the repository
+git clone https://github.com/atpritam/Voice-Assistant.git
+cd Voice-Assistant
 # Create virtual environment
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
