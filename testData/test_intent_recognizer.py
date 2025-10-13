@@ -5,7 +5,7 @@ Run:
   python -m testData.test_intent_recognizer --comparative
 """
 
-import sys, os, time, argparse, traceback
+import sys, os, time, argparse, traceback, logging
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from intentRecognizer.intent_recognizer import IntentRecognizer
@@ -30,6 +30,12 @@ THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
 
 # CRITICAL: Enable TEST_MODE for pure intent recognition testing
 TEST_MODE = True
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='- %(name)s - %(levelname)s - %(message)s',
+    force=True
+)
 
 def format_time(s):
     return f"{s*1000:.1f}ms" if s < 1 else f"{s:.2f}s"

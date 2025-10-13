@@ -243,7 +243,7 @@ class LLMRecognizer:
 Generate ONE natural, conversational response that directly addresses the customer's query.
 This response will be used for TTS so make the response adhere to common TTS text rules.
 RESTAURANT INFO: {json.dumps(self.res_info, indent=2)}
-Usual order flow: Customer picks their order → offer sides or drinks → ask pickup or delivery → get name → ask address if its a delivery -> confirm and close.
+Usual order flow: Customer chooses → offer sides or drinks → ask pickup or delivery → get name → ask address if its a delivery -> confirm and close.
 AVAILABLE INTENTS: {', '.join(valid_intents)}
 {intent_descriptions}
 

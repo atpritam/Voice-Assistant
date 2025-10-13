@@ -1,5 +1,6 @@
 """
 Automatic Speech Recognition Service using OpenAI Whisper-tiny
+With integrated audio preprocessing for improved accuracy
 """
 
 import os
@@ -15,15 +16,18 @@ try:
 except ImportError:
     WHISPER_AVAILABLE = False
 
+from .audio_preprocessor import AudioPreprocessor
 
 class ASRService:
-    """Automatic Speech Recognition service using Whisper-tiny"""
+    """Automatic Speech Recognition service using Whisper-tiny with preprocessing"""
 
     def __init__(
         self,
         model_size: str = "tiny.en",
         device: str = "auto",
-        enable_logging: bool = False
+        enable_logging: bool = False,
+        enable_preprocessing: bool = True,
+        noise_reduction_strength: float = 0.5
     ):
         if not WHISPER_AVAILABLE:
             raise ImportError(
@@ -33,20 +37,28 @@ class ASRService:
         self.model_size = model_size
         self.device = self._determine_device(device)
         self.enable_logging = enable_logging
+        self.enable_preprocessing = enable_preprocessing
 
         if enable_logging:
             self.logger = logging.getLogger(__name__)
 
         self.model = None
+        self.preprocessor = None
+
         self.stats = {
             'total_requests': 0,
             'successful_transcriptions': 0,
             'failed_transcriptions': 0,
             'total_audio_duration': 0.0,
-            'total_processing_time': 0.0
+            'total_processing_time': 0.0,
+            'total_preprocessing_time': 0.0,
+            'total_transcription_time': 0.0
         }
 
         self._initialize_model()
+
+        if enable_preprocessing:
+            self._initialize_preprocessor(noise_reduction_strength)
 
     def _determine_device(self, device: str) -> str:
         """Determine the best available device"""
@@ -70,6 +82,39 @@ class ASRService:
                 self.logger.error(f"Failed to initialize Whisper model: {e}")
             raise RuntimeError(f"Whisper initialization failed: {e}")
 
+    def _initialize_preprocessor(self, noise_reduction_strength: float):
+        """Initialize audio preprocessor"""
+        try:
+            self.preprocessor = AudioPreprocessor(
+                target_sample_rate=16000,
+                enable_noise_reduction=True,
+                enable_normalization=True,
+                enable_silence_trim=True,
+                noise_reduction_strength=noise_reduction_strength,
+                enable_logging=self.enable_logging
+            )
+
+            if self.enable_logging:
+                self.logger.info("Audio preprocessor initialized")
+
+        except ImportError as e:
+            if self.enable_logging:
+                self.logger.warning(
+                    f"Audio preprocessor initialization failed: {e}\n"
+                    "Install with: pip install librosa soundfile noisereduce\n"
+                    "Continuing without preprocessing..."
+                )
+            self.enable_preprocessing = False
+            self.preprocessor = None
+        except Exception as e:
+            if self.enable_logging:
+                self.logger.warning(
+                    f"Audio preprocessor initialization failed: {e}\n"
+                    "Continuing without preprocessing..."
+                )
+            self.enable_preprocessing = False
+            self.preprocessor = None
+
     def transcribe_audio(
         self,
         audio_path: str
@@ -92,13 +137,29 @@ class ASRService:
             return None, 0.0
 
         try:
-            start_time = time.time()
+            total_start_time = time.time()
+            processed_path = audio_path
 
+            if self.enable_preprocessing and self.preprocessor:
+                processed_path, preprocess_time = self.preprocessor.process_audio_file(audio_path)
+
+                if processed_path is None:
+                    if self.enable_logging:
+                        self.logger.warning("Preprocessing failed, using original audio")
+                    processed_path = audio_path
+                else:
+                    self.stats['total_preprocessing_time'] += preprocess_time
+                    if self.enable_logging:
+                        self.logger.debug(f"Preprocessing completed in {preprocess_time*1000:.1f}ms")
+
+            transcription_start = time.time()
             result = self.model.transcribe(
-                audio_path,
+                processed_path,
                 language="en",
                 fp16=False if self.device == "cpu" else True
             )
+            transcription_time = time.time() - transcription_start
+            self.stats['total_transcription_time'] += transcription_time
 
             transcribed_text = result["text"].strip()
 
@@ -106,22 +167,37 @@ class ASRService:
                 if self.enable_logging:
                     self.logger.warning("No speech detected in audio")
                 self.stats['failed_transcriptions'] += 1
+
+                if processed_path != audio_path and os.path.exists(processed_path):
+                    try:
+                        os.unlink(processed_path)
+                    except:
+                        pass
+
                 return None, 0.0
 
             segments = result.get("segments", [])
             avg_logprob = sum(s.get("avg_logprob", -1.0) for s in segments) / len(segments) if segments else -1.0
             confidence = self._normalize_confidence(avg_logprob)
 
-            processing_time = time.time() - start_time
+            total_processing_time = time.time() - total_start_time
 
             self.stats['successful_transcriptions'] += 1
-            self.stats['total_processing_time'] += processing_time
+            self.stats['total_processing_time'] += total_processing_time
 
             if self.enable_logging:
                 self.logger.info(
                     f"Transcription: '{transcribed_text[:50]}...' "
-                    f"(confidence: {confidence:.2f}, processing: {processing_time:.2f}s)"
+                    f"(confidence: {confidence:.2f}, "
+                    f"total: {total_processing_time*1000:.1f}ms, "
+                    f"transcription: {transcription_time*1000:.1f}ms)"
                 )
+
+            if processed_path != audio_path and os.path.exists(processed_path):
+                try:
+                    os.unlink(processed_path)
+                except:
+                    pass
 
             return transcribed_text, confidence
 
@@ -188,19 +264,39 @@ class ASRService:
             else 0.0
         )
 
-        avg_processing_time = (
+        avg_total_time = (
             self.stats['total_processing_time'] / self.stats['successful_transcriptions']
             if self.stats['successful_transcriptions'] > 0
             else 0.0
         )
 
-        return {
+        avg_transcription_time = (
+            self.stats['total_transcription_time'] / self.stats['successful_transcriptions']
+            if self.stats['successful_transcriptions'] > 0
+            else 0.0
+        )
+
+        avg_preprocessing_time = (
+            self.stats['total_preprocessing_time'] / self.stats['successful_transcriptions']
+            if self.stats['successful_transcriptions'] > 0 and self.enable_preprocessing
+            else 0.0
+        )
+
+        stats_dict = {
             'total_requests': self.stats['total_requests'],
             'successful_transcriptions': self.stats['successful_transcriptions'],
             'failed_transcriptions': self.stats['failed_transcriptions'],
             'success_rate': success_rate,
             'total_processing_time': self.stats['total_processing_time'],
-            'avg_processing_time': avg_processing_time,
+            'avg_total_processing_time_ms': avg_total_time * 1000,
+            'avg_transcription_time_ms': avg_transcription_time * 1000,
             'model_size': self.model_size,
-            'device': self.device
+            'device': self.device,
+            'preprocessing_enabled': self.enable_preprocessing
         }
+
+        if self.enable_preprocessing and self.preprocessor:
+            stats_dict['avg_preprocessing_time_ms'] = avg_preprocessing_time * 1000
+            stats_dict['preprocessing_stats'] = self.preprocessor.get_statistics()
+
+        return stats_dict
