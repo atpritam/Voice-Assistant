@@ -42,7 +42,7 @@ LONG_STRING_THRESHOLD = 15
 HIGH_SIMILARITY_EARLY_EXIT = 0.92
 
 # OPTIMIZATION FLAGS
-LEVENSHTEIN_SKIP_THRESHOLD = 0.20
+LEVENSHTEIN_SKIP_THRESHOLD = 0.17
 LENGTH_DIFF_FILTER_ENABLED = True
 INVERTED_INDEX_ENABLED = True
 
@@ -356,7 +356,6 @@ s
             'avg_confidence': [],
             'intents_evaluated': [],
             'patterns_evaluated': [],
-            'total_patterns_checked': 0
         }
 
     def _preprocess_patterns(self):
@@ -431,7 +430,6 @@ s
                 break
 
         self.stats['patterns_evaluated'].append(len(patterns_to_check))
-        self.stats['total_patterns_checked'] += len(patterns_to_check)
 
         return IntentEvaluation(max_similarity, best_pattern, best_breakdown)
 
@@ -548,5 +546,4 @@ s
             'average_confidence': avg_conf,
             'avg_intents_evaluated_per_query': avg_intents_checked,
             'avg_patterns_evaluated_per_query': avg_patterns_checked,
-            'total_patterns_checked': self.stats['total_patterns_checked'],
         }

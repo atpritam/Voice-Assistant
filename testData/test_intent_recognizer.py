@@ -89,8 +89,6 @@ def run_comprehensive_test():
 
     test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
     print(f"Running tests on {len(test_data)} queries...\n")
-    if INCLUDE_EDGE_CASES:
-        print("Edge Cases Included")
 
     start = time.time()
     ev = recognizer.evaluate(test_data)

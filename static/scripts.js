@@ -16,6 +16,7 @@ const DOM = {
   chatResponseAudio: null,
 }
 
+// Recording state
 let mediaRecorder = null
 let audioChunks = []
 let isRecording = false
@@ -23,6 +24,28 @@ let isProcessing = false
 let isConnected = false
 let currentMode = "voice"
 let conversationHistory = []
+
+// Continuous conversation state
+let conversationMode = false
+let audioStream = null
+let audioContext = null
+let analyser = null
+let silenceTimeout = null
+let speechDetected = false
+let inactivityTimeout = null
+
+// VAD Configuration
+const VAD_CONFIG = {
+  silenceThreshold: 0.01,
+  silenceDuration: 1200,
+  minSpeechDuration: 500,
+  volumeThreshold: 0.02,
+  inactivityTimeout: 3200,
+}
+
+let speechStartTime = null
+let lastSoundTime = null
+let lastActivityTime = null
 
 function initializeDOM() {
   DOM.orb = document.getElementById("orb")
@@ -66,7 +89,7 @@ function handleConnect() {
   console.log("Connected to server")
   isConnected = true
   updateConnectionStatus(true)
-  updateStatusMessage("Tap to speak")
+  updateStatusMessage("Tap to start conversation")
   socket.emit("clear_history")
   conversationHistory = []
 }
@@ -76,6 +99,9 @@ function handleDisconnect() {
   isConnected = false
   updateConnectionStatus(false)
   updateStatusMessage("Disconnected")
+  if (conversationMode) {
+    stopConversationMode()
+  }
 }
 
 function updateConnectionStatus(connected) {
@@ -96,27 +122,195 @@ function handleOrbClick() {
     updateStatusMessage("Not connected")
     return
   }
-  isRecording ? stopRecording() : startRecording()
+
+  if (conversationMode) {
+    stopConversationMode()
+  } else {
+    startConversationMode()
+  }
 }
 
-async function startRecording() {
+async function startConversationMode() {
   if (isProcessing) {
     console.log("Still processing previous request")
     return
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    audioStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,
         sampleRate: 16000,
         echoCancellation: true,
         noiseSuppression: true,
+        autoGainControl: true,
       },
     })
 
+    conversationMode = true
+    lastActivityTime = Date.now()
+    setupVAD()
+    startInactivityTimer()
+    updateStatusMessage("Listening")
+    setOrbState("listening")
+    console.log("Conversation mode started")
+
+  } catch (error) {
+    console.error("Error accessing microphone:", error)
+    updateStatusMessage("Microphone access denied")
+    conversationMode = false
+  }
+}
+
+function stopConversationMode() {
+  console.log("Stopping conversation mode")
+  conversationMode = false
+
+  if (isRecording) {
+    stopRecording()
+  }
+
+  if (audioStream) {
+    audioStream.getTracks().forEach(track => track.stop())
+    audioStream = null
+  }
+
+  if (audioContext) {
+    audioContext.close()
+    audioContext = null
+  }
+
+  if (silenceTimeout) {
+    clearTimeout(silenceTimeout)
+    silenceTimeout = null
+  }
+
+  if (inactivityTimeout) {
+    clearTimeout(inactivityTimeout)
+    inactivityTimeout = null
+  }
+
+  analyser = null
+  speechDetected = false
+  speechStartTime = null
+  lastSoundTime = null
+  lastActivityTime = null
+
+  setOrbState("")
+  updateStatusMessage("Tap to start conversation")
+  console.log("Conversation mode stopped")
+}
+
+function setupVAD() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  const source = audioContext.createMediaStreamSource(audioStream)
+
+  analyser = audioContext.createAnalyser()
+  analyser.fftSize = 2048
+  analyser.smoothingTimeConstant = 0.8
+
+  source.connect(analyser)
+
+  monitorAudioLevel()
+}
+
+function monitorAudioLevel() {
+  if (!conversationMode || !analyser) return
+
+  const bufferLength = analyser.frequencyBinCount
+  const dataArray = new Uint8Array(bufferLength)
+
+  function checkAudioLevel() {
+    if (!conversationMode) return
+
+    analyser.getByteTimeDomainData(dataArray)
+
+    let sum = 0
+    for (let i = 0; i < bufferLength; i++) {
+      const normalized = (dataArray[i] - 128) / 128
+      sum += normalized * normalized
+    }
+    const rms = Math.sqrt(sum / bufferLength)
+
+    const isSpeaking = rms > VAD_CONFIG.volumeThreshold
+    const now = Date.now()
+
+    if (isSpeaking) {
+      lastSoundTime = now
+      lastActivityTime = now
+      resetInactivityTimer()
+
+      if (!speechDetected && !isRecording && !isProcessing) {
+        speechDetected = true
+        speechStartTime = now
+        startRecording()
+      }
+
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+        silenceTimeout = null
+      }
+
+    } else if (speechDetected && isRecording) {
+      if (!silenceTimeout) {
+        silenceTimeout = setTimeout(() => {
+          const speechDuration = Date.now() - speechStartTime
+
+          if (speechDuration >= VAD_CONFIG.minSpeechDuration) {
+            console.log(`Speech detected for ${speechDuration}ms, processing`)
+            stopRecording()
+          } else {
+            console.log(`Speech too short (${speechDuration}ms), ignoring`)
+            speechDetected = false
+            speechStartTime = null
+            if (isRecording) {
+              cancelRecording()
+            }
+          }
+
+          silenceTimeout = null
+        }, VAD_CONFIG.silenceDuration)
+      }
+    }
+
+    requestAnimationFrame(checkAudioLevel)
+  }
+
+  checkAudioLevel()
+}
+
+function startInactivityTimer() {
+  if (inactivityTimeout) {
+    clearTimeout(inactivityTimeout)
+  }
+
+  inactivityTimeout = setTimeout(() => {
+    if (conversationMode && !isRecording && !isProcessing) {
+      console.log("No activity detected for 4 seconds, exiting conversation mode")
+      updateStatusMessage("No activity detected")
+      setTimeout(() => {
+        stopConversationMode()
+      }, 1000)
+    }
+  }, VAD_CONFIG.inactivityTimeout)
+}
+
+function resetInactivityTimer() {
+  if (conversationMode && !isProcessing) {
+    startInactivityTimer()
+  }
+}
+
+async function startRecording() {
+  if (isProcessing || isRecording) {
+    return
+  }
+
+  try {
     audioChunks = []
-    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" })
+    mediaRecorder = new MediaRecorder(audioStream, {
+      mimeType: "audio/webm;codecs=opus"
+    })
 
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) audioChunks.push(event.data)
@@ -127,11 +321,10 @@ async function startRecording() {
     mediaRecorder.start()
     isRecording = true
     setOrbState("listening")
-    updateStatusMessage("Listening")
     console.log("Recording started")
   } catch (error) {
-    console.error("Error accessing microphone:", error)
-    updateStatusMessage("Microphone access denied")
+    console.error("Error starting recording:", error)
+    speechDetected = false
   }
 }
 
@@ -139,14 +332,37 @@ function stopRecording() {
   if (mediaRecorder && isRecording) {
     mediaRecorder.stop()
     isRecording = false
-    mediaRecorder.stream.getTracks().forEach((track) => track.stop())
+    speechDetected = false
+    speechStartTime = null
     setOrbState("processing")
     updateStatusMessage("Processing")
     console.log("Recording stopped")
   }
 }
 
+function cancelRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop()
+    isRecording = false
+    audioChunks = []
+
+    if (conversationMode) {
+      setOrbState("listening")
+      updateStatusMessage("Listening")
+    }
+  }
+}
+
 async function handleRecordingStop() {
+  if (audioChunks.length === 0) {
+    console.log("No audio data recorded")
+    if (conversationMode) {
+      setOrbState("listening")
+      updateStatusMessage("Listening")
+    }
+    return
+  }
+
   isProcessing = true
   const audioBlob = new Blob(audioChunks, { type: "audio/webm" })
   const reader = new FileReader()
@@ -155,7 +371,6 @@ async function handleRecordingStop() {
 }
 
 function handleTranscriptionStatus(data) {
-  console.log("Transcription status:", data.status)
   if (data.status === "processing") {
     setOrbState("processing")
     updateStatusMessage("Transcribing")
@@ -167,8 +382,14 @@ function handleTranscriptionResult(data) {
 
   if (data.error) {
     updateStatusMessage(data.error)
-    setOrbState("")
-    isProcessing = false
+    if (conversationMode) {
+      setOrbState("listening")
+      updateStatusMessage("Listening")
+      isProcessing = false
+    } else {
+      setOrbState("")
+      isProcessing = false
+    }
     return
   }
 
@@ -187,8 +408,13 @@ function handleVoiceResponse(data) {
   if (data.audio_url) {
     playAudio(data.audio_url, DOM.responseAudio, "speaking", "Speaking")
   } else {
-    setOrbState("")
-    updateStatusMessage("Tap to speak")
+    if (conversationMode) {
+      setOrbState("listening")
+      updateStatusMessage("Listening")
+    } else {
+      setOrbState("")
+      updateStatusMessage("Tap to speak")
+    }
     isProcessing = false
   }
 }
@@ -219,7 +445,12 @@ function handleError(data) {
 
   if (currentMode === "voice") {
     updateStatusMessage("Error: " + data.message)
-    setOrbState("")
+    if (conversationMode) {
+      setOrbState("listening")
+      updateStatusMessage("Listening")
+    } else {
+      setOrbState("")
+    }
     isProcessing = false
   } else {
     removeLoadingIndicator()
@@ -262,9 +493,17 @@ function playAudio(audioUrl, audioElement, orbState = null, statusMessage = null
 }
 
 function handleAudioEnded() {
-  setOrbState("")
-  updateStatusMessage("Tap to speak")
   isProcessing = false
+
+  if (conversationMode) {
+    setOrbState("listening")
+    updateStatusMessage("Listening")
+    lastActivityTime = Date.now()
+    resetInactivityTimer()
+  } else {
+    setOrbState("")
+    updateStatusMessage("Tap to speak")
+  }
 
   setTimeout(() => {
     DOM.userTranscript.classList.remove("show")
@@ -274,6 +513,10 @@ function handleAudioEnded() {
 
 function toggleMode() {
   if (currentMode === "voice") {
+    if (conversationMode) {
+      stopConversationMode()
+    }
+
     currentMode = "chat"
     DOM.voiceContainer.classList.add("hidden")
     DOM.chatContainer.classList.add("active")

@@ -85,7 +85,7 @@ body {
   animation: orbPulse 1.5s ease-in-out infinite, gradientShiftListening 3s ease-in-out infinite;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
   background-size: 200% 200%;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.1), 0 0 80px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 60px rgba(102, 126, 234, 0.4), 0 0 100px rgba(102, 126, 234, 0.2);
   filter: grayscale(0);
 }
 
@@ -99,7 +99,7 @@ body {
   animation: orbPulse 1s ease-in-out infinite, gradientShiftSpeaking 2s ease-in-out infinite;
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #4facfe 100%);
   background-size: 200% 200%;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.1), 0 0 80px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 60px rgba(79, 172, 254, 0.4), 0 0 100px rgba(79, 172, 254, 0.2);
   filter: grayscale(0);
 }
 
@@ -115,6 +115,11 @@ body {
 
 .orb.connected ~ .orb-ring {
   border-color: rgba(102, 126, 234, 0.3);
+}
+
+.orb.listening ~ .orb-ring {
+  border-color: rgba(102, 126, 234, 0.5);
+  animation: ringPulseActive 2s ease-in-out infinite;
 }
 
 .orb-ring.ring-2 {
@@ -186,8 +191,8 @@ body {
 
 .mode-toggle {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 45px;
+  right: 45px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -328,8 +333,8 @@ body {
   display: flex;
   gap: 6px;
   align-items: center;
-    justify-content: center;
-    flex-direction: row;
+  justify-content: center;
+  flex-direction: row;
   padding: 14px 18px;
   max-width: 120px;
 }
@@ -432,6 +437,18 @@ body {
   }
 }
 
+@keyframes ringPulseActive {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.3;
+  }
+}
+
 @keyframes messageSlideIn {
   from {
     opacity: 0;
@@ -519,7 +536,7 @@ body {
   }
 
   .mode-toggle {
-    bottom: 16px;
+    bottom: 76px;
     right: 16px;
     width: 48px;
     height: 48px;

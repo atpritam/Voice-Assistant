@@ -49,7 +49,6 @@ class ASRService:
             'total_requests': 0,
             'successful_transcriptions': 0,
             'failed_transcriptions': 0,
-            'total_audio_duration': 0.0,
             'total_processing_time': 0.0,
             'total_preprocessing_time': 0.0,
             'total_transcription_time': 0.0
@@ -289,14 +288,7 @@ class ASRService:
             'success_rate': success_rate,
             'total_processing_time': self.stats['total_processing_time'],
             'avg_total_processing_time_ms': avg_total_time * 1000,
-            'avg_transcription_time_ms': avg_transcription_time * 1000,
-            'model_size': self.model_size,
-            'device': self.device,
             'preprocessing_enabled': self.enable_preprocessing
         }
-
-        if self.enable_preprocessing and self.preprocessor:
-            stats_dict['avg_preprocessing_time_ms'] = avg_preprocessing_time * 1000
-            stats_dict['preprocessing_stats'] = self.preprocessor.get_statistics()
 
         return stats_dict

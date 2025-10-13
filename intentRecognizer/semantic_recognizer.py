@@ -78,7 +78,6 @@ class SemanticRecognizer:
             'total_queries': 0,
             'intent_distribution': {},
             'avg_confidence': [],
-            'model_name': model_name
         }
 
     def _load_model(self):
@@ -298,8 +297,4 @@ class SemanticRecognizer:
             'total_queries_processed': self.stats['total_queries'],
             'intent_distribution': self.stats['intent_distribution'],
             'average_confidence': avg_conf,
-            'model_name': self.stats['model_name'],
-            'total_patterns_encoded': sum(len(data['patterns']) for data in self.intent_embeddings.values()),
-            'cache_enabled': self.use_cache,
-            'cache_location': str(CACHE_DIR) if self.use_cache else None
         }
