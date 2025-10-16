@@ -1,0 +1,67 @@
+
+Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
+Semantic Model: all-MiniLM-L6-v2
+LLM Model: llama3.2:3b-instruct-q4_K_M
+Mode: TEST MODE (intent recognition only)
+
+Boost Engine: True
+Edge Cases Included: True
+
+Running tests on 300 queries...
+
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 94.33%
+Correct: 283 / 300
+Avg Query Time: 55.2ms
+Queries/s: 18.1
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 231 ( 77.0%)  Acc: 96.54%
+Semantic    :  48 ( 16.0%)  Acc: 87.50%
+LLM         :  21 (  7.0%)  Acc: 85.71%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 195 ( 65.0%)
+Medium (0.6-0.8)      :  88 ( 29.3%)
+Low (<0.6)            :  17 (  5.7%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'I'll take a veggie deluxe no mushrooms' -> menu_inquiry (exp: order, conf: 0.59, layer: semantic)
+
+2. 'The crust is hard as a rock' -> menu_inquiry (exp: complaint, conf: 0.60, layer: semantic)
+
+3. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+
+4. 'What's in your supreme pizza' -> order (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+
+5. 'Amazing service as always' -> complaint (exp: general, conf: 0.82, layer: algorithmic)
+
+6. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.81, layer: algorithmic)
+
+7. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.50, layer: semantic)
+
+8. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
+
+9. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> order (exp: menu_inquiry, conf: 0.68, layer: semantic)
+
+10. 'I want to order but first tell me your hours' -> order (exp: hours_location, conf: 0.90, layer: algorithmic)
+
+11. 'I saw on the menu you have gluten free but can I order that for delivery' -> menu_inquiry (exp: order, conf: 0.78, layer: semantic)
+
+12. 'I will take that one' -> menu_inquiry (exp: order, conf: 0.80, layer: llm)
+
+13. 'Make it a large' -> menu_inquiry (exp: order, conf: 0.90, layer: llm)
+
+14. 'Same as last time' -> menu_inquiry (exp: order, conf: 0.65, layer: llm)
+
+15. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
+
+16. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
+
+17. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.89, layer: algorithmic)

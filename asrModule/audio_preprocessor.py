@@ -30,7 +30,7 @@ class AudioPreprocessor:
             enable_noise_reduction: bool = True,
             enable_normalization: bool = True,
             enable_silence_trim: bool = True,
-            noise_reduction_strength: float = 0.5,
+            noise_reduction_strength: float = 0.25,
             enable_logging: bool = False
     ):
         if not DEPENDENCIES_AVAILABLE:

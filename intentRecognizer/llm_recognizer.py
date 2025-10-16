@@ -219,12 +219,12 @@ class LLMRecognizer:
         """Generate system prompt for intent classification and response generation"""
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
         intent_descriptions = """Intent descriptions:
-- order: User wants to place an order, buy pizza, or start ordering process
-- complaint: User has a problem, complaint, or issue with their order, wants refund or escalate
-- hours_location: User asks about business hours, location, or address
+- order: User wants to place an order
+- complaint: User has a problem, or issue with their order, wants refund or escalate
+- hours_location: User asks about business hours, location
 - menu_inquiry: User asks about menu items, toppings, prices, or options
 - delivery: User asks about delivery status, tracking, fees, or timing
-- general: Greetings, thanks, confirmations (hello, thanks, ok, sure, etc.)"""
+- general: Greetings, thanks, confirmations"""
 
         if self.test_mode:
             prompt = f"Intent classification for pizza restaurant. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"
@@ -233,25 +233,25 @@ class LLMRecognizer:
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
-        tts_rules = """Some of CRITICAL RESPONSE RULES for TTS:
-1. Keep responses SHORT (1-3 sentences max under 50 words preferably)
+        tts_rules = """ 1. Keep responses SHORT (1-3 sentences max under 50 words preferably)
 2. NO special formatting: no $, %, parentheses, brackets, colons, semicolons
 3. Spell out prices (e.g., 'twelve dollars' instead of $12)
 4. No multiple questions in one response"""
 
-        prompt = f"""You are a helpful voice customer support assistant for {self.res_info['name']}, a {self.res_info.get('business_type', 'business')}.
-Generate ONE natural, conversational response that directly addresses the customer's query.
-This response will be used for TTS so make the response adhere to common TTS text rules.
-RESTAURANT INFO: {json.dumps(self.res_info, indent=2)}
-Usual order flow: Customer chooses → offer sides or drinks → ask pickup or delivery → get name → ask address if its a delivery -> confirm and close.
-AVAILABLE INTENTS: {', '.join(valid_intents)}
+        prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
+Generate ONE natural, conversational response that directly addresses the query.
+INFO: {json.dumps(self.res_info, indent=2)}
+Order flow:
+1) Customer chooses something
+2) You offer sides or drinks
+3) You ask if they'd like to pick up or get the order delivered
+4) get their name
+5) ask address if its a delivery
+6) confirm and close.
+AVAILABLE INTENTS:
 {intent_descriptions}
 
 {tts_rules}"""
-
-        if recognized_intent:
-            prompt += f"""\n\nPrevious intent classifier layer suggested: {recognized_intent} intent
-The previous layer does not have full conversational context, if you are highly confident that the intent is incorrect, provide the correct intent with a confidence 0 to 1 based on context."""
 
         prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your natural, helpful response here"}}'
         return prompt

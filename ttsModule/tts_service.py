@@ -128,7 +128,7 @@ class TTSService:
             self,
             text: str,
             output_filename: Optional[str] = None,
-            speed: float = 1.1
+            speed: float = 1.2
     ) -> Optional[str]:
         """
         Generate speech from text using VITS model

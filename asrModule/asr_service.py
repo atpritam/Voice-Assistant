@@ -27,7 +27,7 @@ class ASRService:
         device: str = "auto",
         enable_logging: bool = False,
         enable_preprocessing: bool = True,
-        noise_reduction_strength: float = 0.5
+        noise_reduction_strength: float = 0.25
     ):
         if not WHISPER_AVAILABLE:
             raise ImportError(

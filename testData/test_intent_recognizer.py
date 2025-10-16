@@ -22,10 +22,10 @@ USE_LOCAL_LLM = True  # Set to True for Ollama, False for OpenAI
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
-INCLUDE_EDGE_CASES = True
+INCLUDE_EDGE_CASES = False
 
 # Default pipeline
-ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, False, False
+ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True
 USE_BOOST_ENGINE = True # Contextual boosting for Algorithmic layer
 THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
 
@@ -81,6 +81,9 @@ def run_comprehensive_test():
     print(f"Boost Engine: {USE_BOOST_ENGINE}")
     print(f"Edge Cases Included: {INCLUDE_EDGE_CASES}\n")
 
+    test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
+    print(f"Running tests on {len(test_data)} queries...\n")
+
     try:
         recognizer = init_recognizer(ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM, log=True)
         warmup_pipeline(recognizer)
@@ -88,9 +91,6 @@ def run_comprehensive_test():
         print(f"INIT ERROR: {e}")
         traceback.print_exc()
         return None, None
-
-    test_data = get_test_dataset(include_edge_cases=INCLUDE_EDGE_CASES)
-    print(f"Running tests on {len(test_data)} queries...\n")
 
     start = time.time()
     ev = recognizer.evaluate(test_data)
@@ -133,8 +133,6 @@ def run_comparative_analysis():
     print(f"Boost Engine: {USE_BOOST_ENGINE}")
     print(f"Edge Cases Included: {INCLUDE_EDGE_CASES}\n")
     print(f"\nRunning tests on {len(test_data)} queries...\n")
-    if INCLUDE_EDGE_CASES:
-        print("Edge Cases Included")
 
     configs = [
         ("Full Pipeline", True, True, True),

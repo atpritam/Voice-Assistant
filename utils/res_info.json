@@ -84,7 +84,7 @@
     "toppings": {
       "Meats": ["Pepperoni", "Sausage", "Bacon", "Ham", "Chicken", "Ground Beef"],
       "Veggies": ["Mushrooms", "Peppers", "Onions", "Olives", "Tomatoes", "Jalapeños", "Spinach"],
-      "Cheese": ["Extra Mozzarella", "Parmesan", "Feta", "Vegan Cheese"]
+      "Cheese": ["Mozzarella", "Parmesan", "Feta", "Vegan Cheese", "Extra Cheese"]
     },
     "special_options": ["Vegan cheese available", "Gluten-free crust available"],
     "current_deals": {

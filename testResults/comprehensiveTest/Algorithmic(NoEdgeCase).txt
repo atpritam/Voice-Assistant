@@ -1,0 +1,61 @@
+
+Pipeline: Algorithmic
+Mode: TEST MODE (intent recognition only)
+
+Boost Engine: True
+Edge Cases Included: False
+
+Running tests on 213 queries...
+
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 92.49%
+Correct: 197 / 213
+Avg Query Time: 1.4ms
+Queries/s: 731.3
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 206 ( 96.7%)  Acc: 95.63%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 140 ( 65.7%)
+Medium (0.6-0.8)      :  46 ( 21.6%)
+Low (<0.6)            :  27 ( 12.7%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'The box was damaged when it arrived' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
+
+2. 'This is not what I ordered at all' -> hours_location (exp: complaint, conf: 0.48, layer: algorithmic)
+
+3. 'The driver was very rude' -> delivery (exp: complaint, conf: 0.50, layer: algorithmic)
+
+4. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+5. 'The crust is hard as a rock' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+6. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+
+7. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.57, layer: algorithmic)
+
+8. 'What's in your supreme pizza' -> order (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+
+9. 'What specials are running' -> general (exp: menu_inquiry, conf: 0.55, layer: algorithmic)
+
+10. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.58, layer: algorithmic)
+
+11. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
+
+12. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
+
+13. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
+
+14. 'Amazing service as always' -> complaint (exp: general, conf: 0.47, layer: algorithmic)
+
+15. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
+
+16. 'See you later' -> unknown (exp: general, conf: 0.00, layer: none)
