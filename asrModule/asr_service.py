@@ -9,6 +9,7 @@ import tempfile
 from typing import Optional, Tuple
 import time
 import torch
+import math
 
 try:
     import whisper
@@ -249,7 +250,6 @@ class ASRService:
         """
         Normalize log probability to 0-1 confidence score
         """
-        import math
         if avg_logprob == 0:
             return 0.5
         normalized = math.exp(avg_logprob)
@@ -266,18 +266,6 @@ class ASRService:
         avg_total_time = (
             self.stats['total_processing_time'] / self.stats['successful_transcriptions']
             if self.stats['successful_transcriptions'] > 0
-            else 0.0
-        )
-
-        avg_transcription_time = (
-            self.stats['total_transcription_time'] / self.stats['successful_transcriptions']
-            if self.stats['successful_transcriptions'] > 0
-            else 0.0
-        )
-
-        avg_preprocessing_time = (
-            self.stats['total_preprocessing_time'] / self.stats['successful_transcriptions']
-            if self.stats['successful_transcriptions'] > 0 and self.enable_preprocessing
             else 0.0
         )
 

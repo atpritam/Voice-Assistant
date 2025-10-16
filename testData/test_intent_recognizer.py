@@ -22,7 +22,7 @@ USE_LOCAL_LLM = True  # Set to True for Ollama, False for OpenAI
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
-INCLUDE_EDGE_CASES = False
+INCLUDE_EDGE_CASES = True
 
 # Default pipeline
 ENABLE_ALGO, ENABLE_SEMANTIC, ENABLE_LLM = True, True, True

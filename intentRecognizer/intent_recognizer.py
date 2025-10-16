@@ -351,10 +351,6 @@ class IntentRecognizer:
             score_breakdown={'error': reason}
         )
 
-    def generate_response(self, intent_info: RecognitionResult, message: str) -> str:
-        """Generate a response based on the recognized intent (Deprecated)"""
-        return intent_info.response if intent_info.response else intent_info.intent
-
     def evaluate(self, test_data: list) -> Dict:
         """Evaluate recognizer accuracy on test data"""
         results = []

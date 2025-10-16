@@ -13,7 +13,7 @@ ORDER_DELIVERY_PENALTY = 0.15
 DELIVERY_COMPLAINT_PENALTY=0.25
 NEGATIVE_SENTIMENT_BOOST = 0.4
 PRICE_SIZE_BOOST = 0.25
-TIME_LOCATION_BOOST = 0.20
+TIME_LOCATION_BOOST = 0.25
 ESCALATION_BOOST = 0.35
 SARCASM_COMPLAINT_BOOST = 0.35
 
@@ -181,7 +181,7 @@ class BoostRuleEngine:
         """
         time_location_context = {
             'when', 'what time', 'how long', 'until when', 'from when',
-            'where', 'which', 'what address', 'how far'
+            'where', 'which', 'what address', 'how far', 'late night'
         }
         hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store'}
 
@@ -191,6 +191,7 @@ class BoostRuleEngine:
         if has_question and has_hours:
             self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST,
                                "Time/location boost")
+            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY, "Order penalty for time query")
 
     def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -230,13 +231,12 @@ class BoostRuleEngine:
         Detect sarcastic complaints
         """
         sarcasm_markers = {'amazing', 'wonderful', 'perfect', 'great', 'love', 'exactly'}
-        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not'}
+        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever'}
 
         has_sarcasm = bool(query_words & sarcasm_markers)
         has_negative = bool(query_words & negative_context)
 
-        if has_sarcasm:
-            if has_negative or 'as always' in ' '.join(query_words):
+        if has_sarcasm and has_negative:
                 self._boost_intent('complaint', intent_scores, SARCASM_COMPLAINT_BOOST, "Sarcasm complaint boost")
 
     def _apply_menu_item_ordering_boost(self, query_words: Set[str], intent_scores: Dict):
@@ -245,8 +245,9 @@ class BoostRuleEngine:
         Users mentioning specific pizzas/toppings often want to order
         """
         has_menu_item = bool(query_words & self.menu_items)
-        question_words = {'what', 'which', 'how', 'do', 'does', 'can', 'is', 'are', 'tell', 'show'}
+        question_words = {'what', 'which', 'how', 'do', 'does', 'can', 'is', 'are', 'tell', 'show', 'whats'}
         has_question = bool(query_words & question_words)
 
         if has_menu_item and not has_question:
             self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Menu item ordering boost")
+            self._penalty_intent('menu_inquiry', intent_scores, 0.2, "Menu item ordering penalty")
