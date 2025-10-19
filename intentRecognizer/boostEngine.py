@@ -23,15 +23,17 @@ class BoostRuleEngine:
     Applies domain-specific contextual boost rules to intent scores
     """
 
-    def __init__(self, intent_critical_keywords: Dict, enable_logging: bool = False):
+    def __init__(self, intent_critical_keywords: Dict, synonyms: Dict, enable_logging: bool = False):
         """
         Initialize boost rule engine
 
         Args:
             intent_critical_keywords: Domain-specific critical keywords per intent
+            synonyms: Synonym lookup dictionary
             enable_logging: Enable detailed logging of boost applications
         """
         self.intent_critical_keywords = intent_critical_keywords
+        self.synonyms = synonyms
         self.enable_logging = enable_logging
         if enable_logging:
             self.logger = logging.getLogger(__name__)
@@ -241,13 +243,19 @@ class BoostRuleEngine:
 
     def _apply_menu_item_ordering_boost(self, query_words: Set[str], intent_scores: Dict):
         """
-        RULE 8: Menu item mention suggests ordering
+        RULE 8: Menu item/size mention suggests ordering
         Users mentioning specific pizzas/toppings often want to order
         """
         has_menu_item = bool(query_words & self.menu_items)
         question_words = {'what', 'which', 'how', 'do', 'does', 'can', 'is', 'are', 'tell', 'show', 'whats'}
         has_question = bool(query_words & question_words)
+        has_order_action = bool(query_words & self.synonyms.get('order', set()))
+        has_sizer = bool(query_words & {'small', 'medium', 'large', 'family', 'one', 'two', 'three', 'four', 'five', '1', '2', '3', '4', '5'})
 
         if has_menu_item and not has_question:
+            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Menu item ordering boost")
+            self._penalty_intent('menu_inquiry', intent_scores, 0.2, "Menu item ordering penalty")
+
+        elif (has_menu_item or has_sizer) and has_order_action and len(query_words) <=5:
             self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Menu item ordering boost")
             self._penalty_intent('menu_inquiry', intent_scores, 0.2, "Menu item ordering penalty")

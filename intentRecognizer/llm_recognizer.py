@@ -251,7 +251,13 @@ Order flow:
 AVAILABLE INTENTS:
 {intent_descriptions}
 
-{tts_rules}"""
+{tts_rules}
+
+confidence level range from 0.00 to 1.00
+>=0.8 is High confidence
+>=0.6 is Medium confidence
+<0.6 is Low confidence
+"""
 
         prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your natural, helpful response here"}}'
         return prompt

@@ -2,13 +2,6 @@
 
 A voice-enabled customer service system that recognizes user intent through a multi-layer pipeline combining algorithmic pattern matching, semantic analysis, and LLM support. The system processes voice input, determines intent, generates appropriate responses, and converts them back to speech.
 
-## Overview
-
-A multi-layer voice assistant system for customer service that combines fast algorithmic pattern matching with semantic understanding and LLM intelligence. The system processes voice queries, recognizes user intent through a cascading pipeline, and generates natural spoken responses.
-
-**Use Case**: Customer service (The System is Domain Agnostic.)
-**Current Domain**: Pizza Restaurant
-
 ### Key Features
 
 - **Multi-layer Intent Recognition Pipeline**
@@ -33,58 +26,20 @@ The system uses a cascading pipeline where each layer is tried sequentially unti
 
 Each layer can be independently enabled or disabled with configurable confidence thresholds.
 
-```
-User Voice Input
-     ↓
-[ASR - Whisper]
-     ↓
-Text Query
-     ↓
-┌─────────────────────────┐
-│ Intent Recognition      │
-│                         │
-│ 1. Algorithmic (fast)   │ ← 77% of queries
-│    ├─ Pattern matching  │
-│    ├─ Levenshtein      │
-│    └─ Boost Engine      │
-│         ↓               │
-│ 2. Semantic (accurate)  │ ← 16% of queries
-│    └─ Neural embeddings │
-│         ↓               │
-│ 3. LLM (fallback)       │ ← 7% of queries
-│    └─ Ollama/OpenAI    │
-└─────────────────────────┘
-     ↓
-Response Generation
-     ↓
-[TTS - Coqui VITS]
-     ↓
-Voice Output
-```
-
 ## Installation
-
-### System Requirements
-
-**Minimum:**
-- CPU: Modern multi-core processor
-- RAM: 8GB
-- Storage: 6GB free space
-
-**Recommended:**
-- CPU: 4+ cores
-- RAM: 16GB
-- GPU: NVIDIA GPU with 4GB+ VRAM (CUDA-compatible)
-- Storage: 10GB free space
-
-**Note**: All components work on CPU, but GPU provides 5-10x speedup.
 
 ### Prerequisites
 
 - Python >3.8 ; <=3.11
 - Virtual environment (recommended)
+- CUDA-compatible GPU (minimum 4GB of VRAM)
 - FFmpeg (required for audio processing)
 - espeak-ng (required for TTS)
+
+GPU Support:
+   - Optional but recommended
+   - All components fall back to CPU automatically
+   - Expected performance: GPU provides 5-10x speedup
 
 ### System Dependencies
 
@@ -218,11 +173,12 @@ Pipeline configuration tested on 213 queries without edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 97.65% | 17.6ms | 56.9 |
-| Algorithmic + Semantic | 95.77% | 3.7ms | 269.5 |
-| Algorithmic + LLM | 96.71% | 84.1ms | 11.9 |
-| Algorithmic Only | 92.49% | 1.4ms | 732.5 |
-| Semantic Only | 92.02% | 9.4ms | 106.0 |
+| Full Pipeline | 98.59% | 22.4ms | 44.6 |
+| Algorithmic + Semantic | 96.24% | 2.2ms | 449.8 |
+| Algorithmic + LLM | 98.12% | 91.6ms | 10.9 |
+| Semantic + LLM | 94.37% | 57.1ms | 17.5 |
+| Algorithmic Only | 92.96% | 1.5ms | 666.0 |
+| Semantic Only | 92.02% | 10.0ms | 100.4 |
 
 ### Extended Test Dataset (300 queries with edge cases)
 
@@ -230,18 +186,24 @@ Comprehensive testing with 300 queries including edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 94.33% | 54.9ms | 18.2 |
-| Algorithmic + Semantic | 91.67% | 7.3ms | 137.5 |
-| Algorithmic + LLM | 93.67% | 175.2ms | 5.7 |
-| Algorithmic Only | 83.67% | 1.6ms | 619.7 |
-| Semantic Only | 88.33% | 5.9ms | 168.9 |
+| Full Pipeline | 95.67% | 51.4ms | 19.4 |
+| Algorithmic + Semantic | 93.00% | 2.6ms | 391.2 |
+| Algorithmic + LLM | 93.33% | 169.4ms | 5.9 |
+| Semantic + LLM | 90.67% | 95.6ms | 10.5 |
+| Algorithmic Only | 85.00% | 1.5ms | 663.0 |
+| Semantic Only | 88.33% | 4.8ms | 209.7 |
 
-### Layer Distribution (Full Pipeline, 300 queries)
+### Layer Distribution (Full Pipeline)
 
-With boost engine enabled, the Full Pipeline uses:
-- Algorithmic layer: 77.0% of queries (96.54% accuracy)
-- Semantic layer: 16.0% of queries (87.50% accuracy)
-- LLM layer (local ollama): 7.0% of queries (85.71% accuracy)
+#### Standard Dataset (213 queries):
+- Algorithmic layer: 87.3% of queries (99.46% accuracy)
+- Semantic layer: 9.9% of queries (90.48% accuracy)
+- LLM layer (local ollama): 2.8% of queries (100.00% accuracy)
+
+#### Extended Dataset (300 queries with edge cases):
+- Algorithmic layer: 78.7% of queries (97.46% accuracy)
+- Semantic layer: 15.0% of queries (88.89% accuracy)
+- LLM layer (local ollama): 6.3% of queries (94.74% accuracy)
 
 ### Boost Engine Impact
 
@@ -249,9 +211,9 @@ Comparison with and without contextual boost rules (300 queries):
 
 | Metric | With Boost | Without Boost | Improvement |
 |--------|-----------|---------------|-------------|
-| Accuracy | 94.33% | 91.00% | +3.33% |
-| Algorithmic Usage | 77.0% | 68.7% | +8.3% |
-| Avg Query Time | 54.9ms | 68.1ms | 19.4% faster |
+| Accuracy | 95.67% | 91.67% | +4.00% |
+| Algorithmic Usage | 78.7% | 68.7% | +10.0% |
+| Avg Query Time | 51.4ms | 68.0ms | 24.4% faster |
 
 See `testResults/` directory for detailed comparative analyses.
 
@@ -278,8 +240,6 @@ See `testResults/` directory for detailed comparative analyses.
 
 ## Development
 
-The System is Domain Agnostic.
-
 ### Extending to Other Domains
 
 1. Replace `utils/res_info.json` with your domain information
@@ -290,7 +250,7 @@ The System is Domain Agnostic.
 
 ## License
 
-This project is part of a Engineering Thesis. All rights reserved.
+This project is part of a Bachelor's Thesis. All rights reserved.
 
 ## Acknowledgments
 

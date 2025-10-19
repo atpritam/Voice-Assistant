@@ -12,16 +12,16 @@ Running tests on 300 queries...
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 91.00%
-Correct: 273 / 300
-Avg Query Time: 68.1ms
+Accuracy: 91.67%
+Correct: 275 / 300
+Avg Query Time: 68.0ms
 Queries/s: 14.7
 
 LAYER USAGE
 --------------------------------------------------------------------------------
 Algorithmic : 206 ( 68.7%)  Acc: 94.66%
 Semantic    :  69 ( 23.0%)  Acc: 86.96%
-LLM         :  25 (  8.3%)  Acc: 72.00%
+LLM         :  25 (  8.3%)  Acc: 80.00%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
@@ -66,22 +66,18 @@ INCORRECT PREDICTIONS
 
 17. 'I need a refund but first where's my pizza' -> order (exp: complaint, conf: 0.61, layer: algorithmic)
 
-18. 'Perfect timing, I only waited forever' -> general (exp: complaint, conf: 0.95, layer: llm)
+18. 'Exactly what I asked for, NOT' -> general (exp: complaint, conf: 0.80, layer: llm)
 
-19. 'I will take that one' -> menu_inquiry (exp: order, conf: 0.75, layer: llm)
+19. 'Make it a large' -> menu_inquiry (exp: order, conf: 0.92, layer: llm)
 
-20. 'Make it a large' -> menu_inquiry (exp: order, conf: 0.85, layer: llm)
+20. 'Make it two' -> menu_inquiry (exp: order, conf: 0.92, layer: llm)
 
-21. 'Make it two' -> menu_inquiry (exp: order, conf: 0.92, layer: llm)
+21. 'Same as last time' -> menu_inquiry (exp: order, conf: 0.80, layer: llm)
 
-22. 'Same as last time' -> menu_inquiry (exp: order, conf: 0.65, layer: llm)
+22. 'my food aint here yet' -> complaint (exp: delivery, conf: 0.95, layer: llm)
 
-23. 'where u guys at' -> general (exp: hours_location, conf: 0.80, layer: llm)
+23. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
 
-24. 'my food aint here yet' -> complaint (exp: delivery, conf: 0.85, layer: llm)
+24. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
 
-25. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
-
-26. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
-
-27. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.69, layer: algorithmic)
+25. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.69, layer: algorithmic)

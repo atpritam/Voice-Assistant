@@ -12,22 +12,22 @@ Running tests on 300 queries...
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 94.33%
-Correct: 283 / 300
-Avg Query Time: 55.2ms
-Queries/s: 18.1
+Accuracy: 96.00%
+Correct: 288 / 300
+Avg Query Time: 48.5ms
+Queries/s: 20.6
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 231 ( 77.0%)  Acc: 96.54%
-Semantic    :  48 ( 16.0%)  Acc: 87.50%
-LLM         :  21 (  7.0%)  Acc: 85.71%
+Algorithmic : 236 ( 78.7%)  Acc: 97.46%
+Semantic    :  45 ( 15.0%)  Acc: 88.89%
+LLM         :  19 (  6.3%)  Acc: 94.74%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 195 ( 65.0%)
-Medium (0.6-0.8)      :  88 ( 29.3%)
-Low (<0.6)            :  17 (  5.7%)
+High (≥0.8)           : 191 ( 63.7%)
+Medium (0.6-0.8)      :  93 ( 31.0%)
+Low (<0.6)            :  16 (  5.3%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
@@ -38,30 +38,20 @@ INCORRECT PREDICTIONS
 
 3. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
 
-4. 'What's in your supreme pizza' -> order (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+4. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.81, layer: algorithmic)
 
-5. 'Amazing service as always' -> complaint (exp: general, conf: 0.82, layer: algorithmic)
+5. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.50, layer: semantic)
 
-6. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.81, layer: algorithmic)
+6. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
 
-7. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.50, layer: semantic)
+7. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> order (exp: menu_inquiry, conf: 0.68, layer: semantic)
 
-8. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
+8. 'Same as last time' -> general (exp: order, conf: 0.80, layer: llm)
 
-9. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> order (exp: menu_inquiry, conf: 0.68, layer: semantic)
+9. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
 
-10. 'I want to order but first tell me your hours' -> order (exp: hours_location, conf: 0.90, layer: algorithmic)
+10. 'Can you tell me your prices' -> hours_location (exp: menu_inquiry, conf: 0.63, layer: algorithmic)
 
-11. 'I saw on the menu you have gluten free but can I order that for delivery' -> menu_inquiry (exp: order, conf: 0.78, layer: semantic)
+11. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
 
-12. 'I will take that one' -> menu_inquiry (exp: order, conf: 0.80, layer: llm)
-
-13. 'Make it a large' -> menu_inquiry (exp: order, conf: 0.90, layer: llm)
-
-14. 'Same as last time' -> menu_inquiry (exp: order, conf: 0.65, layer: llm)
-
-15. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
-
-16. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
-
-17. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.89, layer: algorithmic)
+12. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.89, layer: algorithmic)

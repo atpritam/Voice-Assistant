@@ -10,14 +10,14 @@ Running tests on 213 queries...
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 92.49%
-Correct: 197 / 213
+Accuracy: 92.96%
+Correct: 198 / 213
 Avg Query Time: 1.4ms
 Queries/s: 731.3
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 206 ( 96.7%)  Acc: 95.63%
+Algorithmic : 206 ( 96.7%)  Acc: 96.12%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
@@ -42,20 +42,18 @@ INCORRECT PREDICTIONS
 
 7. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.57, layer: algorithmic)
 
-8. 'What's in your supreme pizza' -> order (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+8. 'What specials are running' -> general (exp: menu_inquiry, conf: 0.55, layer: algorithmic)
 
-9. 'What specials are running' -> general (exp: menu_inquiry, conf: 0.55, layer: algorithmic)
+9. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.58, layer: algorithmic)
 
-10. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.58, layer: algorithmic)
+10. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
 
-11. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
+11. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
 
-12. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
+12. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
 
-13. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
+13. 'Amazing service as always' -> complaint (exp: general, conf: 0.47, layer: algorithmic)
 
-14. 'Amazing service as always' -> complaint (exp: general, conf: 0.47, layer: algorithmic)
+14. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
 
-15. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
-
-16. 'See you later' -> unknown (exp: general, conf: 0.00, layer: none)
+15. 'See you later' -> unknown (exp: general, conf: 0.00, layer: none)

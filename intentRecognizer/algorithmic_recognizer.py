@@ -45,6 +45,7 @@ HIGH_SIMILARITY_EARLY_EXIT = 0.92
 LEVENSHTEIN_SKIP_THRESHOLD = 0.17
 LENGTH_DIFF_FILTER_ENABLED = True
 INVERTED_INDEX_ENABLED = True
+BUT_CLAUSE_HANDLING_ENABLED = True
 
 @dataclass
 class SimilarityMetrics:
@@ -315,7 +316,7 @@ class AlgorithmicRecognizer:
     def __init__(self, patterns_file: str = None, enable_logging: bool = False,
                  min_confidence: float = 0.5, linguistic_resources_file: str = None, use_boost_engine: bool = True):
         """Initialize the optimized algorithmic recognizer
-s
+
         Args:
             patterns_file: Path to intent patterns JSON
             enable_logging: Enable detailed logging
@@ -342,7 +343,7 @@ s
         self.similarity_calculator = SimilarityCalculator(self.text_normalizer, self.synonym_lookup)
         self.use_boost_engine = use_boost_engine
         if self.use_boost_engine:
-            self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, enable_logging)
+            self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, self.synonyms, enable_logging)
 
         self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer) if INVERTED_INDEX_ENABLED else None
 
@@ -374,6 +375,38 @@ s
 
             self._intent_keywords_cache[intent_name] = keywords
             self._normalized_patterns_cache[intent_name] = normalized_patterns
+
+    def _preprocess_but_clause(self, query: str) -> str:
+        """
+        Handle 'but' clause in long queries without other separators
+
+        Strategy: In complex queries with 'but', the clause after 'but' typically
+        contains the primary intent while the first part provides context.
+
+        Args:
+            query: Original user query
+
+        Returns:
+            Processed query (either second part after 'but' or original query)
+        """
+        if not BUT_CLAUSE_HANDLING_ENABLED:
+            return query
+
+        query_lower = query.lower()
+        words = query.split()
+
+        if ("but" in query_lower and
+            query_lower.count("but") == 1 and
+            len(words) >= 10 and
+            "and" not in query_lower):
+
+            parts = query.split("but", 1)
+            second_part = parts[1].strip()
+
+            if len(second_part.split()) >= 3:
+                return second_part
+
+        return query
 
     def _filter_patterns_by_length(self, query: str, patterns: List[str],
                                    normalized_patterns: List[str]) -> List[Tuple[int, str, str]]:
@@ -487,18 +520,37 @@ s
         if not query or not self.patterns:
             return "unknown", 0.0, "", {}
 
-        query_words = set(self.text_normalizer.extract_filtered_words(query))
+        # but-clause preprocessing
+        processed_query = self._preprocess_but_clause(query)
+        but_clause_applied = processed_query != query
+
+        query_words = set(self.text_normalizer.extract_filtered_words(processed_query))
         if not query_words:
             return "unknown", 0.0, "", {}
 
-        intent_scores = self._evaluate_all_intents_optimized(query, query_words)
+        intent_scores = self._evaluate_all_intents_optimized(processed_query, query_words)
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
         if self.use_boost_engine:
-            intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores, query)
+            intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores, processed_query)
 
-        return self._select_best_intent(intent_scores)
+        intent_name, similarity, pattern, breakdown = self._select_best_intent(intent_scores)
+
+        # Fallback: If but-clause was used but resulted in general/unknown, retry with full query
+        if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
+
+            full_query_words = set(self.text_normalizer.extract_filtered_words(query))
+            full_intent_scores = self._evaluate_all_intents_optimized(query, full_query_words)
+
+            if full_intent_scores:
+                if self.use_boost_engine:
+                    full_intent_scores = self.boost_engine.apply_all_boosts(full_query_words, full_intent_scores, query)
+
+                full_intent_name, full_similarity, full_pattern, full_breakdown = self._select_best_intent(full_intent_scores)
+                return full_intent_name, full_similarity, full_pattern, full_breakdown
+
+        return intent_name, similarity, pattern, breakdown
 
     def recognize(self, query: str) -> AlgorithmicResult:
         """Main recognition method"""
