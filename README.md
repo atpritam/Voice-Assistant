@@ -2,6 +2,9 @@
 
 A voice-enabled customer service system that recognizes user intent through a multi-layer pipeline combining algorithmic pattern matching, semantic analysis, and LLM support. The system processes voice input, determines intent, generates appropriate responses, and converts them back to speech.
 
+**Use Case**: Customer service (The System is Domain Agnostic.)
+**Current Domain**: Pizza Restaurant
+
 ### Key Features
 
 - **Multi-layer Intent Recognition Pipeline**
@@ -26,7 +29,52 @@ The system uses a cascading pipeline where each layer is tried sequentially unti
 
 Each layer can be independently enabled or disabled with configurable confidence thresholds.
 
+```
+User Voice Input
+     ↓
+[ASR - Whisper]
+     ↓
+Text Query
+     ↓
+┌─────────────────────────┐
+│ Intent Recognition      │
+│                         │
+│ 1. Algorithmic (fast)   │ ← 77% of queries
+│    ├─ Pattern matching  │
+│    ├─ Levenshtein      │
+│    └─ Boost Engine      │
+│         ↓               │
+│ 2. Semantic (accurate)  │ ← 16% of queries
+│    └─ Neural embeddings │
+│         ↓               │
+│ 3. LLM (fallback)       │ ← 7% of queries
+│    └─ Ollama/OpenAI    │
+└─────────────────────────┘
+     ↓
+Response Generation
+     ↓
+[TTS - Coqui VITS]
+     ↓
+Voice Output
+```
+
+
 ## Installation
+
+### System Requirements
+
+**Minimum:**
+- CPU: Modern multi-core processor
+- RAM: 8GB
+- Storage: 6GB free space
+
+**Recommended:**
+- CPU: 4+ cores
+- RAM: 16GB
+- GPU: NVIDIA GPU with 4GB+ VRAM (CUDA-compatible)
+- Storage: 10GB free space
+
+**Note**: All components work on CPU, but GPU provides 5-10x speedup.
 
 ### Prerequisites
 
@@ -35,11 +83,6 @@ Each layer can be independently enabled or disabled with configurable confidence
 - CUDA-compatible GPU (minimum 4GB of VRAM)
 - FFmpeg (required for audio processing)
 - espeak-ng (required for TTS)
-
-GPU Support:
-   - Optional but recommended
-   - All components fall back to CPU automatically
-   - Expected performance: GPU provides 5-10x speedup
 
 ### System Dependencies
 
