@@ -6,6 +6,7 @@ import os
 import time
 import base64
 import logging
+from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,8 +27,10 @@ from intentRecognizer import IntentRecognizer
 from ttsModule import TTSService
 from asrModule import ASRService
 
+load_dotenv()
+
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.config['SECRET_KEY'] = 'hjbasfbue76t34g76wgv3bywyu47'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7)
 CORS(app)
 

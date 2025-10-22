@@ -195,8 +195,8 @@ class LLMRecognizer:
         if not conversation_history:
             return f'CURRENT CUSTOMER QUERY: "{query}"'
 
-        prompt_parts = ["CONVERSATION HISTORY (recent messages):"]
-        recent_history = conversation_history[-12:] if len(conversation_history) > 12 else conversation_history
+        prompt_parts = ["CONVERSATION HISTORY:"]
+        recent_history = conversation_history[-8:] if len(conversation_history) > 8 else conversation_history
 
         for entry in recent_history:
             role = "Customer" if entry['type'] == 'user' else "Assistant"
@@ -204,13 +204,11 @@ class LLMRecognizer:
 
         prompt_parts.extend([
             "",
-            "CONTEXT AWARENESS:",
-            "- Understand what the customer is referring to",
             "- Do NOT repeat information already mentioned",
             "- Track the order state and what has been collected",
             "- Respond naturally based on what is still needed",
             "",
-            f'CURRENT CUSTOMER QUERY: "{query}"'
+            f'CURRENT QUERY: "{query}"'
         ])
 
         return "\n".join(prompt_parts)
@@ -218,48 +216,43 @@ class LLMRecognizer:
     def _get_system_prompt(self, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> str:
         """Generate system prompt for intent classification and response generation"""
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
-        intent_descriptions = """Intent descriptions:
-- order: User wants to place an order
-- complaint: User has a problem, or issue with their order, wants refund or escalate
-- hours_location: User asks about business hours, location
-- menu_inquiry: User asks about menu items, toppings, prices, or options
-- delivery: User asks about delivery status, tracking, fees, or timing
-- general: Greetings, thanks, confirmations"""
+        intent_descriptions = """- general: Greetings, thanks, confirmations"""
 
         if self.test_mode:
-            prompt = f"Intent classification for pizza restaurant. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"
+            prompt = f"""Intent classification for {self.res_info.get("name", "Business")}. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"""
             if recognized_intent:
                 prompt += f"\nPrevious layer suggested: {recognized_intent}, override if incorrect."
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
-        tts_rules = """ 1. Keep responses SHORT (1-3 sentences max under 50 words preferably)
-2. NO special formatting: no $, %, parentheses, brackets, colons, semicolons
-3. Spell out prices (e.g., 'twelve dollars' instead of $12)
-4. No multiple questions in one response"""
+        tts_rules = """ 1. Keep responses SHORT (1-3 sentences, under 40 words) 2. No multiple questions in one response"""
 
         prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
-Generate ONE natural, conversational response that directly addresses the query.
-INFO: {json.dumps(self.res_info, indent=2)}
-Order flow:
-1) Customer chooses something
-2) You offer sides or drinks
-3) You ask if they'd like to pick up or get the order delivered
-4) get their name
-5) ask address if its a delivery
-6) confirm and close.
-AVAILABLE INTENTS:
-{intent_descriptions}
+                 Generate ONE response that directly addresses the query.
 
-{tts_rules}
+                 INFO: {json.dumps(self.res_info, indent=2)}
 
-confidence level range from 0.00 to 1.00
->=0.8 is High confidence
->=0.6 is Medium confidence
-<0.6 is Low confidence
-"""
+                 Typical Order flow:
+                    1) Customer chooses something (ask size if not already specified)
+                    2) then You offer sides or drinks
+                    3) then You ask them if they'd like to pick up or get the order delivered
+                    4) then get their name
+                    5) then ask for address if its a delivery
+                    6) confirm and close.
 
-        prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your natural, helpful response here"}}'
+                 AVAILABLE INTENTS:
+                 {', '.join(valid_intents)}
+                 {intent_descriptions}
+                 Previous layer suggested: {recognized_intent}, override if incorrect based on conversation history and context.
+
+                 {tts_rules}
+
+                 confidence level:
+                    >=0.8 is High confidence
+                    >=0.6 is Medium confidence
+                    <0.6 is Low confidence"""
+
+        prompt += '\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your helpful response"}}'
         return prompt
 
     def _process_api_response(self, response, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> LLMResult:
@@ -286,6 +279,8 @@ confidence level range from 0.00 to 1.00
             if self.enable_logging:
                 self.logger.warning("[LLM] Generated empty response")
 
+        response = self._sanitize_response(generated_response)
+
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
         if intent not in valid_intents:
             if recognized_intent and recognized_intent in valid_intents:
@@ -303,12 +298,27 @@ confidence level range from 0.00 to 1.00
             confidence=confidence,
             confidence_level=confidence_level,
             explanation=explanation,
-            response=generated_response,
+            response=response,
             matched_pattern="LLM Classification",
             processing_method="llm",
             score_breakdown={"response_generated": True},
             error=False,
         )
+
+    def _sanitize_response(self, text: str) -> str:
+        """Remove TTS-unfriendly characters from response"""
+
+        if not text:
+            return text
+
+        text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} dollars", text)
+        text = text.replace('%', ' percent')
+        text = text.replace(':', ' ')
+        text = text.replace(';', ' ')
+        text = re.sub(r'[(\[\])]', '', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text
 
     @staticmethod
     def _get_fallback_result(error_msg: str) -> LLMResult:

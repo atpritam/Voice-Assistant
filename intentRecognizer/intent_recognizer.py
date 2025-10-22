@@ -18,7 +18,7 @@ DEFAULT_ALGORITHMIC_THRESHOLD = 0.6
 DEFAULT_SEMANTIC_THRESHOLD = 0.5
 DEFAULT_LLM_MODEL = "gpt-5-nano"
 DEFAULT_SEMANTIC_MODEL = "all-MiniLM-L6-v2"
-LLM_OVERRIDE_THRESHOLD = 0.85
+LLM_OVERRIDE_THRESHOLD = 0.9
 
 
 @dataclass
@@ -288,6 +288,7 @@ class IntentRecognizer:
                     result.intent = llm_result.intent
                     result.confidence = llm_result.confidence
                     result.confidence_level = llm_result.confidence_level
+                    layer = 'llm'
                     self.stats['llm_overrides'] += 1
 
                 response = llm_result.response
