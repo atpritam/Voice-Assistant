@@ -275,7 +275,7 @@ class LLMRecognizer:
         generated_response = result.get("response", "")
 
         if not self.test_mode and not generated_response.strip():
-            generated_response = None
+            generated_response = "I apologize, but I'm having trouble processing your request right now."
             if self.enable_logging:
                 self.logger.warning("[LLM] Generated empty response")
 

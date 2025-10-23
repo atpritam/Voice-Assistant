@@ -220,31 +220,31 @@ class ASRService:
         Returns:
             Tuple of (transcribed_text, confidence)
         """
-        temp_path = None
         try:
             with tempfile.NamedTemporaryFile(
                 suffix='.webm',
-                delete=False
+                delete=False,
+                mode='wb'
             ) as temp_file:
                 temp_file.write(audio_data)
+                temp_file.flush()
                 temp_path = temp_file.name
 
-            result = self.transcribe_audio(temp_path)
-
-            return result
+            try:
+                result = self.transcribe_audio(temp_path)
+                return result
+            finally:
+                if os.path.exists(temp_path):
+                    try:
+                        os.unlink(temp_path)
+                    except OSError as e:
+                        if self.enable_logging:
+                            self.logger.warning(f"Failed to delete temp file {temp_path}: {e}")
 
         except Exception as e:
             if self.enable_logging:
                 self.logger.error(f"Failed to transcribe audio data: {e}")
             return None, 0.0
-
-        finally:
-            if temp_path and os.path.exists(temp_path):
-                try:
-                    os.unlink(temp_path)
-                except Exception as e:
-                    if self.enable_logging:
-                        self.logger.warning(f"Failed to delete temp file: {e}")
 
     def _normalize_confidence(self, avg_logprob: float) -> float:
         """

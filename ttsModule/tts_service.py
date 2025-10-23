@@ -26,7 +26,7 @@ class TTSService:
             self,
             model_name: str = "tts_models/en/ljspeech/vits",
             enable_logging: bool = False,
-            use_gpu: bool = True,
+            device: str = "auto",
             output_dir: str = None
     ):
         if not TTS_AVAILABLE:
@@ -36,7 +36,7 @@ class TTSService:
 
         self.model_name = model_name
         self.enable_logging = enable_logging
-        self.use_gpu = use_gpu and torch.cuda.is_available()
+        self.tts_device = device
 
         if output_dir:
             self.output_dir = Path(output_dir)
@@ -64,7 +64,10 @@ class TTSService:
             if self.enable_logging:
                 self.logger.info(f"Initializing TTS model: {self.model_name}")
 
-            device = "cuda" if self.use_gpu else "cpu"
+            if self.tts_device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            else:
+                device = self.tts_device
 
             import warnings
             warnings.filterwarnings('ignore', category=UserWarning)

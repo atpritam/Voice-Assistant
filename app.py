@@ -7,6 +7,7 @@ import time
 import base64
 import logging
 from dotenv import load_dotenv
+from collections import defaultdict
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,10 +32,11 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7, manage_session=False)
 CORS(app)
 
-conversation_history = []
+session_conversations = defaultdict(list)
+MAX_CONVERSATION_HISTORY = 50
 
 # PIPELINE CONFIGURATION
 ENABLE_ALGORITHMIC = True
@@ -77,6 +79,7 @@ def initialize_intent_recognizer():
             semantic_threshold=SEMANTIC_THRESHOLD,
             semantic_model=SEMANTIC_MODEL,
             llm_model=LLM_MODEL,
+            device="auto", # "cuda" , "cpu" , "auto" (for semantic model)
             min_confidence=MIN_CONFIDENCE,
             test_mode=TEST_MODE,
             use_local_llm=USE_LOCAL_LLM,
@@ -126,10 +129,10 @@ if ENABLE_TTS:
     try:
         tts_service = TTSService(
             model_name=TTS_MODEL,
+            device="auto", # "cuda" , "cpu" , "auto"
             enable_logging=ENABLE_LOGGING,
-            output_dir=TTS_OUTPUT_DIR
+            output_dir=TTS_OUTPUT_DIR,
         )
-        print()
     except ImportError as e:
         print(f"\nTTS Import Error: {e}")
         print("Install with: pip install -r requirements.txt\n")
@@ -145,7 +148,7 @@ if ENABLE_ASR:
     try:
         asr_service = ASRService(
             model_size=ASR_MODEL,
-            device="auto",
+            device="auto", # "cuda" , "cpu" , "auto"
             enable_logging=ENABLE_LOGGING,
             enable_preprocessing=ENABLE_AUDIO_PREPROCESSING
         )
@@ -199,8 +202,12 @@ def generate_tts_audio(response):
 
     return None
 
-def add_to_conversation_history(entry_type, message, intent_info=None, audio_url=None, is_audio=False):
-    """Add entry to conversation history"""
+def get_session_id():
+    """Get or create a unique session ID for client"""
+    return request.sid  # type: ignore
+
+def add_to_conversation_history(session_id, entry_type, message, intent_info=None, audio_url=None, is_audio=False):
+    """Add entry to conversation history for a specific session"""
     entry = {
         'type': entry_type,
         'message': message,
@@ -218,18 +225,23 @@ def add_to_conversation_history(entry_type, message, intent_info=None, audio_url
             'audio_url': audio_url
         })
 
-    conversation_history.append(entry)
+    session_conversations[session_id].append(entry)
 
-def process_user_input(user_text, is_audio=False):
-    """Process user input and generate response"""
-    add_to_conversation_history('user', user_text, is_audio=is_audio)
+    # Enforce maximum conversation history limit
+    if len(session_conversations[session_id]) > MAX_CONVERSATION_HISTORY:
+        session_conversations[session_id] = session_conversations[session_id][-MAX_CONVERSATION_HISTORY:]
 
+def process_user_input(session_id, user_text, is_audio=False):
+    """Process user input and generate response for a specific session"""
+    add_to_conversation_history(session_id, 'user', user_text, is_audio=is_audio)
+
+    conversation_history = session_conversations[session_id]
     intent_info = intent_recognizer.recognize_intent(user_text, conversation_history)
     response = intent_info.response
 
     audio_url = generate_tts_audio(response)
 
-    add_to_conversation_history('assistant', response, intent_info, audio_url, is_audio)
+    add_to_conversation_history(session_id, 'assistant', response, intent_info, audio_url, is_audio)
 
     return {
         'user_text': user_text,
@@ -247,11 +259,16 @@ def process_user_input(user_text, is_audio=False):
 
 @socketio.on('connect')
 def handle_connect():
-    print('Client connected')
+    session_id = get_session_id()
+    print(f'Client connected - Session ID: {session_id}')
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print('Client disconnected')
+    session_id = get_session_id()
+    print(f'Client disconnected - Session ID: {session_id}')
+    # Clean up session data
+    if session_id in session_conversations:
+        del session_conversations[session_id]
 
 @socketio.on('voice_input')
 def handle_voice_input(data):
@@ -261,6 +278,7 @@ def handle_voice_input(data):
         return
 
     try:
+        session_id = get_session_id()
         audio_data = data.get('audio')
         if not audio_data:
             emit('error', {'message': 'No audio data received'})
@@ -285,7 +303,7 @@ def handle_voice_input(data):
             'confidence': confidence
         })
 
-        result = process_user_input(transcribed_text, is_audio=True)
+        result = process_user_input(session_id, transcribed_text, is_audio=True)
         result['transcribed_text'] = transcribed_text
 
         emit('voice_response', result)
@@ -300,12 +318,13 @@ def handle_voice_input(data):
 def handle_text_input(data):
     """Handle incoming text messages directly without ASR"""
     try:
+        session_id = get_session_id()
         text = data.get('text')
         if not text:
             emit('error', {'message': 'No text received'})
             return
 
-        result = process_user_input(text, is_audio=False)
+        result = process_user_input(session_id, text, is_audio=False)
 
         emit('text_response', result)
 
@@ -317,7 +336,9 @@ def handle_text_input(data):
 
 @socketio.on('clear_history')
 def handle_clear_history():
-    conversation_history.clear()
+    session_id = get_session_id()
+    session_conversations[session_id].clear()
+    print(f'Cleared conversation history for session: {session_id}')
 
 @app.route('/')
 def index():

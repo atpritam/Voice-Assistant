@@ -16,11 +16,13 @@ from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 try:
     from sentence_transformers import SentenceTransformer
     from sklearn.metrics.pairwise import cosine_similarity
+    import torch
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
     if TYPE_CHECKING:
         from sentence_transformers import SentenceTransformer
+        import torch
 
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
 CACHE_DIR = Path.home() / ".cache" / "voice-assistant" / "embeddings"
@@ -50,7 +52,8 @@ class SemanticRecognizer:
         model_name: str = DEFAULT_MODEL,
         enable_logging: bool = False,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
-        use_cache: bool = True
+        use_cache: bool = True,
+        device: str = "auto"
     ):
         if not DEPENDENCIES_AVAILABLE:
             raise ImportError("Required packages not installed. Run: pip install sentence-transformers scikit-learn")
@@ -60,6 +63,7 @@ class SemanticRecognizer:
         self.min_confidence = min_confidence
         self.use_cache = use_cache
         self.enable_logging = enable_logging
+        self.device = device
 
         if enable_logging:
             self.logger = logging.getLogger(__name__)
@@ -86,7 +90,15 @@ class SemanticRecognizer:
             raise ImportError("SentenceTransformer not available")
 
         try:
-            return SentenceTransformer(self.model_name, device='cuda')
+            if self.device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            else:
+                device = self.device
+
+            if self.enable_logging:
+                self.logger.info(f"Loading Sentence Transformer model on device: {device}")
+
+            return SentenceTransformer(self.model_name, device=device)
         except Exception as e:
             if self.enable_logging:
                 self.logger.error(f"Error loading model: {e}")

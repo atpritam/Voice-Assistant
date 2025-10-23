@@ -7,6 +7,7 @@ Each layer is tried when the previous layer fails or has below threshold confide
 import os
 import json
 import logging
+import torch
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 from collections import defaultdict
@@ -89,6 +90,7 @@ class IntentRecognizer:
             use_boost_engine: bool = True,
             enable_semantic: bool = True,
             enable_llm: bool = True,
+            device: str = "auto",
             algorithmic_threshold: float = DEFAULT_ALGORITHMIC_THRESHOLD,
             semantic_threshold: float = DEFAULT_SEMANTIC_THRESHOLD,
             semantic_model: str = DEFAULT_SEMANTIC_MODEL,
@@ -106,6 +108,7 @@ class IntentRecognizer:
         self.use_boost_engine = use_boost_engine
         self.enable_semantic = enable_semantic
         self.enable_llm = enable_llm
+        self.device = device
         self.test_mode = test_mode
         self.algorithmic_threshold = algorithmic_threshold if (enable_semantic or enable_llm) else 0
         self.semantic_threshold = semantic_threshold if enable_llm else 0
@@ -152,10 +155,12 @@ class IntentRecognizer:
                 self.logger.info(" Algorithmic layer initialized")
 
         if self.enable_semantic:
+            device = self.device if self.device != "auto" else "cuda" if torch.cuda.is_available() else "cpu"
             try:
                 self.semantic_recognizer = SemanticRecognizer(
                     patterns_file=self.patterns_file,
                     model_name=semantic_model,
+                    device=device,
                     enable_logging=self.enable_logging,
                     min_confidence=self.min_confidence,
                     use_cache=True
