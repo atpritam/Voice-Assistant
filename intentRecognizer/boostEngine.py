@@ -170,7 +170,7 @@ class BoostRuleEngine:
         has_price = bool(query_words & price_words)
 
         has_size = bool(query_words & {'small', 'medium', 'large', 'family'})
-        has_items = bool(query_words & self.menu_items)
+        has_items = bool(query_words & ({'drinks', 'toppings'} | set(self.menu_items or [])))
 
         if has_price and (has_size or has_items):
             boost_label = "Price+size boost" if has_size else "Price+items boost"
@@ -215,7 +215,7 @@ class BoostRuleEngine:
         RULE 6: Delivery status indicators
         Queries asking about order status should boost delivery
         """
-        status_indicators = {'late', 'track', 'status', 'eta', 'arrive', 'long', 'estimated', 'arrival'}
+        status_indicators = {'late', 'track', 'status', 'eta', 'arrive', 'long', 'estimated', 'arrival', 'much longer'}
         order_context = {'order', 'pizza', 'food', 'delivery'}
 
         has_status = bool(query_words & status_indicators)

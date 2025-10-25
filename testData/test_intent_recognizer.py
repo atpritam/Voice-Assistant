@@ -32,11 +32,8 @@ THRESH_ALGO, THRESH_SEMANTIC = 0.6, 0.5
 # CRITICAL: Enable TEST_MODE for pure intent recognition testing
 TEST_MODE = True
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='- %(name)s - %(levelname)s - %(message)s',
-    force=True
-)
+from utils.logger_config import setup_logging
+setup_logging(level=logging.INFO)
 
 def format_time(s):
     return f"{s*1000:.1f}ms" if s < 1 else f"{s:.2f}s"
@@ -55,17 +52,21 @@ def describe_pipeline(a, s, l):
 
 
 def init_recognizer(a=True, s=True, l=True, log=True, ta=THRESH_ALGO, ts=THRESH_SEMANTIC):
-    return IntentRecognizer(
-        enable_logging=log,
-        enable_algorithmic=a, enable_semantic=s, enable_llm=l,
-        use_boost_engine=USE_BOOST_ENGINE,
-        algorithmic_threshold=ta or 0.6, semantic_threshold=ts or 0.5,
-        semantic_model=SEMANTIC_MODEL, llm_model=LLM_MODEL,
-        min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE,
-        test_mode=TEST_MODE,
-        use_local_llm=USE_LOCAL_LLM,
-        ollama_base_url=OLLAMA_BASE_URL
-    )
+    try:
+        return IntentRecognizer(
+            enable_logging=log,
+            enable_algorithmic=a, enable_semantic=s, enable_llm=l,
+            use_boost_engine=USE_BOOST_ENGINE,
+            algorithmic_threshold=ta or 0.6, semantic_threshold=ts or 0.5,
+            semantic_model=SEMANTIC_MODEL, llm_model=LLM_MODEL,
+            min_confidence=MIN_CONFIDENCE, patterns_file=PATTERN_FILE,
+            test_mode=TEST_MODE,
+            use_local_llm=USE_LOCAL_LLM,
+            ollama_base_url=OLLAMA_BASE_URL
+        )
+    except ValueError as e:
+        print(f"\nIntent Recognizer Configuration Error: {e}\n")
+        sys.exit(1)
 
 def warmup_pipeline(recognizer):
     if ENABLE_SEMANTIC or (ENABLE_LLM and USE_LOCAL_LLM) :

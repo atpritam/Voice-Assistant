@@ -60,6 +60,9 @@ function initializeEventListeners() {
   socket.on("voice_response", handleVoiceResponse)
   socket.on("text_response", handleTextResponse)
   socket.on("error", handleError)
+  socket.on("history_cleared", () => {
+      DOM.chatMessages.innerHTML = ""
+  })
 }
 
 function handleConnect() {

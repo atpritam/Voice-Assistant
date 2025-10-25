@@ -186,11 +186,9 @@ class ASRService:
             self.stats['total_processing_time'] += total_processing_time
 
             if self.enable_logging:
+                preview = transcribed_text[:40] + "..." if len(transcribed_text) > 40 else transcribed_text
                 self.logger.info(
-                    f"Transcription: '{transcribed_text[:50]}...' "
-                    f"(confidence: {confidence:.2f}, "
-                    f"total: {total_processing_time*1000:.1f}ms, "
-                    f"transcription: {transcription_time*1000:.1f}ms)"
+                    f"'{preview}' ({confidence:.2f}, {total_processing_time*1000:.0f}ms)"
                 )
 
             if processed_path != audio_path and os.path.exists(processed_path):

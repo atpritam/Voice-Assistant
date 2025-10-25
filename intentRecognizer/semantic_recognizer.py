@@ -96,7 +96,7 @@ class SemanticRecognizer:
                 device = self.device
 
             if self.enable_logging:
-                self.logger.info(f"Loading Sentence Transformer model on device: {device}")
+                self.logger.info(f"Loading Sentence Transformer model on device: {'GPU' if device == 'cuda' else 'CPU'}")
 
             return SentenceTransformer(self.model_name, device=device)
         except Exception as e:
@@ -262,9 +262,8 @@ class SemanticRecognizer:
             if best_similarity < threshold:
                 if self.enable_logging:
                     self.logger.info(
-                        f"[SEMANTIC] Intent: unknown "
-                        f"(best: {best_intent_name} with {best_similarity:.3f}, "
-                        f"below threshold: {threshold:.3f})"
+                        f"unknown (best: {best_intent_name} {best_similarity:.3f}, "
+                        f"threshold: {threshold:.3f})"
                     )
                 return self._create_unknown_result(f"Best match {best_intent_name} below threshold", best_similarity)
 
@@ -274,7 +273,7 @@ class SemanticRecognizer:
             self.stats['avg_confidence'].append(best_similarity)
 
             if self.enable_logging:
-                self.logger.info(f"[SEMANTIC] Intent: {best_intent_name} (confidence: {best_similarity:.3f}, level: {confidence_level})")
+                self.logger.info(f"{best_intent_name} ({best_similarity:.3f}, {confidence_level})")
 
             return SemanticResult(
                 intent=best_intent_name,

@@ -573,8 +573,7 @@ class AlgorithmicRecognizer:
 
         if self.enable_logging:
             self.logger.info(
-                f"[ALGORITHMIC] Intent: {intent_name} "
-                f"(confidence: {similarity:.3f}, level: {confidence_level}, method: {method})"
+                f"{intent_name} ({similarity:.3f}, {confidence_level}, {method})"
             )
 
         return AlgorithmicResult(

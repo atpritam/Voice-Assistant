@@ -25,11 +25,13 @@ class LLMResult:
     confidence: float
     confidence_level: str
     explanation: str
+    generated_response: str
     response: str
     matched_pattern: str = "LLM Classification"
     processing_method: str = "llm"
     score_breakdown: Dict = None
     error: bool = False
+    override: bool = False
 
 
 class LLMRecognizer:
@@ -88,11 +90,11 @@ class LLMRecognizer:
                 return json.load(f)
         except FileNotFoundError:
             if self.enable_logging:
-                self.logger.error(f"Info file not found: {res_info_file}")
+                self.logger.error(f" Info file not found: {res_info_file}")
             return {}
         except json.JSONDecodeError as e:
             if self.enable_logging:
-                self.logger.error(f"Invalid JSON in info file: {e}")
+                self.logger.error(f" Invalid JSON in info file: {e}")
             return {}
 
     def _initialize_client(self):
@@ -122,8 +124,17 @@ class LLMRecognizer:
 
     def recognize(self, query: str, intent_patterns: Dict,
                   conversation_history: Optional[List[Dict]] = None,
-                  recognized_intent: Optional[str] = None) -> LLMResult:
-        """Recognize intent and generate response using LLM"""
+                  recognized_intent: Optional[str] = None,
+                  original_conf: Optional[float] = None,
+                  override_thres: Optional[float] = None) -> LLMResult:
+        """Recognize intent and generate response using LLM
+
+        Args:
+            recognized_intent: Intent Recognized by previous layer
+            original_conf: Original Confidence Score of recognized_intent by previous layer
+            override_thres: Previous Layer Intent Override Threshold for LLM
+        """
+
         self.stats["total_queries"] += 1
         self.stats["total_api_calls"] += 1
 
@@ -131,32 +142,49 @@ class LLMRecognizer:
             response = self._call_llm_api(query, intent_patterns, conversation_history, recognized_intent)
             result = self._process_api_response(response, intent_patterns, recognized_intent)
 
-            if not result.response or result.response.strip() == "":
-                if self.enable_logging:
-                    self.logger.error(f"[LLM] Empty response generated for query: '{query}'")
-                result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
+            if not self.test_mode:
+                if not result.response or result.response.strip() == "":
+                    if self.enable_logging:
+                        self.logger.error(f" Empty response generated for query: '{query}'")
+                    result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
 
             self.stats["successful_queries"] += 1
             self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
             self.stats["avg_confidence"].append(result.confidence)
 
             if self.enable_logging:
-                provider = "OLLAMA" if self.use_local_llm else "LLM"
-                self.logger.info(f"[{provider}] Intent: {result.intent} (confidence: {result.confidence:.3f}, level: {result.confidence_level})")
-                if result.response:
-                    preview = result.response[:80] + "..." if len(result.response) > 80 else result.response
-                    self.logger.debug(f"[{provider}] Response: {preview}")
+                provider = "Ollama" if self.use_local_llm else "OpenAI"
+                if original_conf is None:
+                    self.logger.info(
+                        f"[{provider}] {result.intent} ({result.confidence:.3f}, {result.confidence_level})")
+                elif not self.test_mode and original_conf is not None:
+                    if (result.intent != recognized_intent and
+                        result.confidence >= override_thres and
+                        result.confidence > original_conf and
+                        result.intent != "unknown"
+                        ):
+
+                        result.override = True
+                        self.logger.info(
+                            f"[{provider}] OVERRIDE: '{recognized_intent}' "
+                            f"({original_conf:.3f}) -> '{result.intent}' ({result.confidence:.3f}, {result.confidence_level})"
+                        )
+
+                if not self.test_mode and result.generated_response:
+                    preview = result.generated_response[:50] + "..." if len(
+                        result.generated_response) > 50 else result.generated_response
+                    self.logger.info(f"Response: '{preview}'")
 
             return result
 
         except json.JSONDecodeError as e:
             if self.enable_logging:
-                self.logger.error(f"[LLM] JSON parsing error: {e}")
+                self.logger.error(f" JSON parsing error: {e}")
             self.stats["failed_queries"] += 1
             return self._get_fallback_result(f"JSON parsing failed: {str(e)}")
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"[LLM] API error: {e}")
+                self.logger.error(f" API error: {e}")
             self.stats["failed_queries"] += 1
             return self._get_fallback_result(f"API error: {str(e)}")
 
@@ -207,6 +235,7 @@ class LLMRecognizer:
             "- Do NOT repeat information already mentioned",
             "- Track the order state and what has been collected",
             "- Respond naturally based on what is still needed",
+            "- Do not ask multiple questions in one response"
             "",
             f'CURRENT QUERY: "{query}"'
         ])
@@ -219,22 +248,20 @@ class LLMRecognizer:
         intent_descriptions = """- general: Greetings, thanks, confirmations"""
 
         if self.test_mode:
-            prompt = f"""Intent classification for {self.res_info.get("name", "Business")}. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"""
-            if recognized_intent:
-                prompt += f"\nPrevious layer suggested: {recognized_intent}, override if incorrect."
+            prompt = f"""Intent classification for Pizza Restaurant. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"""
+            if recognized_intent and recognized_intent != "unknown":
+                prompt += f"\nPrevious layer suggested: {recognized_intent}, override if you think it's incorrect."
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
-        tts_rules = """ 1. Keep responses SHORT (1-3 sentences, under 40 words) 2. No multiple questions in one response"""
-
         prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
-                 Generate ONE response that directly addresses the query.
+                 Generate ONE response that directly addresses the query in under 40 words.
 
                  INFO: {json.dumps(self.res_info, indent=2)}
 
                  Typical Order flow:
-                    1) Customer chooses something (ask size if not already specified)
-                    2) then You offer sides or drinks
+                    1) Customer chooses Pizza (ask size if not already specified)
+                    2) then You offer sides or drinks (if not already specified)
                     3) then You ask them if they'd like to pick up or get the order delivered
                     4) then get their name
                     5) then ask for address if its a delivery
@@ -244,8 +271,6 @@ class LLMRecognizer:
                  {', '.join(valid_intents)}
                  {intent_descriptions}
                  Previous layer suggested: {recognized_intent}, override if incorrect based on conversation history and context.
-
-                 {tts_rules}
 
                  confidence level:
                     >=0.8 is High confidence
@@ -272,14 +297,17 @@ class LLMRecognizer:
         intent = result.get("intent", "unknown")
         confidence = result.get("confidence", 0.5)
         explanation = result.get("explanation", "LLM classification")
-        generated_response = result.get("response", "")
 
-        if not self.test_mode and not generated_response.strip():
-            generated_response = "I apologize, but I'm having trouble processing your request right now."
-            if self.enable_logging:
-                self.logger.warning("[LLM] Generated empty response")
-
-        response = self._sanitize_response(generated_response)
+        if self.test_mode:
+            generated_response = ""
+            response = ""
+        else:
+            generated_response = result.get("response", "")
+            if not generated_response.strip():
+                generated_response = "I apologize, but I'm having trouble processing your request right now."
+                if self.enable_logging:
+                    self.logger.warning("[LLM] Generated empty response")
+            response = self._sanitize_response(generated_response)
 
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
         if intent not in valid_intents:
@@ -298,27 +326,39 @@ class LLMRecognizer:
             confidence=confidence,
             confidence_level=confidence_level,
             explanation=explanation,
+            generated_response=generated_response,
             response=response,
             matched_pattern="LLM Classification",
             processing_method="llm",
             score_breakdown={"response_generated": True},
             error=False,
+            override=False
         )
 
     def _sanitize_response(self, text: str) -> str:
-        """Remove TTS-unfriendly characters from response"""
+        """Remove TTS-unfriendly characters from response."""
 
         if not text:
             return text
 
-        text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} dollars", text)
-        text = text.replace('%', ' percent')
-        text = text.replace(':', ' ')
-        text = text.replace(';', ' ')
-        text = re.sub(r'[(\[\])]', '', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        def format_currency(match):
+            dollars = int(match.group(1))
+            cents = int(match.group(2))
+            dollar_word = 'dollar' if dollars == 1 else 'dollars'
+            cent_word = 'cent' if cents == 1 else 'cents'
+            return f"{dollars} {dollar_word}" if cents == 0 else f"{dollars} {dollar_word} and {cents} {cent_word}"
 
-        return text
+        text = re.sub(r'\$(\d+)\.(\d{2})', format_currency, text)
+        text = re.sub(r'(\d+)\.(\d{2})(?=\s|,|and|for|$)', format_currency, text)
+        text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} {'dollar' if int(m.group(1)) == 1 else 'dollars'}", text)
+        text = re.sub(r'\b(dollars?)\.(?=\d)', r'\1', text)
+        text = (text.replace('%', ' percent')
+                .replace(':', ',')
+                .replace(';', ','))
+
+        text = re.sub(r'[\[\]()]', '', text)
+
+        return text.strip()
 
     @staticmethod
     def _get_fallback_result(error_msg: str) -> LLMResult:
@@ -328,11 +368,13 @@ class LLMRecognizer:
             confidence=ERROR_FALLBACK_CONFIDENCE,
             confidence_level="low",
             explanation=f"LLM API failed: {error_msg}",
+            generated_response="",
             response="I apologize, but I'm having trouble processing your request right now. Please try again or call us directly.",
             matched_pattern="Error",
             processing_method="llm_fallback",
             score_breakdown={"error": error_msg},
             error=True,
+            override=False
         )
 
     def get_statistics(self) -> dict:

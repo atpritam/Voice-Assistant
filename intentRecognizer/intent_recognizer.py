@@ -7,6 +7,8 @@ Each layer is tried when the previous layer fails or has below threshold confide
 import os
 import json
 import logging
+import sys
+
 import torch
 from typing import Dict, Optional, List
 from dataclasses import dataclass
@@ -184,6 +186,7 @@ class IntentRecognizer:
                     min_confidence=self.min_confidence,
                     use_local_llm=self.use_local_llm,
                     ollama_base_url=self.ollama_base_url,
+                    test_mode=self.test_mode
                 )
                 provider_type = "Ollama" if self.use_local_llm else "OpenAI"
                 if self.enable_logging:
@@ -205,31 +208,27 @@ class IntentRecognizer:
         self.stats['total_queries'] += 1
 
         if self.enable_logging:
-            self.logger.info("-" * 50)
-            self.logger.info(f"Processing Query: '{query}'")
-            self.logger.info("-" * 50)
+            self.logger.info("-" * 60)
+            self.logger.info(f"Processing: '{query}'")
+            self.logger.info("-" * 60)
 
         recognized_intent = None
 
         if self.enable_algorithmic:
-            result = self._try_layer('algorithmic', self.algorithmic_recognizer, query,
+            result, algo_result = self._try_layer('algorithmic', self.algorithmic_recognizer, query,
                                     self.algorithmic_threshold, conversation_history)
             if result:
                 return result
-            if self.algorithmic_recognizer:
-                algo_result = self.algorithmic_recognizer.recognize(query)
-                if algo_result.intent != "unknown":
-                    recognized_intent = algo_result.intent
+            if algo_result and algo_result.intent != "unknown":
+                recognized_intent = algo_result.intent
 
         if self.enable_semantic:
-            result = self._try_layer('semantic', self.semantic_recognizer, query,
+            result, semantic_result = self._try_layer('semantic', self.semantic_recognizer, query,
                                     self.semantic_threshold, conversation_history)
             if result:
                 return result
-            if self.semantic_recognizer:
-                semantic_result = self.semantic_recognizer.recognize(query)
-                if semantic_result.intent != "unknown":
-                    recognized_intent = semantic_result.intent
+            if semantic_result and semantic_result.intent != "unknown":
+                recognized_intent = semantic_result.intent
 
         if self.enable_llm:
             result = self._try_llm_layer(query, conversation_history, recognized_intent)
@@ -239,7 +238,7 @@ class IntentRecognizer:
         return self._create_unknown_result("No layers produced a result")
 
     def _try_layer(self, layer_name: str, recognizer, query: str, threshold: float,
-                   conversation_history: Optional[List[Dict]] = None) -> Optional[RecognitionResult]:
+                   conversation_history: Optional[List[Dict]] = None) -> tuple[Optional[RecognitionResult], any]:
         """Generic layer trying logic for algorithmic and semantic layers"""
         result = recognizer.recognize(query)
 
@@ -248,12 +247,13 @@ class IntentRecognizer:
                 next_layer = "Semantic" if layer_name == "algorithmic" and self.enable_semantic else "LLM"
                 if (layer_name == "algorithmic" and self.enable_semantic) or (layer_name == "semantic" and self.enable_llm):
                     self.logger.info(f"  - Proceeding to {next_layer} layer")
-            return None
+            return None, result
 
         self.stats[f'{layer_name}_used'] += 1
-        return self._create_result(query, result, layer=layer_name,
+        final_result = self._create_result(query, result, layer=layer_name,
                                   conversation_history=conversation_history,
                                   original_confidence=result.confidence)
+        return final_result, result
 
     def _try_llm_layer(self, query: str, conversation_history: Optional[List[Dict]] = None,
                       recognized_intent: Optional[str] = None) -> RecognitionResult:
@@ -266,7 +266,6 @@ class IntentRecognizer:
                        conversation_history: Optional[List[Dict]] = None,
                        original_confidence: float = None) -> RecognitionResult:
         """Create unified RecognitionResult from any layer with LLM override capability"""
-        original_intent = result.intent
         original_conf = original_confidence if original_confidence is not None else result.confidence
         response = getattr(result, 'response', '')
 
@@ -277,19 +276,11 @@ class IntentRecognizer:
                 self.logger.info("  - Using LLM for response generation")
 
             try:
-                llm_result = self.llm_recognizer.recognize(query, self.patterns, conversation_history, result.intent)
+                llm_result = self.llm_recognizer.recognize(
+                    query, self.patterns, conversation_history, result.intent, original_conf, LLM_OVERRIDE_THRESHOLD
+                )
 
-                if (llm_result.confidence >= LLM_OVERRIDE_THRESHOLD and
-                    llm_result.confidence > original_conf and
-                    llm_result.intent != original_intent and
-                    llm_result.intent != "unknown"):
-
-                    if self.enable_logging:
-                        self.logger.info(
-                            f"  - LLM OVERRIDE: Changing intent from '{original_intent}' "
-                            f"({original_conf:.3f}) to '{llm_result.intent}' ({llm_result.confidence:.3f})"
-                        )
-
+                if llm_result.override:
                     result.intent = llm_result.intent
                     result.confidence = llm_result.confidence
                     result.confidence_level = llm_result.confidence_level
@@ -302,8 +293,6 @@ class IntentRecognizer:
                     if self.enable_logging:
                         self.logger.warning("LLM returned empty response, using fallback")
                     response = self._generate_simple_response(result.intent)
-                elif self.enable_logging:
-                    self.logger.debug(f"[LLM Response] Generated: {response[:100]}...")
             except json.JSONDecodeError as e:
                 if self.enable_logging:
                     self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
@@ -320,10 +309,8 @@ class IntentRecognizer:
 
         if self.enable_logging:
             self.logger.info(
-                f" Accepted from {layer.upper()} layer: "
-                f"Query: '{query}' -> "
-                f"{result.intent} (confidence: {result.confidence:.3f}, "
-                f"level: {result.confidence_level})"
+                f"✓ ACCEPTED {layer.upper()} Layer: {result.intent} "
+                f"({result.confidence:.3f}, {result.confidence_level})"
             )
 
         return RecognitionResult(

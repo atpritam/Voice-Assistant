@@ -9,20 +9,17 @@ import logging
 from dotenv import load_dotenv
 from collections import defaultdict
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    force=True
-)
-
-import warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='jieba')
-warnings.filterwarnings('ignore', message='.*is deprecated.*')
-
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'intentRecognizer'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ttsModule'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'asrModule'))
+
+from utils.logger_config import setup_logging
+setup_logging(level=logging.INFO)
+
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='jieba')
+warnings.filterwarnings('ignore', message='.*is deprecated.*')
 
 from intentRecognizer import IntentRecognizer
 from ttsModule import TTSService
@@ -31,9 +28,14 @@ from asrModule import ASRService
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY must be set in .env")
+app.config['SECRET_KEY'] = SECRET_KEY
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7, manage_session=False)
 CORS(app)
+
+logger = logging.getLogger(__name__)
 
 session_conversations = defaultdict(list)
 MAX_CONVERSATION_HISTORY = 50
@@ -86,93 +88,66 @@ def initialize_intent_recognizer():
             ollama_base_url=OLLAMA_BASE_URL,
         )
 
-        print()
-        print(f"  Pipeline: ", end="")
-        layers = []
-        if ENABLE_ALGORITHMIC:
-            layers.append("Algorithmic")
-        if ENABLE_SEMANTIC:
-            layers.append("Semantic")
-        if ENABLE_LLM:
-            layers.append("LLM (Ollama)" if USE_LOCAL_LLM else "LLM (OpenAI)")
-        print(" -> ".join(layers))
-
-        if ENABLE_SEMANTIC:
-            print(f"  Semantic Model: {SEMANTIC_MODEL}")
-
-        if ENABLE_LLM:
-            print(f"  LLM Provider: {'Ollama' if USE_LOCAL_LLM else 'OpenAI'}")
-            print(f"  LLM Model: {LLM_MODEL}")
-            if USE_LOCAL_LLM:
-                print(f"  Ollama URL: {OLLAMA_BASE_URL}")
-
-        print(
-            f"  Mode: {'TEST MODE (intent recognition only, no response generation)' if TEST_MODE else 'Test Mode: OFF'}")
-        print()
-
         return recognizer
 
     except ValueError as e:
-        print(f"\nConfiguration Error: {e}\n")
+        logger.error(f"\nIntent Recognizer Configuration Error: {e}\n")
         sys.exit(1)
     except Exception as e:
-        print(f"\nInitialization Error: {e}\n")
+        logger.error(f"\nIntent Recognizer Initialization Error: {e}\n")
         sys.exit(1)
 
-# Initialize Intent Recognizer
-intent_recognizer = initialize_intent_recognizer()
-
-# Initialize TTS Service
-tts_service = None
-if ENABLE_TTS:
-    print(f"  TTS Model: {TTS_MODEL}")
+def initialize_tts_service():
+    """Initialize TTS service with error handling"""
     try:
-        tts_service = TTSService(
+        tts = TTSService(
             model_name=TTS_MODEL,
             device="auto", # "cuda" , "cpu" , "auto"
             enable_logging=ENABLE_LOGGING,
             output_dir=TTS_OUTPUT_DIR,
         )
+
+        return tts
+
     except ImportError as e:
         print(f"\nTTS Import Error: {e}")
         print("Install with: pip install -r requirements.txt\n")
-        ENABLE_TTS = False
     except Exception as e:
-        print(f"\nTTS Initialization Error: {e}\n")
-        ENABLE_TTS = False
+        logger.error(f"\nTTS Initialization Error: {e}\n")
 
-# Initialize ASR Service
-asr_service = None
-if ENABLE_ASR:
-    print(f"  ASR Model: whisper-{ASR_MODEL}")
+
+def initialize_asr_service():
+    """Initialize ASR service with error handling"""
     try:
-        asr_service = ASRService(
+        asr = ASRService(
             model_size=ASR_MODEL,
             device="auto", # "cuda" , "cpu" , "auto"
             enable_logging=ENABLE_LOGGING,
             enable_preprocessing=ENABLE_AUDIO_PREPROCESSING
         )
-        print()
+
+        return asr
+
     except ImportError as e:
         print("\nASR Error: Dependencies not installed")
         print("Install with: pip install openai-whisper")
         if ENABLE_AUDIO_PREPROCESSING:
             print("For preprocessing: pip install librosa soundfile noisereduce\n")
-        ENABLE_ASR = False
     except Exception as e:
-        print(f"\nASR Initialization Error: {e}\n")
-        ENABLE_ASR = False
+        logger.error(f"\nASR Initialization Error: {e}\n")
+
 
 def perform_system_warmup():
     """Warm up Local LLM and TTS components to eliminate cold start latency"""
 
+    logger.info("Performing system warmup")
     warmup_start = time.time()
 
-    if USE_LOCAL_LLM:
+    if USE_LOCAL_LLM and intent_recognizer:
         try:
             intent_recognizer.recognize_intent("sample text", [])
         except Exception as e:
-            print(f"    Warning: Intent recognizer warmup query failed: {e}")
+            logger.warning(f"Warning: Intent recognizer warmup query failed: {e}")
 
     if ENABLE_TTS and tts_service:
         try:
@@ -180,29 +155,29 @@ def perform_system_warmup():
             if warmup_audio and os.path.exists(warmup_audio):
                 os.unlink(warmup_audio)
         except Exception as e:
-            print(f"    Warning: TTS warmup failed: {e}")
+            logger.warning(f"\nWarning: TTS warmup failed: {e}")
 
     total_warmup_time = time.time() - warmup_start
-    print(f"Total Warm-up Time: {total_warmup_time:.2f}s")
+    logger.info(f"Total System Warm-up Time: {total_warmup_time:.2f}s")
 
-def generate_tts_audio(response):
+def generate_tts_audio(tts, response):
     """Generate TTS audio and return URL"""
-    if not (ENABLE_TTS and tts_service and response):
+    if not (ENABLE_TTS and tts and response):
         return None
 
     try:
         timestamp = int(time.time() * 1000)
         audio_filename = f"response_{timestamp}.wav"
-        audio_path = tts_service.generate_speech(text=response, output_filename=audio_filename)
+        audio_path = tts.generate_speech(text=response, output_filename=audio_filename)
 
         if audio_path:
             return f"/static/audio/{audio_filename}"
     except Exception as e:
-        print(f"TTS generation error: {e}")
+        logger.error(f"TTS generation error: {e}")
 
     return None
 
-def get_session_id():
+def get_session_id() -> str:
     """Get or create a unique session ID for client"""
     return request.sid  # type: ignore
 
@@ -239,7 +214,7 @@ def process_user_input(session_id, user_text, is_audio=False):
     intent_info = intent_recognizer.recognize_intent(user_text, conversation_history)
     response = intent_info.response
 
-    audio_url = generate_tts_audio(response)
+    audio_url = generate_tts_audio(tts_service, response)
 
     add_to_conversation_history(session_id, 'assistant', response, intent_info, audio_url, is_audio)
 
@@ -260,12 +235,12 @@ def process_user_input(session_id, user_text, is_audio=False):
 @socketio.on('connect')
 def handle_connect():
     session_id = get_session_id()
-    print(f'Client connected - Session ID: {session_id}')
+    logger.info(f'Client connected : [{session_id}]')
 
 @socketio.on('disconnect')
 def handle_disconnect():
     session_id = get_session_id()
-    print(f'Client disconnected - Session ID: {session_id}')
+    logger.info(f'Client disconnected : [{session_id}]')
     # Clean up session data
     if session_id in session_conversations:
         del session_conversations[session_id]
@@ -309,7 +284,7 @@ def handle_voice_input(data):
         emit('voice_response', result)
 
     except Exception as e:
-        print(f"Voice input error: {e}")
+        logger.error(f" Voice input error: {e}")
         import traceback
         traceback.print_exc()
         emit('error', {'message': f'Processing error: {str(e)}'})
@@ -329,7 +304,7 @@ def handle_text_input(data):
         emit('text_response', result)
 
     except Exception as e:
-        print(f"Text input error: {e}")
+        logger.error(f"Text input error: {e}")
         import traceback
         traceback.print_exc()
         emit('error', {'message': f'Processing error: {str(e)}'})
@@ -338,7 +313,8 @@ def handle_text_input(data):
 def handle_clear_history():
     session_id = get_session_id()
     session_conversations[session_id].clear()
-    print(f'Cleared conversation history for session: {session_id}')
+    logger.info(f'Cleared History : [{session_id}]')
+    emit('history_cleared')
 
 @app.route('/')
 def index():
@@ -359,6 +335,25 @@ def get_statistics():
 
     return jsonify(stats)
 
+# System Start
+intent_recognizer = initialize_intent_recognizer()
+if ENABLE_TTS:
+    tts_service = initialize_tts_service()
+if ENABLE_ASR:
+    asr_service = initialize_asr_service()
+
+layers = []
+if ENABLE_ALGORITHMIC:
+    layers.append("Algorithmic")
+if ENABLE_SEMANTIC:
+    layers.append("Semantic")
+if ENABLE_LLM:
+    layers.append("LLM (Ollama)" if USE_LOCAL_LLM else "LLM (OpenAI)")
+pipeline = "Pipeline: " + " -> ".join(layers)
+logger.info(pipeline)
+
+# System Warmup
 perform_system_warmup()
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)

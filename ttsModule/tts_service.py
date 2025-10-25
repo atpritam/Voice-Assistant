@@ -106,27 +106,6 @@ class TTSService:
             if self.enable_logging:
                 self.logger.error(f"Startup cleanup failed: {e}")
 
-    def _preprocess_text(self, text: str) -> str:
-        """Preprocess text for better TTS output"""
-        text = ' '.join(text.split())
-        text = re.sub(r'([.!?])([A-Z])', r'\1 \2', text)
-        text = re.sub(r'[*_~`\[\]{}]', '', text)
-
-        replacements = {
-            r'\$(\d+)': r'\1 dollars',
-            r'(\d+)%': r'\1 percent',
-            r'\bpm\b': 'PM',
-            r'\bam\b': 'AM',
-        }
-
-        for pattern, replacement in replacements.items():
-            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-
-        if text and text[-1] not in '.!?':
-            text += '.'
-
-        return text
-
     def generate_speech(
             self,
             text: str,
@@ -161,15 +140,10 @@ class TTSService:
             else:
                 output_path = self.output_dir / f"tts_output_{self.stats['total_requests']}.wav"
 
-            processed_text = self._preprocess_text(text)
-
-            if self.enable_logging:
-                self.logger.info(f"Generating speech for text: '{processed_text[:60]}...'")
-
             # Suppress TTS verbose output during generation
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 self.tts.tts_to_file(
-                    text=processed_text,
+                    text=text,
                     file_path=str(output_path),
                     speed=speed
                 )
@@ -177,7 +151,8 @@ class TTSService:
             self.stats['successful_generations'] += 1
 
             if self.enable_logging:
-                self.logger.info(f"Audio generated successfully: {output_path}")
+                preview = text[:40] + "..." if len(text) > 40 else text
+                self.logger.info(f"Generated: '{preview}' -> {output_path.name}")
 
             return str(output_path)
 
