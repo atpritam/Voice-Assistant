@@ -89,7 +89,6 @@ def setup_logging(level=logging.INFO):
     logging.getLogger('openai').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 
 def get_logger(name: str) -> logging.Logger:

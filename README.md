@@ -194,18 +194,32 @@ Access the web interface at `http://localhost:5000`
     ```
 4. Set `USE_LOCAL_LLM = True` in `app.py`
 
-### Testing the Intent Recognizer
+## Running Tests
 
-Run comprehensive tests:
+The project includes comprehensive test suites for the intent recognition pipeline. Tests are located in the `test/` directory.
+
+### Basic Comprehensive Test
+
+Run a full evaluation of the current pipeline configuration:
 
 ```bash
-python -m testData.test_intent_recognizer
+python -m test.runtest
 ```
 
-Run comparative analysis across different pipeline configurations:
+### Comparative Analysis
+
+Compare multiple pipeline configurations side-by-side:
 
 ```bash
-python -m testData.test_intent_recognizer --comparative
+python -m test.runtest --c
+```
+
+### Boost Engine Analysis
+
+Evaluate the impact of the contextual boost engine:
+
+```bash
+python -m test.runtest --b
 ```
 
 ## Performance Benchmarks
@@ -216,12 +230,12 @@ Pipeline configuration tested on 213 queries without edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 98.59% | 22.4ms | 44.6 |
-| Algorithmic + Semantic | 96.24% | 2.2ms | 449.8 |
-| Algorithmic + LLM | 98.12% | 91.6ms | 10.9 |
-| Semantic + LLM | 94.37% | 57.1ms | 17.5 |
-| Algorithmic Only | 92.96% | 1.5ms | 666.0 |
-| Semantic Only | 92.02% | 10.0ms | 100.4 |
+| Full Pipeline | 98.59% | 10.8ms | 92.5 |
+| Algorithmic + Semantic | 96.24% | 1.9ms | 519.4 |
+| Algorithmic + LLM | 98.12% | 44.7ms | 22.4 |
+| Semantic + LLM | 94.37% | 25.3ms | 39.6 |
+| Algorithmic Only | 92.96% | 1.3ms | 775.5 |
+| Semantic Only | 92.02% | 9.1ms | 109.6 |
 
 ### Extended Test Dataset (300 queries with edge cases)
 
@@ -229,19 +243,19 @@ Comprehensive testing with 300 queries including edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 95.67% | 51.4ms | 19.4 |
-| Algorithmic + Semantic | 93.00% | 2.6ms | 391.2 |
-| Algorithmic + LLM | 93.33% | 169.4ms | 5.9 |
-| Semantic + LLM | 90.67% | 95.6ms | 10.5 |
-| Algorithmic Only | 85.00% | 1.5ms | 663.0 |
-| Semantic Only | 88.33% | 4.8ms | 209.7 |
+| Full Pipeline | 95.67% | 21.3ms | 46.9 |
+| Algorithmic + Semantic | 93.00% | 4.0ms | 248.8 |
+| Algorithmic + LLM | 94.33% | 58.6ms | 17.1 |
+| Semantic + LLM | 91.33% | 38.7ms | 25.8 |
+| Algorithmic Only | 85.00% | 1.4ms | 737.4 |
+| Semantic Only | 88.33% | 9.4ms | 106.7 |
 
 ### Layer Distribution (Full Pipeline)
 
 #### Standard Dataset (213 queries):
-- Algorithmic layer: 87.3% of queries (99.46% accuracy)
-- Semantic layer: 9.9% of queries (90.48% accuracy)
-- LLM layer (local ollama): 2.8% of queries (100.00% accuracy)
+- Algorithmic layer: 87.8% of queries (187/213)
+- Semantic layer: 9.4% of queries (20/213)
+- LLM layer (local ollama): 2.8% of queries (6/213)
 
 #### Extended Dataset (300 queries with edge cases):
 - Algorithmic layer: 78.7% of queries (97.46% accuracy)
@@ -252,11 +266,11 @@ Comprehensive testing with 300 queries including edge cases:
 
 Comparison with and without contextual boost rules (300 queries):
 
-| Metric | With Boost | Without Boost | Improvement |
-|--------|-----------|---------------|-------------|
-| Accuracy | 95.67% | 91.67% | +4.00% |
-| Algorithmic Usage | 78.7% | 68.7% | +10.0% |
-| Avg Query Time | 51.4ms | 68.0ms | 24.4% faster |
+| Metric | With Boost | Without Boost | Improvement  |
+|--------|------------|---------------|--------------|
+| Accuracy | 95.67%     | 92.00%        | ~ +4.00%     |
+| Algorithmic Usage | 78.7%      | 69.3%         | ~ +10.0%     |
+| Avg Query Time | 21.3ms     | 27.2ms        | ~ 22% faster |
 
 See `testResults/` directory for detailed comparative analyses.
 
@@ -285,11 +299,12 @@ See `testResults/` directory for detailed comparative analyses.
 
 ### Extending to Other Domains
 
-1. Replace `utils/res_info.json` with your domain information
+1. Update `utils/res_info.json` with your domain information
 2. Update intent patterns in `utils/intent_patterns.json`
-3. Modify critical keywords in `utils/linguistic_resources.json`
-4. Adjust boost rules in `boostEngine.py` if using algorithmic layer
-5. Update test dataset in `testData/test_data.py`
+3. Modify linguistics in `utils/linguistic_resources.json`
+4. Adjust boost rules in `intentRecognizer/boostEngine.py` if using algorithmic layer
+5. Update llm prompt templates in `intentRecognizer/llm_recognizer.py`
+6. Update test dataset in `testData/test_data.py`
 
 ## License
 

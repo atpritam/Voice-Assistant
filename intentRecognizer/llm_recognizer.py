@@ -139,7 +139,7 @@ class LLMRecognizer:
         self.stats["total_api_calls"] += 1
 
         try:
-            response = self._call_llm_api(query, intent_patterns, conversation_history, recognized_intent)
+            response = self._call_llm_api(query, intent_patterns, conversation_history, recognized_intent, original_conf)
             result = self._process_api_response(response, intent_patterns, recognized_intent)
 
             if not self.test_mode:
@@ -190,9 +190,10 @@ class LLMRecognizer:
 
     def _call_llm_api(self, query: str, intent_patterns: Dict,
                      conversation_history: Optional[List[Dict]] = None,
-                     recognized_intent: Optional[str] = None):
+                     recognized_intent: Optional[str] = None,
+                      original_conf: Optional[float] = None):
         """Call LLM API (Ollama or OpenAI)"""
-        system_prompt = self._get_system_prompt(intent_patterns, recognized_intent)
+        system_prompt = self._get_system_prompt(intent_patterns, recognized_intent, original_conf)
         user_prompt = self._build_user_prompt(query, conversation_history)
 
         messages = [
@@ -242,22 +243,64 @@ class LLMRecognizer:
 
         return "\n".join(prompt_parts)
 
-    def _get_system_prompt(self, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> str:
+    def _get_selective_business_info(self, intent: str) -> str:
+        """Return only business info relevant to the intent to reduce token usage"""
+
+        if intent == "order" or intent == "delivery":
+            info = {
+                "menu_highlights": self.res_info.get("menu_highlights"),
+                "delivery": self.res_info.get("delivery"),
+            }
+
+        elif intent == "complaint":
+            info = {
+                "location": self.res_info.get("location"),
+                "delivery": self.res_info.get("delivery")
+            }
+
+        elif intent == "hours_location":
+            info = {
+                "hours": self.res_info.get("hours"),
+                "location": self.res_info.get("location")
+            }
+
+        elif intent == "menu_inquiry":
+            info = {
+                "menu_highlights": self.res_info.get("menu_highlights")
+            }
+
+        elif intent == "general":
+            info = {
+                "business_type": self.res_info.get("business_type"),
+            }
+
+        else:
+            info = {}
+
+        return json.dumps(info, indent=2)
+
+    def _get_system_prompt(self, intent_patterns: Dict, recognized_intent: Optional[str] = None, original_conf: Optional[float] = None) -> str:
         """Generate system prompt for intent classification and response generation"""
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
         intent_descriptions = """- general: Greetings, thanks, confirmations"""
 
         if self.test_mode:
             prompt = f"""Intent classification for Pizza Restaurant. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"""
-            if recognized_intent and recognized_intent != "unknown":
+            if recognized_intent in valid_intents:
                 prompt += f"\nPrevious layer suggested: {recognized_intent}, override if you think it's incorrect."
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
+        business_info=""
+        if recognized_intent in valid_intents and original_conf > 0.7:
+            business_info = self._get_selective_business_info(recognized_intent)
+        else:
+            business_info = json.dumps(self.res_info, indent=2)
+
         prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
                  Generate ONE response that directly addresses the query in under 40 words.
 
-                 INFO: {json.dumps(self.res_info, indent=2)}
+                 INFO: {business_info}
 
                  Typical Order flow:
                     1) Customer chooses Pizza (ask size if not already specified)
@@ -270,14 +313,16 @@ class LLMRecognizer:
                  AVAILABLE INTENTS:
                  {', '.join(valid_intents)}
                  {intent_descriptions}
-                 Previous layer suggested: {recognized_intent}, override if incorrect based on conversation history and context.
 
-                 confidence level:
-                    >=0.8 is High confidence
-                    >=0.6 is Medium confidence
-                    <0.6 is Low confidence"""
+                 Confidence levels:
+                    >=0.8 High (clear intent)
+                    >=0.6 Medium (reasonable)
+                    <0.6 Low (ambiguous)"""
 
-        prompt += '\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your helpful response"}}'
+        if recognized_intent in valid_intents:
+            prompt += f"\n\nPrevious layer suggested: {recognized_intent}, but you must override if conversation context clearly indicates different intent."
+
+        prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your helpful response"}}'
         return prompt
 
     def _process_api_response(self, response, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> LLMResult:
