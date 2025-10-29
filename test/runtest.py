@@ -86,7 +86,7 @@ class RecognizerFactory:
         """Create IntentRecognizer with given configuration"""
         try:
             return IntentRecognizer(
-                enable_logging=False,
+                enable_logging=log,
                 enable_algorithmic=algo,
                 enable_semantic=semantic,
                 enable_llm=llm,
