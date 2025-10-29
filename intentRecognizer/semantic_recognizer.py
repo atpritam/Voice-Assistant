@@ -180,7 +180,8 @@ class SemanticRecognizer:
                 continue
 
             patterns = intent_data["patterns"]
-            embeddings = self.model.encode(patterns, convert_to_numpy=True)
+            expanded_patterns = [IntentRecognizerUtils.expand_contractions(p) for p in patterns]
+            embeddings = self.model.encode(expanded_patterns, convert_to_numpy=True)
             self.intent_embeddings[intent_name] = {
                 'patterns': patterns,
                 'embeddings': embeddings,
@@ -211,20 +212,31 @@ class SemanticRecognizer:
             if self.enable_logging:
                 self.logger.error(f"Error clearing cache: {e}")
 
-    def _calculate_semantic_similarity(self, query_embedding: np.ndarray, intent_name: str) -> Tuple[float, str, Dict]:
-        """Calculate semantic similarity between query and intent patterns"""
+    def _calculate_semantic_similarity(self, query_embedding: np.ndarray, intent_name: str, top_k: int = 3) -> Tuple[
+        float, str, Dict]:
+        """Calculate semantic similarity using top-K averaging"""
         intent_data = self.intent_embeddings[intent_name]
         pattern_embeddings = intent_data['embeddings']
         patterns = intent_data['patterns']
 
         similarities = cosine_similarity(query_embedding.reshape(1, -1), pattern_embeddings)[0]
-        max_idx = np.argmax(similarities)
-        max_similarity = float(similarities[max_idx])
-        best_pattern = patterns[max_idx]
+
+        # Get top-K patterns
+        top_k_indices = np.argsort(similarities)[-top_k:][::-1]
+        top_k_similarities = similarities[top_k_indices]
+
+        # Weighted average: 50% max, 30% second, 20% third
+        weights = [0.5, 0.3, 0.2][:len(top_k_similarities)]
+        weights = np.array(weights) / sum(weights)  # Normalize
+
+        max_similarity = float(np.sum(top_k_similarities * weights))
+        best_pattern = patterns[top_k_indices[0]]
 
         breakdown = {
             'semantic_similarity': max_similarity,
             'matched_pattern': best_pattern,
+            'top_k_patterns': [patterns[i] for i in top_k_indices],
+            'top_k_scores': [float(similarities[i]) for i in top_k_indices],
             'all_similarities': {patterns[i]: float(similarities[i]) for i in range(len(patterns))}
         }
         return max_similarity, best_pattern, breakdown
@@ -237,7 +249,8 @@ class SemanticRecognizer:
             return self._create_unknown_result("Empty query or no patterns")
 
         try:
-            query_embedding = self.model.encode(query, convert_to_numpy=True)
+            expanded_query = IntentRecognizerUtils.expand_contractions(query)
+            query_embedding = self.model.encode(expanded_query, convert_to_numpy=True)
 
             intent_scores = {}
             for intent_name in self.intent_embeddings.keys():

@@ -7,7 +7,6 @@ Each layer is tried when the previous layer fails or has below threshold confide
 import os
 import json
 import logging
-import sys
 
 import torch
 from typing import Dict, Optional, List
@@ -39,6 +38,49 @@ class RecognitionResult:
 
 class IntentRecognizerUtils:
     """Shared utilities for all recognizer layers"""
+
+    @staticmethod
+    def expand_contractions(text: str) -> str:
+        """Expand English contractions using suffix-based matching"""
+
+        # Contraction expansion mappings
+        CONTRACTION_SUFFIXES = [
+            ("n't", " not"),
+            ("'ve", " have"),
+            ("'re", " are"),
+            ("'ll", " will"),
+            ("'d", " would"),
+            ("'m", " am"),
+            ("'s", " is"),
+        ]
+
+        CONTRACTION_SPECIAL_CASES = {
+            "won't": "will not",
+            "can't": "cannot",
+            "ain't": "am not"
+        }
+        words = text.split()
+        expanded_words = []
+
+        for word in words:
+            word_lower = word.lower()
+
+            if word_lower in CONTRACTION_SPECIAL_CASES:
+                expanded_words.append(CONTRACTION_SPECIAL_CASES[word_lower])
+                continue
+
+            expanded = False
+            for suffix, replacement in CONTRACTION_SUFFIXES:
+                if word_lower.endswith(suffix):
+                    base = word_lower[:-len(suffix)]
+                    expanded_words.append(base + replacement)
+                    expanded = True
+                    break
+
+            if not expanded:
+                expanded_words.append(word)
+
+        return ' '.join(expanded_words)
 
     @staticmethod
     def determine_confidence_level(confidence: float) -> str:

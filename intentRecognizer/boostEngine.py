@@ -6,16 +6,35 @@ Current Domain: Pizza Restaurant Customer Service
 import logging, os, json
 from typing import Dict, Set
 
-# BOOST VALUES
+# ============================================================================
+# BOOST VALUES - Positive adjustments to intent scores
+
 ORDER_ACTION_BOOST = 0.20
 DELIVERY_STATUS_BOOST = 0.25
-ORDER_DELIVERY_PENALTY = 0.15
-DELIVERY_COMPLAINT_PENALTY=0.25
 NEGATIVE_SENTIMENT_BOOST = 0.4
 PRICE_SIZE_BOOST = 0.25
 TIME_LOCATION_BOOST = 0.25
 ESCALATION_BOOST = 0.35
 SARCASM_COMPLAINT_BOOST = 0.35
+INQUIRY_QUESTION_BOOST = 0.25
+DELIVERY_INQUIRY_BOOST = 0.20
+MENU_ITEM_ORDERING_BOOST = 0.20
+MENU_ITEM_CUSTOMIZATION_BOOST = 0.25
+MENU_ITEM_QUALITY_BOOST = 0.30
+RECOMMENDATION_INQUIRY_BOOST = 0.25
+PRICE_INQUIRY_BOOST = 0.15
+HOURS_INQUIRY_BOOST = 0.25
+
+# ============================================================================
+# PENALTY VALUES - Negative adjustments to intent scores
+
+ORDER_DELIVERY_PENALTY = 0.15
+DELIVERY_COMPLAINT_PENALTY = 0.25
+MENU_INQUIRY_PENALTY = 0.20
+ORDER_INQUIRY_PENALTY = 0.15
+HOURS_MENU_PENALTY = 0.15
+DELIVERY_RECOMMENDATION_PENALTY = 0.15
+
 
 
 class BoostRuleEngine:
@@ -39,6 +58,13 @@ class BoostRuleEngine:
             self.logger = logging.getLogger(__name__)
         self.res_info = self._load_res_info()
         self.menu_items = self._extract_menu_items(self.res_info) if self.res_info else set()
+
+        self.negative_words = {
+            'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain',
+            'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold',
+            'late', 'issue', 'problem', 'never', 'poor', 'nasty', 'disgusting',
+            'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale', 'furious'
+        }
 
     def _load_res_info(self, res_info_file: str = None) -> Dict:
         """Load restaurant information from JSON file"""
@@ -104,6 +130,8 @@ class BoostRuleEngine:
         self._apply_delivery_status_boost(query_words, intent_scores)
         self._apply_sarcasm_boost(query_words, intent_scores)
         self._apply_menu_item_ordering_boost(query_words, intent_scores)
+        self._apply_inquiry_pattern_boost(query_words, intent_scores)
+        self._apply_menu_item_quality_boost(query_words, intent_scores)
         return intent_scores
 
     def _boost_intent(self, intent_name: str, intent_scores: Dict, boost: float, label: str = ""):
@@ -123,30 +151,29 @@ class BoostRuleEngine:
                 self.logger.debug(f"{label}: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
 
 
+    # ========================================================================
     # DOMAIN-SPECIFIC BOOST RULES
 
     def _apply_order_action_boost(self, query_words: Set[str], intent_scores: Dict):
         """
         RULE 1: Order action verb handling
+        Boosts order intent when both order action verbs and 'order' keyword present
         """
+
+        has_negative = bool(query_words & self.negative_words)
+
         has_order_action = bool(query_words & self.intent_critical_keywords.get('order', set()))
         has_order_keyword = 'order' in query_words
 
-        if has_order_action and has_order_keyword:
-            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Order boost")
+        if has_order_action and has_order_keyword and not has_negative:
+            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Order action boost")
 
     def _apply_negative_sentiment_boost(self, query_words: Set[str], intent_scores: Dict):
         """
         RULE 2: Negative sentiment for complaints
         This rule is generally applicable to most customer service domains.
         """
-        negative_words = {
-            'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain',
-            'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold',
-            'late', 'issue', 'problem', 'never', 'poor', 'nasty', 'disgusting',
-            'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale'
-        }
-        negative_count = len(query_words & negative_words)
+        negative_count = len(query_words & self.negative_words)
 
         if negative_count > 0:
             boost_amount = min(NEGATIVE_SENTIMENT_BOOST * min(negative_count, 3) / 2, 0.35)
@@ -160,7 +187,7 @@ class BoostRuleEngine:
 
             if has_delivery_keywords:
                 self._penalty_intent('delivery', intent_scores, DELIVERY_COMPLAINT_PENALTY,
-                                     f"Negative+delivery penalty (complaint about delivery)")
+                                     "Negative+delivery penalty (complaint about delivery)")
 
     def _apply_price_size_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -183,9 +210,9 @@ class BoostRuleEngine:
         """
         time_location_context = {
             'when', 'what time', 'how long', 'until when', 'from when',
-            'where', 'which', 'what address', 'how far', 'late night'
+            'where', 'which', 'what address', 'how far', 'late night', 'get to'
         }
-        hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store'}
+        hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store', 'at', 'find', 'there'}
 
         has_question = bool(query_words & time_location_context)
         has_hours = bool(query_words & hours_keywords)
@@ -193,7 +220,8 @@ class BoostRuleEngine:
         if has_question and has_hours:
             self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST,
                                "Time/location boost")
-            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY, "Order penalty for time query")
+            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY,
+                               "Order penalty for time query")
 
     def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -221,25 +249,32 @@ class BoostRuleEngine:
         has_status = bool(query_words & status_indicators)
         has_order = bool(query_words & order_context)
 
-        if has_status and has_order:
-            self._boost_intent('delivery', intent_scores, DELIVERY_STATUS_BOOST, "Delivery status boost")
-            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY, "Order penalty for status query")
         if has_status:
-            self._boost_intent('delivery', intent_scores, DELIVERY_STATUS_BOOST, "Delivery status boost")
+            self._boost_intent('delivery', intent_scores, DELIVERY_STATUS_BOOST,
+                             "Delivery status boost")
+
+            if has_order:
+                self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY,
+                                   "Order penalty for status query")
 
     def _apply_sarcasm_boost(self, query_words: Set[str], intent_scores: Dict):
         """
-        RULE 7: Sarcasm/negative complaint indicators
-        Detect sarcastic complaints
+        RULE 7: Enhanced sarcasm/negative complaint indicators
         """
-        sarcasm_markers = {'amazing', 'wonderful', 'perfect', 'great', 'love', 'exactly'}
-        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever'}
+        sarcasm_markers = {'amazing', 'wonderful', 'perfect', 'great', 'love', 'exactly', 'brilliant'}
+        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever', 'still', 'yet', 'didnt'}
+
+        # Temporal disappointment words
+        expectation_words = {'waited', 'waiting', 'only', 'still', 'yet', 'finally'}
 
         has_sarcasm = bool(query_words & sarcasm_markers)
         has_negative = bool(query_words & negative_context)
+        has_expectation = bool(query_words & expectation_words)
 
-        if has_sarcasm and has_negative:
-                self._boost_intent('complaint', intent_scores, SARCASM_COMPLAINT_BOOST, "Sarcasm complaint boost")
+        # Sarcasm with timing/expectation is almost always complaint
+        if has_sarcasm and (has_negative or has_expectation):
+            self._boost_intent('complaint', intent_scores, SARCASM_COMPLAINT_BOOST,
+                               "Sarcasm complaint boost")
 
     def _apply_menu_item_ordering_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -253,9 +288,81 @@ class BoostRuleEngine:
         has_sizer = bool(query_words & {'small', 'medium', 'large', 'family', 'one', 'two', 'three', 'four', 'five', '1', '2', '3', '4', '5'})
 
         if has_menu_item and not has_question:
-            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Menu item ordering boost")
-            self._penalty_intent('menu_inquiry', intent_scores, 0.2, "Menu item ordering penalty")
+            self._boost_intent('order', intent_scores, MENU_ITEM_ORDERING_BOOST,
+                             "Menu item ordering boost")
+            self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
+                               "Menu item ordering penalty")
 
-        elif (has_menu_item or has_sizer) and has_order_action and len(query_words) <=5:
-            self._boost_intent('order', intent_scores, ORDER_ACTION_BOOST, "Menu item ordering boost")
-            self._penalty_intent('menu_inquiry', intent_scores, 0.2, "Menu item ordering penalty")
+        elif (has_menu_item or has_sizer) and has_order_action and len(query_words) <= 5:
+            self._boost_intent('order', intent_scores, MENU_ITEM_ORDERING_BOOST,
+                             "Menu item ordering boost")
+            self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
+                               "Menu item ordering penalty")
+
+    def _apply_inquiry_pattern_boost(self, query_words: Set[str], intent_scores: Dict):
+        """
+        RULE 9: Question about X Inquiry Pattern / Recommendation Pattern
+        """
+        inquiry_words = {'question', 'asking', 'inquire', 'wondering', 'ask', 'tell', 'know'}
+        about_words = {'about', 'regarding', 'can', 'concerning'}
+        recommendation_words = self.synonyms.get('recommendation', set())
+        menu_context_words = {'options', 'choices', 'selections', 'good', 'best', 'pizza'}
+
+        has_inquiry = bool(query_words & inquiry_words)
+        has_about = bool(query_words & about_words)
+        has_recommendation = bool(query_words & recommendation_words)
+        has_menu_context = bool(query_words & menu_context_words)
+        is_recommendation_query = has_recommendation and has_menu_context
+
+        if has_inquiry and has_about:
+            if query_words & self.synonyms.get('delivery', set()):
+                self._boost_intent('delivery', intent_scores, DELIVERY_INQUIRY_BOOST,
+                                   "Delivery inquiry boost")
+                self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
+                                   "Order penalty for delivery inquiry")
+
+            if query_words & {'hours', 'time', 'open', 'close'}:
+                self._boost_intent('hours_location', intent_scores, HOURS_INQUIRY_BOOST,
+                                   "Hours inquiry boost")
+                self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
+                                   "Order penalty for hours inquiry")
+
+            price_related_words = {'menu'} | self.synonyms.get('price', set())
+            if query_words & price_related_words:
+                self._boost_intent('menu_inquiry', intent_scores, PRICE_INQUIRY_BOOST,
+                                   "Price inquiry boost")
+                self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
+                                   "Order penalty for price inquiry")
+                self._penalty_intent('hours_location', intent_scores, HOURS_MENU_PENALTY,
+                                   "Hours penalty for menu/price inquiry")
+
+        if is_recommendation_query:
+            self._boost_intent('menu_inquiry', intent_scores, RECOMMENDATION_INQUIRY_BOOST,
+                               "Recommendation inquiry boost")
+            self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
+                               "Order penalty for recommendation inquiry")
+            self._penalty_intent('delivery', intent_scores, DELIVERY_RECOMMENDATION_PENALTY,
+                               "Delivery penalty for recommendation inquiry")
+
+    def _apply_menu_item_quality_boost(self, query_words: Set[str], intent_scores: Dict):
+        """
+        RULE 10: Specific menu items + quality/customization = could be order or complaint
+        """
+        has_menu_item = bool(query_words & self.menu_items)
+        quality_issues = self.synonyms.get('quality', set())
+        has_quality_issue = bool(query_words & quality_issues)
+
+        customization_words = {'no', 'without', 'extra', 'add', 'remove', 'different'}
+        has_customization = bool(query_words & customization_words)
+
+        if has_menu_item:
+            if has_quality_issue:
+                self._boost_intent('complaint', intent_scores, MENU_ITEM_QUALITY_BOOST,
+                                 "Menu item quality issue boost")
+                self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
+                                   "Menu inquiry penalty")
+            elif has_customization:
+                self._boost_intent('order', intent_scores, MENU_ITEM_CUSTOMIZATION_BOOST,
+                                 "Menu item customization boost")
+                self._penalty_intent('menu_inquiry', intent_scores, ORDER_INQUIRY_PENALTY,
+                                   "Menu inquiry penalty")

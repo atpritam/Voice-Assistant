@@ -27,7 +27,7 @@ class Config:
     utils_dir: str = os.path.join(os.path.dirname(__file__), '..', 'utils')
     pattern_file: str = os.path.join(utils_dir, 'intent_patterns.json')
     min_confidence: float = 0.5
-    semantic_model: str = "all-MiniLM-L6-v2"
+    semantic_model: str = "all-mpnet-base-v2" # all-MiniLM-L6-v2
 
     # LLM Configuration
     use_local_llm: bool = True
@@ -86,7 +86,7 @@ class RecognizerFactory:
         """Create IntentRecognizer with given configuration"""
         try:
             return IntentRecognizer(
-                enable_logging=log,
+                enable_logging=False,
                 enable_algorithmic=algo,
                 enable_semantic=semantic,
                 enable_llm=llm,
@@ -271,7 +271,7 @@ class ComparativeTestRunner(TestRunner):
         return results
 
     def _print_comparison(self, results: List[Dict]) -> None:
-        print_section("=" * 80)
+        print_section("COMPARATIVE ANALYSIS")
 
         print("\nPipeline Comparison\n" + "-" * 80)
         print(f"{'Configuration':<25} {'Accuracy':<10} {'Total Time':<12} {'Avg Time':<10} {'Q/s':<10}")

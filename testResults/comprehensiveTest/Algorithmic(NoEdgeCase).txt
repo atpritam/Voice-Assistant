@@ -1,42 +1,47 @@
 
+================================================================================
+COMPREHENSIVE TEST
+================================================================================
+
+
 Pipeline: Algorithmic
 Mode: TEST MODE (intent recognition only)
 
 Boost Engine: True
 Edge Cases Included: False
 
-Running tests on 213 queries...
+Test Dataset Size: 304 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 92.96%
-Correct: 198 / 213
-Avg Query Time: 1.4ms
-Queries/s: 731.3
+Accuracy: 95.39%
+Correct: 290 / 304
+Avg Query Time: 2.7ms
+Queries/s: 373.5
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 206 ( 96.7%)  Acc: 96.12%
+Algorithmic : 299 ( 98.4%)  Acc: 96.99%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 140 ( 65.7%)
-Medium (0.6-0.8)      :  46 ( 21.6%)
-Low (<0.6)            :  27 ( 12.7%)
+High (≥0.8)           : 231 ( 76.0%)
+Medium (0.6-0.8)      :  51 ( 16.8%)
+Low (<0.6)            :  22 (  7.2%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'The box was damaged when it arrived' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
+1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
 
-2. 'This is not what I ordered at all' -> hours_location (exp: complaint, conf: 0.48, layer: algorithmic)
+2. 'The box was damaged when it arrived' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
 
-3. 'The driver was very rude' -> delivery (exp: complaint, conf: 0.50, layer: algorithmic)
+3. 'This is not what I ordered at all' -> hours_location (exp: complaint, conf: 0.48, layer: algorithmic)
 
-4. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
+4. 'The driver was very rude' -> delivery (exp: complaint, conf: 0.50, layer: algorithmic)
 
-5. 'The crust is hard as a rock' -> unknown (exp: complaint, conf: 0.00, layer: none)
+5. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
 
 6. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
 
@@ -52,8 +57,6 @@ INCORRECT PREDICTIONS
 
 12. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
 
-13. 'Amazing service as always' -> complaint (exp: general, conf: 0.47, layer: algorithmic)
+13. 'Amazing service as always' -> complaint (exp: general, conf: 0.46, layer: algorithmic)
 
 14. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
-
-15. 'See you later' -> unknown (exp: general, conf: 0.00, layer: none)

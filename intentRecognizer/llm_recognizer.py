@@ -237,6 +237,7 @@ class LLMRecognizer:
             "- Track the order state and what has been collected",
             "- Respond naturally based on what is still needed",
             "- Do not ask multiple questions in one response"
+            "- Current Query could be a continuation of previous query intent"
             "",
             f'CURRENT QUERY: "{query}"'
         ])
@@ -282,47 +283,57 @@ class LLMRecognizer:
     def _get_system_prompt(self, intent_patterns: Dict, recognized_intent: Optional[str] = None, original_conf: Optional[float] = None) -> str:
         """Generate system prompt for intent classification and response generation"""
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
-        intent_descriptions = """- general: Greetings, thanks, confirmations"""
+        intent_descriptions = """- general: Greetings, thanks, confirmations, chitchat
+        - order: Placing NEW orders, pickup, menu item customization, returning customers wanting order like last time
+        - delivery: Order status checks, tracking, "where is my order", delivery related questions, "when will it arrive?"
+        - menu_inquiry: Asking about prices, options, recommendations, deals, "what do you have", deciding items
+        - hours_location: Store hours, location, address
+        - complaint: Problems with order/food issues, wrong items/size, sarcastic complaints, service/delivery issues"""
 
         if self.test_mode:
             prompt = f"""Intent classification for Pizza Restaurant. Classify into: {', '.join(valid_intents)}\n{intent_descriptions}"""
+            prompt += '\nIdentify Primary intent in multi-intent query.'
             if recognized_intent in valid_intents:
                 prompt += f"\nPrevious layer suggested: {recognized_intent}, override if you think it's incorrect."
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
-        business_info=""
         if recognized_intent in valid_intents and original_conf > 0.7:
-            business_info = self._get_selective_business_info(recognized_intent)
+            info = self._get_selective_business_info(recognized_intent)
         else:
-            business_info = json.dumps(self.res_info, indent=2)
+            info = json.dumps(self.res_info, indent=2)
 
         prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
-                 Generate ONE response that directly addresses the query in under 40 words.
+                 Use INFO to reply in under 40 words.
+                 INFO: {info}
+                 
+    Order flow:
+    1. User picks a specific pizza (ask size if missing)
+    2. Offer sides/drinks
+    3. Ask pickup or delivery
+    4. Get name
+    5. If delivery, ask user's address
+    6. Confirm and close
 
-                 INFO: {business_info}
+    INTENTS: {', '.join(valid_intents)}
+    {intent_descriptions}
 
-                 Typical Order flow:
-                    1) Customer chooses Pizza (ask size if not already specified)
-                    2) then You offer sides or drinks (if not already specified)
-                    3) then You ask them if they'd like to pick up or get the order delivered
-                    4) then get their name
-                    5) then ask for address if its a delivery
-                    6) confirm and close.
+    Confidence:
+    >=0.8 high | >=0.6 medium | <0.6 low
+    """
 
-                 AVAILABLE INTENTS:
-                 {', '.join(valid_intents)}
-                 {intent_descriptions}
+        if recognized_intent in valid_intents and original_conf > 0.5:
+            prompt += f"""
+    Previous layer suggested: {recognized_intent} ({original_conf:.2f})
+    You may override intent if wrong. Previous layer had no chat history.
+    """
 
-                 Confidence levels:
-                    >=0.8 High (clear intent)
-                    >=0.6 Medium (reasonable)
-                    <0.6 Low (ambiguous)"""
+        prompt += (
+            "\nInput could be a continuation of the previous query’s intent.\n"
+            "Return ONLY valid JSON (no markdown):\n"
+            '{"intent": "intent_name", "confidence": 0.83, "response": "Short helpful reply"}'
+        )
 
-        if recognized_intent in valid_intents:
-            prompt += f"\n\nPrevious layer suggested: {recognized_intent}, but you must override if conversation context clearly indicates different intent."
-
-        prompt += '\n\nRespond with ONLY valid JSON (no markdown code blocks):\n{{"intent": "intent_name", "confidence": 0.85, "response": "Your helpful response"}}'
         return prompt
 
     def _process_api_response(self, response, intent_patterns: Dict, recognized_intent: Optional[str] = None) -> LLMResult:

@@ -1,39 +1,44 @@
 
+================================================================================
+COMPREHENSIVE TEST
+================================================================================
+
+
 Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
-Semantic Model: all-MiniLM-L6-v2
+Semantic Model: all-mpnet-base-v2
 LLM Model: llama3.2:3b-instruct-q4_K_M
 Mode: TEST MODE (intent recognition only)
 
 Boost Engine: True
 Edge Cases Included: False
 
-Running tests on 213 queries...
+Test Dataset Size: 304 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 98.59%
-Correct: 210 / 213
-Avg Query Time: 10.9ms
-Queries/s: 91.8
+Accuracy: 99.01%
+Correct: 301 / 304
+Avg Query Time: 10.6ms
+Queries/s: 93.9
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 187 ( 87.8%)  Acc: 99.47%
-Semantic    :  20 (  9.4%)  Acc: 90.00%
-LLM         :   6 (  2.8%)  Acc: 100.00%
+Algorithmic : 282 ( 92.8%)  Acc: 99.29%
+Semantic    :  14 (  4.6%)  Acc: 92.86%
+LLM         :   8 (  2.6%)  Acc: 100.00%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 151 ( 70.9%)
-Medium (0.6-0.8)      :  53 ( 24.9%)
-Low (<0.6)            :   9 (  4.2%)
+High (≥0.8)           : 240 ( 78.9%)
+Medium (0.6-0.8)      :  59 ( 19.4%)
+Low (<0.6)            :   5 (  1.6%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'I'll take a veggie deluxe no mushrooms' -> menu_inquiry (exp: order, conf: 0.59, layer: semantic)
+1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
 
-2. 'The crust is hard as a rock' -> menu_inquiry (exp: complaint, conf: 0.60, layer: semantic)
+2. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
 
-3. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+3. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.50, layer: semantic)

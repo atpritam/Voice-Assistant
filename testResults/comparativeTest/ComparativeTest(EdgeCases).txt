@@ -1,51 +1,57 @@
 
+================================================================================
+COMPARATIVE TEST
+================================================================================
+
+
 Testing multiple pipeline configurations for comparative results
-Semantic Model: all-MiniLM-L6-v2
+Semantic Model: all-mpnet-base-v2
 LLM Model: llama3.2:3b-instruct-q4_K_M
 Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: True
 
-
-Running tests on 300 queries...
+Test Dataset Size: 400 queries
 
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 95.67% (287/300 correct)
-Time: 6.39s
+✓ Accuracy: 98.75% (395/400 correct)
+Time: 7.55s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> Semantic
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 93.00% (279/300 correct)
-Time: 1.21s
+✓ Accuracy: 96.00% (384/400 correct)
+Time: 2.43s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 94.33% (283/300 correct)
-Time: 17.58s
+✓ Accuracy: 97.00% (388/400 correct)
+Time: 18.12s
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 91.33% (274/300 correct)
-Time: 11.62s
+✓ Accuracy: 93.25% (373/400 correct)
+Time: 19.43s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 85.00% (255/300 correct)
-Time: 406.8ms
+✓ Accuracy: 89.75% (359/400 correct)
+Time: 1.11s
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 88.33% (265/300 correct)
-Time: 2.81s
+✓ Accuracy: 88.00% (352/400 correct)
+Time: 2.71s
 
+================================================================================
+COMPARATIVE ANALYSIS
 ================================================================================
 
 
@@ -53,21 +59,21 @@ Pipeline Comparison
 --------------------------------------------------------------------------------
 Configuration             Accuracy   Total Time   Avg Time   Q/s
 --------------------------------------------------------------------------------
-Full Pipeline               95.67%       6.39s    21.3ms      46.9
-Algorithmic -> Semantic     93.00%       1.21s     4.0ms     248.8
-Algorithmic -> LLM          94.33%      17.58s    58.6ms      17.1
-Semantic -> LLM             91.33%      11.62s    38.7ms      25.8
-Algorithmic Only            85.00%     406.8ms     1.4ms     737.4
-Semantic Only               88.33%       2.81s     9.4ms     106.7
+Full Pipeline               98.75%       7.55s    18.9ms      53.0
+Algorithmic -> Semantic     96.00%       2.43s     6.1ms     164.8
+Algorithmic -> LLM          97.00%      18.12s    45.3ms      22.1
+Semantic -> LLM             93.25%      19.43s    48.6ms      20.6
+Algorithmic Only            89.75%       1.11s     2.8ms     361.2
+Semantic Only               88.00%       2.71s     6.8ms     147.6
 
 LAYER USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             Algo     Semantic   LLM      Unrecognized Intent
 --------------------------------------------------------------------------------
-Full Pipeline                236        45      19        0
-Algorithmic -> Semantic      236        55       0        9
-Algorithmic -> LLM           236         0      64        0
-Semantic -> LLM                0       267      33        0
-Algorithmic Only             274         0       0       26
-Semantic Only                  0       288       0       12
+Full Pipeline                337        43      20        0
+Algorithmic -> Semantic      337        55       0        8
+Algorithmic -> LLM           337         0      63        1
+Semantic -> LLM                0       351      49        0
+Algorithmic Only             378         0       0       22
+Semantic Only                  0       382       0       18
 

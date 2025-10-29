@@ -8,7 +8,7 @@
       "complaint", "complain", "wrong", "issue", "problem",
       "bad", "terrible", "horrible", "disappointed", "unhappy",
       "refund", "unsatisfied", "dissatisfied", "upset", "angry",
-      "unacceptable", "poor", "awful", "disgusting", "nasty"
+      "unacceptable", "poor", "awful", "disgusting", "nasty", "furious"
     ],
     "delivery": [
       "delivery", "deliver", "delivered", "delivering", "shipment",
@@ -36,7 +36,10 @@
     ],
     "quality": [
       "quality", "fresh", "stale", "old", "burnt", "cold",
-      "hot", "warm", "undercooked", "overcooked", "raw"
+      "hot", "warm", "undercooked", "overcooked", "raw", "hard", "soggy"
+    ],
+    "recommendation": [
+      "recommendations", "recommend", "recommended", "recommendations", "suggestion", "suggestions", "suggest"
     ],
     "help": [
       "help", "assist", "support", "service", "information",
@@ -64,13 +67,13 @@
     "hours_location": [
       "hours", "open", "close", "address", "location",
       "where", "when", "time", "until", "schedule",
-      "directions", "find", "near", "situated"
+      "directions", "find", "near", "situated", "located"
     ],
     "menu_inquiry": [
       "menu", "toppings", "sizes", "price", "cost",
-      "have", "options", "special", "deal", "signature",
-      "available", "serve", "offer", "what", "which",
-      "types", "kind", "variety", "selection"
+      "have", "options", "special", "deal", "signature", "specialty",
+      "available", "serve", "offer", "what", "which", "suggestions",
+      "types", "kind", "variety", "selection", "recommend", "recommendations"
     ],
     "delivery": [
       "track", "status", "eta", "arrive", "fee", "charge",

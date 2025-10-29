@@ -17,6 +17,63 @@ A voice-enabled customer service system that recognizes user intent through a mu
   - Text-to-Speech (TTS) using Coqui TTS VITS model
   - Audio preprocessing for improved transcription accuracy
 
+## Quick Start
+
+Get the system running in 3 steps:
+
+### 1. Install Dependencies
+
+```bash
+# Install system dependencies
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.11 python3.11-venv ffmpeg espeak-ng
+
+# Clone and setup
+git clone https://github.com/atpritam/Voice-Assistant.git
+cd Voice-Assistant
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Choose Your LLM Backend
+
+**Option A: Local LLM with Ollama (Recommended - Free & Private)**
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull model and start service
+ollama pull llama3.2:3b-instruct-q4_K_M
+ollama serve &
+```
+
+**Option B: OpenAI API (Faster setup, requires API key)**
+
+Edit `app.py` and set `USE_LOCAL_LLM = False`
+
+```bash
+# Get API key from https://platform.openai.com/api-keys
+```
+
+### 3. Run the Application
+
+```bash
+# Create .env file with generated SECRET_KEY
+echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" > .env
+
+# If using OpenAI (Option B above), also add:
+echo "OPENAI_API_KEY=your-openai-api-key-here" >> .env
+
+# Start the application
+python app.py
+```
+
+Access the web interface at `http://localhost:5000` 
+
 ## System Architecture
 
 ### Intent Recognition Pipeline
@@ -39,15 +96,15 @@ Text Query
 ┌─────────────────────────┐
 │ Intent Recognition      │
 │                         │
-│ 1. Algorithmic (fast)   │ ← 77% of queries
+│ 1. Algorithmic (fast)   │ ← 84% of queries
 │    ├─ Pattern matching  │
 │    ├─ Levenshtein      │
 │    └─ Boost Engine      │
 │         ↓               │
-│ 2. Semantic (accurate)  │ ← 16% of queries
+│ 2. Semantic (accurate)  │ ← 11% of queries
 │    └─ Neural embeddings │
 │         ↓               │
-│ 3. LLM (fallback)       │ ← 7% of queries
+│ 3. LLM (fallback)       │ ← 5% of queries
 │    └─ Ollama/OpenAI    │
 └─────────────────────────┘
      ↓
@@ -67,6 +124,7 @@ Voice Output
 - CPU: Modern multi-core processor
 - RAM: 8GB
 - Storage: 6GB free space
+- Python: **3.11 (Required)** - Coqui TTS limitation
 
 **Recommended:**
 - CPU: 4+ cores
@@ -74,46 +132,49 @@ Voice Output
 - GPU: NVIDIA GPU with 4GB+ VRAM (CUDA-compatible)
 - Storage: 10GB free space
 
-**Note**: All components work on CPU, but GPU provides 5-10x speedup.
+**Note**: All components work on CPU-only systems. GPU acceleration is optional but significantly improves performance.
 
-### Prerequisites
+### Detailed Setup Instructions
 
-- Python >3.8 ; <=3.11
-- Virtual environment (recommended)
-- CUDA-compatible GPU (minimum 4GB of VRAM)
-- FFmpeg (required for audio processing)
-- espeak-ng (required for TTS)
+#### Installing Python 3.11
 
-### System Dependencies
+If you don't have Python 3.11 or need it alongside your existing Python installation:
 
 ```bash
-# Install Python 3.11 besides your existing System Python version
-# Coqui TTS currently only supports Python <=3.11
+# Ubuntu/Debian
 sudo apt install software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.11 python3.11-venv python3.11-dev
 
-# check python 3.11 version
-python3.11 --version
+# Verify installation
+python3.11 --version 
 ```
 
 ```bash
+# Ubuntu/Debian
 sudo apt install ffmpeg espeak-ng
 ```
 
-### Python Dependencies
+#### GPU Setup (Optional)
+
+If you have an NVIDIA GPU and want acceleration:
 
 ```bash
-# Clone the repository
-git clone https://github.com/atpritam/Voice-Assistant.git
-cd Voice-Assistant
+# Check CUDA availability
+nvidia-smi
+```
 
-# Create virtual environment
-python3.11 -m venv .venv
-source .venv/bin/activate
+The system will automatically detect and use GPU if available.
 
-# Install dependencies
+### Alternative Installation Methods
+
+#### Using Conda/Mamba
+
+```bash
+conda create -n voice-assistant python=3.11
+conda activate voice-assistant
+conda install -c conda-forge ffmpeg espeak-ng
 pip install -r requirements.txt
 ```
 
@@ -122,10 +183,17 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```env
+# Required
+SECRET_KEY=your_generated_secret_key_here
+
+# Optional - only if using OpenAI instead of local Ollama
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-Note: OpenAI API key is only required if using OpenAI models. For local LLM inference with Ollama, no API key is needed.
+Generate a secure `SECRET_KEY`:
+```bash
+python3 -c 'import secrets; print(secrets.token_hex(32))'
+```
 
 ## Configuration
 
@@ -144,7 +212,7 @@ ALGORITHMIC_THRESHOLD = 0.6
 SEMANTIC_THRESHOLD = 0.5
 
 # Model selection
-SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+SEMANTIC_MODEL = "all-MiniLM-L6-v2" # Options: all-mpnet-base-v2
 USE_LOCAL_LLM = True  # True for Ollama, False for OpenAI
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"  # or "gpt-5-nano" for OpenAI
 ```
@@ -224,53 +292,68 @@ python -m test.runtest --b
 
 ## Performance Benchmarks
 
-### Standard Test Dataset (213 queries)
+All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-instruct-q4_K_M`.
 
-Pipeline configuration tested on 213 queries without edge cases:
+### Standard Test Dataset (304 queries)
 
-| Configuration | Accuracy | Avg Time | Queries/s |
-|--------------|----------|----------|-----------|
-| Full Pipeline | 98.59% | 10.8ms | 92.5 |
-| Algorithmic + Semantic | 96.24% | 1.9ms | 519.4 |
-| Algorithmic + LLM | 98.12% | 44.7ms | 22.4 |
-| Semantic + LLM | 94.37% | 25.3ms | 39.6 |
-| Algorithmic Only | 92.96% | 1.3ms | 775.5 |
-| Semantic Only | 92.02% | 9.1ms | 109.6 |
-
-### Extended Test Dataset (300 queries with edge cases)
-
-Comprehensive testing with 300 queries including edge cases:
+Pipeline configuration tested on 304 queries without edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 95.67% | 21.3ms | 46.9 |
-| Algorithmic + Semantic | 93.00% | 4.0ms | 248.8 |
-| Algorithmic + LLM | 94.33% | 58.6ms | 17.1 |
-| Semantic + LLM | 91.33% | 38.7ms | 25.8 |
-| Algorithmic Only | 85.00% | 1.4ms | 737.4 |
-| Semantic Only | 88.33% | 9.4ms | 106.7 |
+| Full Pipeline | 99.01% | 11.2ms | 88.9 |
+| Algorithmic + Semantic | 97.70% | 3.5ms | 288.9 |
+| Algorithmic + LLM | 99.34% | 22.6ms | 44.3 |
+| Semantic + LLM | 95.07% | 37.6ms | 26.6 |
+| Algorithmic Only | 95.39% | 3.0ms | 330.6 |
+| Semantic Only | 92.43% | 6.5ms | 153.6 |
+
+### Extended Test Dataset (400 queries with edge cases)
+
+Comprehensive testing with 400 queries including edge cases:
+
+| Configuration | Accuracy | Avg Time | Queries/s |
+|--------------|----------|----------|-----------|
+| Full Pipeline | 98.75% | 18.9ms | 53.0 |
+| Algorithmic + Semantic | 96.00% | 6.1ms | 164.8 |
+| Algorithmic + LLM | 97.00% | 45.3ms | 22.1 |
+| Semantic + LLM | 93.25% | 48.6ms | 20.6 |
+| Algorithmic Only | 89.75% | 2.8ms | 361.2 |
+| Semantic Only | 88.00% | 6.8ms | 147.6 |
 
 ### Layer Distribution (Full Pipeline)
 
-#### Standard Dataset (213 queries):
-- Algorithmic layer: 87.8% of queries (187/213)
-- Semantic layer: 9.4% of queries (20/213)
-- LLM layer (local ollama): 2.8% of queries (6/213)
+#### Standard Dataset (304 queries):
+- Algorithmic layer: 92.8% of queries (282/304)
+- Semantic layer: 4.6% of queries (14/304)
+- LLM layer: 2.6% of queries (8/304)
 
-#### Extended Dataset (300 queries with edge cases):
-- Algorithmic layer: 78.7% of queries (97.46% accuracy)
-- Semantic layer: 15.0% of queries (88.89% accuracy)
-- LLM layer (local ollama): 6.3% of queries (94.74% accuracy)
+#### Extended Dataset (400 queries with edge cases):
+- Algorithmic layer: 84.3% of queries (337/400)
+- Semantic layer: 10.8% of queries (43/400)
+- LLM layer: 5.0% of queries (20/400)
 
 ### Boost Engine Impact
 
-Comparison with and without contextual boost rules (300 queries):
+Comparison with and without contextual boost rules (400 queries with edge cases):
 
-| Metric | With Boost | Without Boost | Improvement  |
-|--------|------------|---------------|--------------|
-| Accuracy | 95.67%     | 92.00%        | ~ +4.00%     |
-| Algorithmic Usage | 78.7%      | 69.3%         | ~ +10.0%     |
-| Avg Query Time | 21.3ms     | 27.2ms        | ~ 22% faster |
+#### Algorithmic Only Pipeline
+
+| Metric | Without Boost | With Boost | Improvement |
+|--------|---------------|------------|-------------|
+| Accuracy | 83.75% | 89.75% | +6.00% |
+| Correct Predictions | 335 | 359 | +24 |
+| High Confidence | 203 | 264 | +61 |
+
+#### Full Pipeline
+
+| Metric | Without Boost | With Boost | Improvement |
+|--------|---------------|------------|-------------|
+| Accuracy | 94.50% | 98.75% | +4.25% |
+| Correct Predictions | 378 | 395 | +17 |
+| Query Time | 31.9ms | 19.4ms | 39% faster |
+| Algorithmic Usage | 305 | 337 | +32 |
+| Semantic Fallback | 60 | 43 | -17 |
+| LLM Fallback | 35 | 20 | -15 |
 
 See `testResults/` directory for detailed comparative analyses.
 
@@ -304,7 +387,7 @@ See `testResults/` directory for detailed comparative analyses.
 3. Modify linguistics in `utils/linguistic_resources.json`
 4. Adjust boost rules in `intentRecognizer/boostEngine.py` if using algorithmic layer
 5. Update llm prompt templates in `intentRecognizer/llm_recognizer.py`
-6. Update test dataset in `testData/test_data.py`
+6. Update test dataset in `test/data.py`
 
 ## License
 

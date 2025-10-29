@@ -1,57 +1,48 @@
 
+================================================================================
+COMPREHENSIVE TEST
+================================================================================
+
+
 Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
-Semantic Model: all-MiniLM-L6-v2
+Semantic Model: all-mpnet-base-v2
 LLM Model: llama3.2:3b-instruct-q4_K_M
 Mode: TEST MODE (intent recognition only)
 
 Boost Engine: True
 Edge Cases Included: True
 
-Running tests on 300 queries...
+Test Dataset Size: 400 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 96.00%
-Correct: 288 / 300
-Avg Query Time: 21.9ms
-Queries/s: 45.6
+Accuracy: 98.75%
+Correct: 395 / 400
+Avg Query Time: 19.8ms
+Queries/s: 50.6
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 236 ( 78.7%)  Acc: 97.46%
-Semantic    :  45 ( 15.0%)  Acc: 88.89%
-LLM         :  19 (  6.3%)  Acc: 94.74%
+Algorithmic : 337 ( 84.2%)  Acc: 99.11%
+Semantic    :  43 ( 10.8%)  Acc: 95.35%
+LLM         :  20 (  5.0%)  Acc: 100.00%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 191 ( 63.7%)
-Medium (0.6-0.8)      :  93 ( 31.0%)
-Low (<0.6)            :  16 (  5.3%)
+High (≥0.8)           : 287 ( 71.8%)
+Medium (0.6-0.8)      :  94 ( 23.5%)
+Low (<0.6)            :  19 (  4.8%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'I'll take a veggie deluxe no mushrooms' -> menu_inquiry (exp: order, conf: 0.59, layer: semantic)
+1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
 
-2. 'The crust is hard as a rock' -> menu_inquiry (exp: complaint, conf: 0.60, layer: semantic)
+2. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
 
-3. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+3. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.50, layer: semantic)
 
-4. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.81, layer: algorithmic)
+4. 'Can I order a large pepperoni and how long will it take?' -> delivery (exp: order, conf: 0.71, layer: algorithmic)
 
-5. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.50, layer: semantic)
-
-6. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
-
-7. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> order (exp: menu_inquiry, conf: 0.68, layer: semantic)
-
-8. 'Same as last time' -> general (exp: order, conf: 0.80, layer: llm)
-
-9. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
-
-10. 'Can you tell me your prices' -> hours_location (exp: menu_inquiry, conf: 0.63, layer: algorithmic)
-
-11. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
-
-12. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.89, layer: algorithmic)
+5. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.68, layer: semantic)

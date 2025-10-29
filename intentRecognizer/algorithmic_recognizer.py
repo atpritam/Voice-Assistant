@@ -192,6 +192,7 @@ class TextNormalizer:
         if not text:
             return ""
         text = text.lower().strip()
+        text = IntentRecognizerUtils.expand_contractions(text)
         text = text.translate(str.maketrans('', '', '!?.,;:\'"()[]{}/@'))
         return ' '.join(text.split())
 
@@ -397,7 +398,7 @@ class AlgorithmicRecognizer:
 
         if ("but" in query_lower and
             query_lower.count("but") == 1 and
-            len(words) >= 10 and
+            len(words) >= 8 and
             "and" not in query_lower):
 
             parts = query.split("but", 1)

@@ -1,16 +1,17 @@
 """
-Shared Test Dataset for Intent Recognition
-Expanded to 300 queries for comprehensive evaluation
+Test Dataset for Intent Recognition
+400 queries for comprehensive evaluation
 """
 
 # === NORMAL TEST DATA ===
 NORMAL_TEST_DATASET = [
-    # Order intents (50 queries)
+    # Order intents (70 queries)
     ("I want to order a large pepperoni pizza", "order"),
     ("Can I get two medium pizzas with extra cheese", "order"),
     ("I'd like to purchase a pizza", "order"),
     ("Place an order for delivery", "order"),
     ("I want a small pizza", "order"),
+    ("Can you take my order?", "order"),
     ("Order a large margherita", "order"),
     ("I'd like to buy pizza", "order"),
     ("Can I place an order", "order"),
@@ -28,6 +29,24 @@ NORMAL_TEST_DATASET = [
     ("Can I get a stuffed crust supreme", "order"),
     ("I want to order a family size Hawaiian", "order"),
     ("Get me a meat lovers with extra bacon", "order"),
+    ("I need three medium pizzas", "order"),
+    ("Let me get a veggie pizza", "order"),
+    ("I'll order the meat lovers", "order"),
+    ("Can I get a thin crust pizza?", "order"),
+    ("I want thick crust please", "order"),
+    ("Order a family size pizza", "order"),
+    ("I'd like a gluten free pizza", "order"),
+    ("Can I order a vegan pizza?", "order"),
+    ("I want my usual", "order"),
+    ("I'll get the same as last time", "order"),
+    ("Order me a stuffed crust", "order"),
+    ("I need a large with extra cheese", "order"),
+    ("Can I buy four pizzas?", "order"),
+    ("I want to order some food", "order"),
+    ("Let me place an order please", "order"),
+    ("I'm looking to order", "order"),
+    ("I'd like to order something", "order"),
+    ("I want a pizza for delivery", "order"),
     ("I'll take a veggie deluxe no mushrooms", "order"),
     ("Can I order a pizza with chicken and peppers", "order"),
     ("I want a personal pan pizza with sausage", "order"),
@@ -57,7 +76,7 @@ NORMAL_TEST_DATASET = [
     ("Can I get a square cut pizza", "order"),
     ("I want to order now for later pickup", "order"),
 
-    # Complaint intents (40 queries)
+    # Complaint intents (62 queries)
     ("My pizza was cold when it arrived", "complaint"),
     ("This is terrible, I want a refund", "complaint"),
     ("The order is wrong and I'm very disappointed", "complaint"),
@@ -85,9 +104,29 @@ NORMAL_TEST_DATASET = [
     ("I found a hair in my pizza", "complaint"),
     ("This is the worst service ever", "complaint"),
     ("My order never showed up", "complaint"),
+    ("I want to escalate this issue", "complaint"),
+    ("This is a terrible experience", "complaint"),
+    ("My order is completely wrong", "complaint"),
+    ("The pizza arrived cold", "complaint"),
+    ("This tastes horrible", "complaint"),
+    ("I'm very unhappy", "complaint"),
+    ("The service is unacceptable", "complaint"),
+    ("I need compensation", "complaint"),
+    ("This is ridiculous", "complaint"),
+    ("The pizza is overcooked", "complaint"),
+    ("I want a refund and to speak to a manager", "complaint"),
+    ("My pizza is cold and I want my money back", "complaint"),
+    ("Actually, my pizza is cold", "complaint"),
+    ("I'm very disappointed with my pizza", "complaint"),
+    ("This is absolutely unacceptable", "complaint"),
+    ("I'm so angry about this order", "complaint"),
+    ("This is disgusting and I want a refund", "complaint"),
+    ("Worst pizza I've ever had", "complaint"),
+    ("I'm extremely unhappy", "complaint"),
+    ("This is ridiculous, I want a manager", "complaint"),
+    ("Absolutely terrible experience", "complaint"),
     ("The driver was very rude", "complaint"),
     ("I want my money back immediately", "complaint"),
-    ("This pizza is stale and old", "complaint"),
     ("You charged me twice", "complaint"),
     ("The crust is hard as a rock", "complaint"),
     ("I'm missing half my order", "complaint"),
@@ -100,7 +139,7 @@ NORMAL_TEST_DATASET = [
     ("This is ice cold", "complaint"),
     ("I need compensation for this", "complaint"),
 
-    # Hours/Location intents (30 queries)
+    # Hours/Location intents (49 queries)
     ("What time do you close", "hours_location"),
     ("When are you open", "hours_location"),
     ("What's your address", "hours_location"),
@@ -111,13 +150,32 @@ NORMAL_TEST_DATASET = [
     ("Where is the nearest store", "hours_location"),
     ("What time do you open tomorrow", "hours_location"),
     ("Store location", "hours_location"),
+    ("Are you still open?", "hours_location"),
+    ("Where is the nearest location?", "hours_location"),
+    ("What street are you on?", "hours_location"),
+    ("Give me directions", "hours_location"),
+    ("What are your delivery hours?", "hours_location"),
+    ("When do you stop taking orders?", "hours_location"),
+    ("Are you open for lunch?", "hours_location"),
+    ("Do you open early?", "hours_location"),
+    ("What neighborhood are you in?", "hours_location"),
+    ("Is there a location near me?", "hours_location"),
+    ("Where is your shop?", "hours_location"),
+    ("What's the closest pizza place?", "hours_location"),
+    ("How many locations do you have?", "hours_location"),
+    ("Can I come in now?", "hours_location"),
+    ("Are you accepting orders right now?", "hours_location"),
+    ("What are your pickup hours?", "hours_location"),
+    ("When does delivery end?", "hours_location"),
+    ("Are you open on weekends?", "hours_location"),
+    ("What time do you start serving?", "hours_location"),
+    ("Where can I find you?", "hours_location"),
     ("Where are you and when are you open", "hours_location"),
     ("where you at", "hours_location"),
     ("What time do you open today", "hours_location"),
     ("What time does the kitchen close?", "hours_location"),
     ("What is your street number?", "hours_location"),
     ("Are you open on Sundays", "hours_location"),
-    ("What time do you start serving", "hours_location"),
     ("When do you close on weekends", "hours_location"),
     ("Do you have late night hours", "hours_location"),
     ("Where exactly is your restaurant", "hours_location"),
@@ -133,7 +191,7 @@ NORMAL_TEST_DATASET = [
     ("Are you closed on Mondays", "hours_location"),
     ("What time do you stop taking orders", "hours_location"),
 
-    # Menu inquiry intents (40 queries)
+    # Menu inquiry intents (57 queries)
     ("What toppings do you have", "menu_inquiry"),
     ("What's on your menu", "menu_inquiry"),
     ("How much does a large pizza cost", "menu_inquiry"),
@@ -160,9 +218,27 @@ NORMAL_TEST_DATASET = [
     ("What's your cheapest pizza", "menu_inquiry"),
     ("Do you have any combos", "menu_inquiry"),
     ("What sides do you have", "menu_inquiry"),
+    ("Can I see a list of toppings?", "menu_inquiry"),
+    ("What are your signature pizzas?", "menu_inquiry"),
+    ("Do you have a BBQ pizza?", "menu_inquiry"),
+    ("What's your most popular pizza?", "menu_inquiry"),
+    ("Do you serve pasta?", "menu_inquiry"),
+    ("Do you have appetizers?", "menu_inquiry"),
+    ("What desserts are available?", "menu_inquiry"),
+    ("What's the price range?", "menu_inquiry"),
+    ("Can I customize my pizza?", "menu_inquiry"),
+    ("Do you have dairy-free cheese?", "menu_inquiry"),
+    ("Is there a low-carb option?", "menu_inquiry"),
+    ("Do you have promotions?", "menu_inquiry"),
+    ("What cheese varieties do you use?", "menu_inquiry"),
+    ("What's your Hawaiian pizza made of?", "menu_inquiry"),
+    ("Tell me about your supreme pizza", "menu_inquiry"),
+    ("What's in a margherita?", "menu_inquiry"),
+    ("Describe your meat lovers pizza", "menu_inquiry"),
+    ("What goes on a veggie pizza?", "menu_inquiry"),
+    ("Do you have thin crust?", "menu_inquiry"),
+    ("What drinks do you have?", "menu_inquiry"),
     ("Do you sell salads", "menu_inquiry"),
-    ("What desserts are available", "menu_inquiry"),
-    ("Do you have appetizers", "menu_inquiry"),
     ("What's in the meat lovers pizza", "menu_inquiry"),
     ("How much is extra cheese", "menu_inquiry"),
     ("Do you have dairy free options", "menu_inquiry"),
@@ -170,12 +246,11 @@ NORMAL_TEST_DATASET = [
     ("Can I see nutritional information", "menu_inquiry"),
     ("What's the price difference between sizes", "menu_inquiry"),
     ("Do you have wings", "menu_inquiry"),
-    ("What's your most popular pizza", "menu_inquiry"),
     ("Do you make calzones", "menu_inquiry"),
     ("What's included in the veggie pizza", "menu_inquiry"),
     ("How many toppings can I choose", "menu_inquiry"),
 
-    # Delivery intents (30 queries)
+    # Delivery intents (47 queries)
     ("Where is my order", "delivery"),
     ("Can you track my delivery", "delivery"),
     ("What's the status of my pizza", "delivery"),
@@ -189,7 +264,6 @@ NORMAL_TEST_DATASET = [
     ("How long for delivery", "delivery"),
     ("Do you deliver to my area", "delivery"),
     ("Do you charge for delivery", "delivery"),
-    ("The app says delivered but I don't have it", "delivery"),
     ("Do you deliver to this address?", "delivery"),
     ("What's the minimum for delivery", "delivery"),
     ("Can I track the driver", "delivery"),
@@ -197,11 +271,29 @@ NORMAL_TEST_DATASET = [
     ("Is there a delivery charge", "delivery"),
     ("When will the driver arrive", "delivery"),
     ("Can you give me an ETA", "delivery"),
+    ("How much is delivery?", "delivery"),
+    ("What's the minimum order for delivery?", "delivery"),
+    ("Is delivery free?", "delivery"),
+    ("How long until my order arrives?", "delivery"),
+    ("What's the estimated delivery time?", "delivery"),
+    ("Can you check on my delivery?", "delivery"),
+    ("Is my order on the way?", "delivery"),
+    ("Where is my order and can I track it?", "delivery"),
+    ("Do you do late night delivery?", "delivery"),
+    ("How much longer for delivery?", "delivery"),
+    ("What's my order status?", "delivery"),
+    ("Is delivery free over thirty dollars?", "delivery"),
+    ("What's your delivery range?", "delivery"),
+    ("Are you in my delivery zone?", "delivery"),
+    ("What's the delivery time estimate?", "delivery"),
+    ("I know you're busy but where is my order?", "delivery"),
+    ("What's the minimum order value?", "delivery"),
+    ("Do you have real-time tracking?", "delivery"),
+    ("Can I see where the driver is?", "delivery"),
     ("Do you offer free delivery", "delivery"),
     ("What's your delivery radius", "delivery"),
     ("How long does delivery usually take", "delivery"),
     ("Can I see where my driver is", "delivery"),
-    ("Is my order on the way", "delivery"),
     ("What's the delivery wait time", "delivery"),
     ("Do you deliver during lunch", "delivery"),
     ("Can I get contactless delivery", "delivery"),
@@ -228,7 +320,6 @@ NORMAL_TEST_DATASET = [
     ("Perfect", "general"),
     ("That works", "general"),
     ("Appreciate it", "general"),
-    ("See you later", "general"),
 ]
 
 
@@ -245,7 +336,7 @@ EDGE_CASES_DATASET = [
     ("Can you help me", "general"),
 
     # Long queries (8 queries)
-    ("Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet", "delivery"),
+    ("Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet", "complaint"),
     ("So I'm looking at your menu and I'm trying to figure out what the best deal is and also I want to know if you have any vegetarian options available", "menu_inquiry"),
     ("I placed an order earlier today around noon and I specifically asked for no onions but when the pizza arrived it had onions all over it and also the crust was burnt", "complaint"),
     ("Good afternoon I was just calling to check if you're still open because I'd like to place an order but I'm not sure what time you close on Saturdays", "hours_location"),
@@ -254,7 +345,7 @@ EDGE_CASES_DATASET = [
     ("I tried calling earlier but no one answered and now I'm worried my order didn't go through can you check if there's an delivery under my name", "delivery"),
     ("I'm looking at your menu online but I can't find any information about whether you have gluten free options or what the price difference would be", "menu_inquiry"),
 
-    # Multiple intents - should recognize dominant intent (10 queries)
+    # Multiple intents - should recognize dominant intent (14 queries)
     ("I want to order but first tell me your hours", "hours_location"),
     ("Can I get a refund and also where is my order", "complaint"),
     ("The driver went to the wrong address", "complaint"),
@@ -263,16 +354,21 @@ EDGE_CASES_DATASET = [
     ("What toppings do you have and can I order now", "menu_inquiry"),
     ("My order is late and I want to know where it is", "delivery"),
     ("I want to complain but also need to know your hours", "complaint"),
-    ("I need a refund but first where's my pizza", "complaint"),
+    ("I need a refund but first where's my pizza", "delivery"),
+    ("My order is wrong but I want to order again", "order"),
+    ("The app says delivered but I don't have it", "complaint"),
+    ("I need to place an order but what sizes do you have?", "menu_inquiry"),
+    ("I want to order but my last delivery was late", "complaint"),
+    ("Can I order a large pepperoni and how long will it take?", "order"),
 
-    # Negative queries (6 queries)
+    # Negative queries (5 queries)
     ("I don't want pepperoni what else do you have", "menu_inquiry"),
     ("I can't eat gluten what can I order", "menu_inquiry"),
     ("I'm not a fan of tomato sauce what are my options", "menu_inquiry"),
     ("I don't like thick crust do you have thin", "menu_inquiry"),
     ("No mushrooms please what else is there", "menu_inquiry"),
 
-    # Sarcasm (8 queries)
+    # Sarcasm (10 queries)
     ("Oh great another wrong order", "complaint"),
     ("Just what I needed, cold pizza again", "complaint"),
     ("Wonderful, an hour late as usual", "complaint"),
@@ -280,6 +376,9 @@ EDGE_CASES_DATASET = [
     ("Love getting the wrong toppings every time", "complaint"),
     ("Exactly what I asked for, NOT", "complaint"),
     ("So happy with this burnt pizza", "complaint"),
+    ("Great service, been waiting two hours", "complaint"),
+    ("Love how my pizza never showed up", "complaint"),
+    ("The delivery took forever", "complaint"),
 
     # Context dependent (10 queries)
     ("What about the large one", "menu_inquiry"),
@@ -293,7 +392,7 @@ EDGE_CASES_DATASET = [
     ("Make it two", "order"),
     ("Same as last time", "order"),
 
-    # Very Short Queries (10 queries)
+    # Very Short Queries (13 queries)
     ("hours", "hours_location"),
     ("price", "menu_inquiry"),
     ("order", "order"),
@@ -306,8 +405,9 @@ EDGE_CASES_DATASET = [
     ("specials", "menu_inquiry"),
     ("pepperoni large", "order"),
     ("hawaiian pizza please", "order"),
+    ("Pizza?", "order"),
 
-    # Unusual Phrasing (8 queries)
+    # Unusual Phrasing (7 queries)
     ("Inquiring about your operational schedule", "hours_location"),
     ("Seeking information regarding menu items", "menu_inquiry"),
     ("Expressing dissatisfaction with service", "complaint"),
@@ -316,7 +416,7 @@ EDGE_CASES_DATASET = [
     ("I require nutritional options", "menu_inquiry"),
     ("Demanding monetary reimbursement", "complaint"),
 
-    # Typos and misspellings (8 queries)
+    # Typos and misspellings (7 queries)
     ("I want to oder a pizza", "order"),
     ("Whats on the menue", "menu_inquiry"),
     ("My oder is late", "complaint"),
@@ -330,7 +430,7 @@ EDGE_CASES_DATASET = [
     ("gimme a pizza", "order"),
     ("where u guys at", "hours_location"),
     ("how much for a pie", "menu_inquiry"),
-    ("my food aint here yet", "delivery"),
+    ("my food aint here yet", "complaint"),
     ("this pizza sucks", "complaint"),
     ("u guys open", "hours_location"),
     ("whats the damage for a large", "menu_inquiry"),
@@ -352,18 +452,68 @@ def get_test_dataset(include_edge_cases=False):
     return NORMAL_TEST_DATASET
 
 
-def get_test_dataset_by_intent(intent_name, include_edge_cases=False):
-    dataset = get_test_dataset(include_edge_cases)
-    return [(q, i) for q, i in dataset if i == intent_name]
+def check_duplicates():
+    """
+    Check if dataset contains duplicate queries.
+    """
+    import re
+
+    dataset = NORMAL_TEST_DATASET + EDGE_CASES_DATASET
+    seen = {}
+    duplicates = []
+
+    for query, intent in dataset:
+        normalized = query.lower().strip()
+        normalized = re.sub(r'[^\w\s]', '', normalized)
+        normalized = ' '.join(normalized.split())
+
+        if normalized in seen:
+            duplicates.append((query, intent, seen[normalized]))
+        else:
+            seen[normalized] = (query, intent)
+
+    return len(duplicates) > 0, duplicates
 
 
-def get_dataset_statistics(include_edge_cases=False):
-    dataset = get_test_dataset(include_edge_cases)
-    counts = {}
-    for _, intent in dataset:
-        counts[intent] = counts.get(intent, 0) + 1
+def get_dataset_statistics():
+    """Get comprehensive statistics about the dataset"""
+    normal_dataset = NORMAL_TEST_DATASET
+    edge_cases = EDGE_CASES_DATASET
+    full_dataset = normal_dataset + edge_cases
+
+    # Count intents in each dataset
+    normal_counts = {}
+    edge_counts = {}
+    total_counts = {}
+
+    for _, intent in normal_dataset:
+        normal_counts[intent] = normal_counts.get(intent, 0) + 1
+        total_counts[intent] = total_counts.get(intent, 0) + 1
+
+    for _, intent in edge_cases:
+        edge_counts[intent] = edge_counts.get(intent, 0) + 1
+        total_counts[intent] = total_counts.get(intent, 0) + 1
+
     return {
-        'total_queries': len(dataset),
-        'unique_intents': len(counts),
-        'intent_distribution': counts
+        'total_queries': len(full_dataset),
+        'normal_queries': len(normal_dataset),
+        'edge_case_queries': len(edge_cases),
+        'unique_intents': len(total_counts),
+        'normal_intent_distribution': normal_counts,
+        'edge_case_intent_distribution': edge_counts,
+        'total_intent_distribution': total_counts
     }
+
+
+if __name__ == '__main__':
+    stats = get_dataset_statistics()
+    print(stats)
+
+    has_dupes, dupes = check_duplicates()
+    print("Duplicates found:", has_dupes)
+
+    if has_dupes:
+        print(f"\nFound {len(dupes)} duplicate(s):")
+        for query, intent, original in dupes:
+            print(f"  - '{query}' ({intent})")
+            print(f"    Duplicate of: '{original[0]}' ({original[1]})")

@@ -48,7 +48,7 @@ ENABLE_LLM = True
 ALGORITHMIC_THRESHOLD = 0.6
 SEMANTIC_THRESHOLD = 0.5
 
-SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+SEMANTIC_MODEL = "all-mpnet-base-v2" # all-MiniLM-L6-v2"
 
 USE_LOCAL_LLM = True
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"

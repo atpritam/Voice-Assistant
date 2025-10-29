@@ -1,81 +1,82 @@
 
+================================================================================
+COMPREHENSIVE TEST
+================================================================================
+
+
 Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
-Semantic Model: all-MiniLM-L6-v2
+Semantic Model: all-mpnet-base-v2
 LLM Model: llama3.2:3b-instruct-q4_K_M
 Mode: TEST MODE (intent recognition only)
 
 Boost Engine: False
 Edge Cases Included: True
 
-Running tests on 300 queries...
+Test Dataset Size: 400 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 92.00%
-Correct: 276 / 300
-Avg Query Time: 27.2ms
-Queries/s: 36.7
+Accuracy: 94.50%
+Correct: 378 / 400
+Avg Query Time: 30.3ms
+Queries/s: 33.0
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 208 ( 69.3%)  Acc: 94.71%
-Semantic    :  67 ( 22.3%)  Acc: 88.06%
-LLM         :  25 (  8.3%)  Acc: 80.00%
+Algorithmic : 305 ( 76.2%)  Acc: 94.75%
+Semantic    :  60 ( 15.0%)  Acc: 93.33%
+LLM         :  35 (  8.8%)  Acc: 94.29%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 158 ( 52.7%)
-Medium (0.6-0.8)      : 121 ( 40.3%)
-Low (<0.6)            :  21 (  7.0%)
+High (≥0.8)           : 241 ( 60.2%)
+Medium (0.6-0.8)      : 138 ( 34.5%)
+Low (<0.6)            :  21 (  5.2%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'I'll take a veggie deluxe no mushrooms' -> menu_inquiry (exp: order, conf: 0.59, layer: semantic)
+1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
 
-2. 'The crust is hard as a rock' -> menu_inquiry (exp: complaint, conf: 0.60, layer: semantic)
+2. 'Late delivery and cold food' -> delivery (exp: complaint, conf: 0.50, layer: semantic)
 
-3. 'The delivery address was wrong' -> delivery (exp: complaint, conf: 0.72, layer: semantic)
+3. 'My pizza has the wrong crust' -> delivery (exp: complaint, conf: 0.60, layer: algorithmic)
 
-4. 'Prices for medium pizza' -> order (exp: menu_inquiry, conf: 0.78, layer: semantic)
+4. 'I need compensation' -> general (exp: complaint, conf: 0.66, layer: algorithmic)
 
-5. 'How much for a family size' -> order (exp: menu_inquiry, conf: 0.54, layer: semantic)
+5. 'I'm so angry about this order' -> order (exp: complaint, conf: 0.62, layer: algorithmic)
 
-6. 'How much is extra cheese' -> delivery (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+6. 'This is ridiculous, I want a manager' -> order (exp: complaint, conf: 0.63, layer: algorithmic)
 
-7. 'Can you give me an ETA' -> general (exp: delivery, conf: 0.62, layer: algorithmic)
+7. 'Where can I find you?' -> general (exp: hours_location, conf: 0.69, layer: algorithmic)
 
-8. 'Help me decide' -> general (exp: menu_inquiry, conf: 0.95, layer: llm)
+8. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.50, layer: semantic)
 
-9. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.81, layer: algorithmic)
+9. 'How much is extra cheese' -> delivery (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
 
-10. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.50, layer: semantic)
+10. 'Can you give me an ETA' -> general (exp: delivery, conf: 0.62, layer: algorithmic)
 
-11. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> order (exp: delivery, conf: 0.68, layer: semantic)
+11. 'What are your recommended good options?' -> delivery (exp: menu_inquiry, conf: 0.80, layer: algorithmic)
 
-12. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> order (exp: menu_inquiry, conf: 0.68, layer: semantic)
+12. 'Can I get a refund and also where is my order' -> order (exp: complaint, conf: 0.62, layer: algorithmic)
 
-13. 'Can I get a refund and also where is my order' -> order (exp: complaint, conf: 0.62, layer: algorithmic)
+13. 'How much does delivery cost and when will it arrive' -> menu_inquiry (exp: delivery, conf: 0.61, layer: algorithmic)
 
-14. 'How much does delivery cost and when will it arrive' -> menu_inquiry (exp: delivery, conf: 0.61, layer: algorithmic)
+14. 'My order is late and I want to know where it is' -> order (exp: delivery, conf: 0.63, layer: algorithmic)
 
-15. 'My order is late and I want to know where it is' -> order (exp: delivery, conf: 0.63, layer: algorithmic)
+15. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.68, layer: semantic)
 
-16. 'I need a refund but first where's my pizza' -> order (exp: complaint, conf: 0.61, layer: algorithmic)
+16. 'order' -> complaint (exp: order, conf: 0.66, layer: semantic)
 
-17. 'Perfect timing, I only waited forever' -> general (exp: complaint, conf: 0.92, layer: llm)
+17. 'My oder is late' -> delivery (exp: complaint, conf: 0.90, layer: llm)
 
-18. 'Same as last time' -> general (exp: order, conf: 0.99, layer: llm)
+18. 'where u guys at' -> general (exp: hours_location, conf: 0.98, layer: llm)
 
-19. 'track' -> order (exp: delivery, conf: 0.80, layer: llm)
+19. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
 
-20. 'where u guys at' -> general (exp: hours_location, conf: 0.92, layer: llm)
+20. 'Can you tell me your prices' -> hours_location (exp: menu_inquiry, conf: 0.63, layer: algorithmic)
 
-21. 'I have a question about delivery' -> complaint (exp: delivery, conf: 0.61, layer: algorithmic)
+21. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
 
-22. 'Can you tell me your prices' -> hours_location (exp: menu_inquiry, conf: 0.63, layer: algorithmic)
-
-23. 'I want to know about your hours' -> order (exp: hours_location, conf: 0.62, layer: algorithmic)
-
-24. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.69, layer: algorithmic)
+22. 'Can I inquire about an order I placed for delivery?' -> order (exp: delivery, conf: 0.69, layer: algorithmic)
