@@ -1,24 +1,23 @@
-# Voice Response System with Multi-Layer NLU Pipeline
+# Voice Response System with Multi-Layer Intent Recognition Pipeline
 
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![NLP](https://img.shields.io/badge/NLP-Intent%20Recognition-orange.svg)]()
 
 
-A **Natural Language Understanding (NLU)** system combining classical computational linguistics, neural semantic analysis, and large language models for robust conversational AI. The system achieves **98% intent recognition accuracy** through a novel hybrid architecture that balances speed, accuracy, and interpretability.
+A **hybrid intent recognition system** combining classical NLP pattern matching, neural semantic embeddings, and large language models for robust conversational AI. The system achieves **98% intent recognition accuracy** through a novel three-layer architecture that balances speed, accuracy, and interpretability.
 
 **Use Case**: Domain-agnostic customer service
 
 **Current Domain**: Pizza Restaurant
 
-**Research Focus**: Multi-paradigm Natural Language Processing (NLP) combining symbolic and subsymbolic approaches
+**Research Focus**: Hybrid NLP approach combining rule-based, embedding-based, and generative techniques
 
 ### Key Features
 
-- **Multi-Layer  Intent Recognition Pipeline**
-  - Layer 1 - Classical NLP: Algorithmic pattern matching with Levenshtein edit distance, TF-IDF weighting, and lexical semantics (synonym expansion)
-  - Layer 2 - Neural NLP: Semantic similarity using Sentence Transformer embeddings for deep contextual understanding
+- **Multi-Layer Intent Recognition Pipeline**
+  - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, TF-IDF weighted indexing, and synonym expansion
+  - Layer 2 - Neural Embeddings: Semantic similarity using Sentence Transformer embeddings (SBERT) for context-aware matching
   - Layer 3 - Generative AI: LLM-based classification with conversation history awareness (OpenAI API or local Ollama)
-  - Boost Engine: Pragmatic NLP layer applying sentiment analysis, NER, and contextual discourse rules
+  - Boost Engine: Domain-specific contextual rules applying negative sentiment detection, entity keyword matching, and co-occurrence patterns
 
 - **End-to-End Voice Interaction**
   - **ASR (Automatic Speech Recognition)**: OpenAI Whisper with audio preprocessing for robust transcription
@@ -86,11 +85,11 @@ Access the web interface at `http://localhost:5000`
 
 ### Intent Recognition Pipeline
 
-The system implements a cascading three-layer architecture where each layer applies progressively sophisticated NLP techniques until confident intent recognition is achieved:
+The system implements a cascading three-layer architecture where each layer applies progressively sophisticated techniques until confident intent recognition is achieved:
 
-1. **Algorithmic Layer**: Fast pattern matching using keyword extraction, synonym expansion, and string similarity metrics
-2. **Semantic Layer**: Deep semantic understanding using transformer-based sentence embeddings for context-aware similarity matching
-3. **LLM Layer**: Fallback to language models for complex queries and response generation
+1. **Algorithmic Layer**: Fast pattern matching using NLP preprocessing, TF-IDF candidate ranking, synonym expansion, and fuzzy string similarity
+2. **Semantic Layer**: Neural semantic matching using transformer-based sentence embeddings (SBERT) for distributional semantic similarity
+3. **LLM Layer**: Fallback to large language models for ambiguous queries and natural response generation
 
 Each layer can be independently enabled or disabled with configurable confidence thresholds.
 
@@ -405,14 +404,14 @@ See `testResults/` directory for detailed  analyses.
 
 - **Information Retrieval**: Inverted index with TF-IDF weighting for efficient candidate selection
 - **String Similarity Metrics**: Levenshtein edit distance with length-based prefiltering
-- **Lexical Semantics**: Synonym expansion using domain-specific linguistic resources
-- **Text Preprocessing**: Filler word removal and keyword extraction
+- **Synonym Expansion**: Domain-specific synonym dictionaries for lexical variation handling
+- **NLP Preprocessing**: Contraction expansion, filler word removal, and tokenization
 - **N-gram Matching**: Multi-word phrase detection with contextual bonuses
-- **Boost Engine**:
-  - Sentiment analysis for complaint detection
-  - Named Entity Recognition (NER) for menu items and locations
-  - Co-occurrence analysis and contextual discourse rules
-  - Domain adaptation with rule-based pattern matching
+- **Contextual Boost Engine**:
+  - Negative sentiment keyword detection for complaint classification
+  - Dictionary-based entity keyword matching for domain entities
+  - Keyword co-occurrence patterns and contextual heuristics
+  - Domain-specific rule-based disambiguation
 
 ### Semantic Layer
 
@@ -422,7 +421,7 @@ See `testResults/` directory for detailed  analyses.
 
 ### LLM Layer
 
-- **Discourse Analysis**: Conversation history tracking for context-aware responses
+- **Conversation Context**: Conversation history tracking for context-aware classification and response generation
 - Support for both cloud (OpenAI) and local (Ollama) models
 
 ## Development
