@@ -14,52 +14,51 @@ Test Dataset Size: 400 queries
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 89.75% (359/400 correct)
-  Time: 1.02s | Avg: 2.5ms | 393.7 q/s
+✓ Accuracy: 89.25% (357/400 correct)
+  Time: 1.03s | Avg: 2.6ms | 388.6 q/s
   Layers Used - Algo: 378, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 83.75% (335/400 correct)
-  Time: 1.00s | Avg: 2.5ms | 399.9 q/s
+✓ Accuracy: 83.25% (333/400 correct)
+  Time: 1.01s | Avg: 2.5ms | 395.3 q/s
   Layers Used - Algo: 374, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 98.75% (395/400 correct)
-  Time: 7.75s | Avg: 19.4ms | 51.6 q/s
-  Layers Used - Algo: 337, Semantic: 43, LLM: 20
+✓ Accuracy: 98.00% (392/400 correct)
+  Time: 8.05s | Avg: 20.1ms | 49.7 q/s
+  Layers Used - Algo: 336, Semantic: 43, LLM: 21
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 94.50% (378/400 correct)
-  Time: 12.76s | Avg: 31.9ms | 31.4 q/s
-  Layers Used - Algo: 305, Semantic: 60, LLM: 35
+✓ Accuracy: 93.75% (375/400 correct)
+  Time: 12.88s | Avg: 32.2ms | 31.1 q/s
+  Layers Used - Algo: 304, Semantic: 60, LLM: 36
 
 ================================================================================
-BOOST ENGINE IMPACT ANALYSIS
+IMPACT ANALYSIS
 ================================================================================
 
 Algorithmic Only Pipeline:
 --------------------------------------------------------------------------------
-Metric                 Without Boost   With Boost      Impact
+Metric                 Without Boost   With Boost      Impact                             
 --------------------------------------------------------------------------------
-Accuracy               83.75%          89.75%          +6.00%
-Correct Predictions    335             359             +24
-Time                   1.00s           1.02s           +2%
-High Confidence        203             264             +61
+Accuracy               83.25%          89.25%          +6.00%                             
+Correct Predictions    333             357             +24                                
+Time                   1.01s           1.03s           +2%                                
+High Confidence        202             262             +60                                
 
 Full Pipeline Pipeline:
 --------------------------------------------------------------------------------
-Metric                 Without Boost   With Boost      Impact
+Metric                 Without Boost   With Boost      Impact                             
 --------------------------------------------------------------------------------
-Accuracy               94.50%          98.75%          +4.25%
-Correct Predictions    378             395             +17
-Time                   12.76s          7.75s           -39%
-Algo Layer Usage       305             337             +32
-Semantic Usage         60              43              -17
-LLM Fallback           35              20              -15
-
+Accuracy               93.75%          98.00%          +4.25%                             
+Correct Predictions    375             392             +17                                
+Time                   12.88s          8.05s           -37%                               
+Algo Layer Usage       304             336             +32                                
+Semantic Usage         60              43              -17                                
+LLM Fallback           36              21              -15                                

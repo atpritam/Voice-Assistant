@@ -10,7 +10,7 @@ from typing import Dict, Set
 # BOOST VALUES - Positive adjustments to intent scores
 
 ORDER_ACTION_BOOST = 0.20
-DELIVERY_STATUS_BOOST = 0.25
+DELIVERY_STATUS_BOOST = 0.20
 NEGATIVE_SENTIMENT_BOOST = 0.4
 PRICE_SIZE_BOOST = 0.25
 TIME_LOCATION_BOOST = 0.25
@@ -30,7 +30,7 @@ HOURS_INQUIRY_BOOST = 0.25
 
 ORDER_DELIVERY_PENALTY = 0.15
 DELIVERY_COMPLAINT_PENALTY = 0.25
-MENU_INQUIRY_PENALTY = 0.20
+MENU_INQUIRY_PENALTY = 0.15
 ORDER_INQUIRY_PENALTY = 0.15
 HOURS_MENU_PENALTY = 0.15
 DELIVERY_RECOMMENDATION_PENALTY = 0.15
@@ -140,7 +140,7 @@ class BoostRuleEngine:
             original = intent_scores[intent_name]['similarity']
             intent_scores[intent_name]['similarity'] = min(1.0, original + boost)
             if self.enable_logging and label:
-                self.logger.debug(f"{label}: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
+                self.logger.debug(f"{label} [{intent_name}]: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
 
     def _penalty_intent(self, intent_name: str, intent_scores: Dict, penalty: float, label: str = ""):
         """Helper to apply penalty to intent"""
@@ -148,7 +148,7 @@ class BoostRuleEngine:
             original = intent_scores[intent_name]['similarity']
             intent_scores[intent_name]['similarity'] = max(0.0, original - penalty)
             if self.enable_logging and label:
-                self.logger.debug(f"{label}: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
+                self.logger.debug(f"{label} [{intent_name}]: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
 
 
     # ========================================================================
@@ -291,13 +291,13 @@ class BoostRuleEngine:
             self._boost_intent('order', intent_scores, MENU_ITEM_ORDERING_BOOST,
                              "Menu item ordering boost")
             self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
-                               "Menu item ordering penalty")
+                               "Menu inquiry penalty (ordering context)")
 
         elif (has_menu_item or has_sizer) and has_order_action and len(query_words) <= 5:
             self._boost_intent('order', intent_scores, MENU_ITEM_ORDERING_BOOST,
                              "Menu item ordering boost")
             self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
-                               "Menu item ordering penalty")
+                               "Menu inquiry penalty (ordering context)")
 
     def _apply_inquiry_pattern_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -360,9 +360,9 @@ class BoostRuleEngine:
                 self._boost_intent('complaint', intent_scores, MENU_ITEM_QUALITY_BOOST,
                                  "Menu item quality issue boost")
                 self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
-                                   "Menu inquiry penalty")
+                                   "Menu inquiry penalty (quality complaint)")
             elif has_customization:
                 self._boost_intent('order', intent_scores, MENU_ITEM_CUSTOMIZATION_BOOST,
                                  "Menu item customization boost")
                 self._penalty_intent('menu_inquiry', intent_scores, ORDER_INQUIRY_PENALTY,
-                                   "Menu inquiry penalty")
+                                   "Menu inquiry penalty (customization ordering)")

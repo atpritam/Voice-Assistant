@@ -10,25 +10,25 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 304 queries
+Test Dataset Size: 301 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 95.39%
-Correct: 290 / 304
+Accuracy: 95.35%
+Correct: 287 / 301
 Avg Query Time: 2.7ms
-Queries/s: 373.5
+Queries/s: 371.7
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 299 ( 98.4%)  Acc: 96.99%
+Algorithmic : 296 ( 98.3%)  Acc: 96.96%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 231 ( 76.0%)
-Medium (0.6-0.8)      :  51 ( 16.8%)
-Low (<0.6)            :  22 (  7.2%)
+High (≥0.8)           : 229 ( 76.1%)
+Medium (0.6-0.8)      :  50 ( 16.6%)
+Low (<0.6)            :  22 (  7.3%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ INCORRECT PREDICTIONS
 
 5. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
 
-6. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+6. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.90, layer: algorithmic)
 
 7. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.57, layer: algorithmic)
 

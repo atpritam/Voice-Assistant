@@ -279,7 +279,7 @@ python -m test.runtest
 Compare multiple pipeline configurations side-by-side:
 
 ```bash
-python -m test.runtest --c
+python -m test.runtest -c
 ```
 
 ### Boost Engine Analysis
@@ -287,75 +287,109 @@ python -m test.runtest --c
 Evaluate the impact of the contextual boost engine:
 
 ```bash
-python -m test.runtest --b
+python -m test.runtest -b
+```
+
+### Confusion Matrix and Error Analysis
+
+Generate confusion matrix with per-intent metrics:
+
+```bash
+python -m test.runtest -mx
+```
+
+### Custom Test Configurations
+
+```bash
+# Test without semantic layer
+python -m test.runtest --no-semantic
+
+# Test algorithmic layer only
+python -m test.runtest --no-semantic --no-llm
+
+# Comparative test without boost engine
+python -m test.runtest -c --no-boost
+
+# Test without edge cases (standard dataset only)
+python -m test.runtest --no-edge
+
+# Use OpenAI instead of Ollama
+python -m test.runtest --openai
+
+# Single query test
+python -m test.runtest "where is my pizza?"
 ```
 
 ## Performance Benchmarks
 
 All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-instruct-q4_K_M`.
 
-### Standard Test Dataset (304 queries)
+### Standard Test Dataset (301 queries - no edge cases)
 
-Pipeline configuration tested on 304 queries without edge cases:
-
-| Configuration | Accuracy | Avg Time | Queries/s |
-|--------------|----------|----------|-----------|
-| Full Pipeline | 99.01% | 11.2ms | 88.9 |
-| Algorithmic + Semantic | 97.70% | 3.5ms | 288.9 |
-| Algorithmic + LLM | 99.34% | 22.6ms | 44.3 |
-| Semantic + LLM | 95.07% | 37.6ms | 26.6 |
-| Algorithmic Only | 95.39% | 3.0ms | 330.6 |
-| Semantic Only | 92.43% | 6.5ms | 153.6 |
-
-### Extended Test Dataset (400 queries with edge cases)
-
-Comprehensive testing with 400 queries including edge cases:
+Pipeline configurations tested on 301 queries without edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 98.75% | 18.9ms | 53.0 |
-| Algorithmic + Semantic | 96.00% | 6.1ms | 164.8 |
-| Algorithmic + LLM | 97.00% | 45.3ms | 22.1 |
-| Semantic + LLM | 93.25% | 48.6ms | 20.6 |
-| Algorithmic Only | 89.75% | 2.8ms | 361.2 |
-| Semantic Only | 88.00% | 6.8ms | 147.6 |
+| Full Pipeline | 99.00% | 11.8ms | 85.0 |
+| Algorithmic + Semantic | 97.67% | 4.9ms | 204.3 |
+| Algorithmic + LLM | 99.34% | 22.5ms | 44.5 |
+| Semantic + LLM | 95.02% | 39.4ms | 25.4 |
+| Algorithmic Only | 95.35% | 3.0ms | 338.3 |
+| Semantic Only | 92.36% | 14.5ms | 68.8 |
+
+### Extended Test Dataset (400 queries - with edge cases)
+
+Comprehensive testing with 400 queries including 99 edge cases:
+
+| Configuration | Accuracy | Avg Time | Queries/s |
+|--------------|----------|----------|-----------|
+| Full Pipeline | 98.00% | 19.1ms | 52.5 |
+| Algorithmic + Semantic | 95.50% | 4.0ms | 247.5 |
+| Algorithmic + LLM | 96.25% | 46.4ms | 21.5 |
+| Semantic + LLM | 93.25% | 53.0ms | 18.9 |
+| Algorithmic Only | 89.25% | 2.9ms | 350.2 |
+| Semantic Only | 88.00% | 13.4ms | 74.5 |
 
 ### Layer Distribution (Full Pipeline)
 
-#### Standard Dataset (304 queries):
-- Algorithmic layer: 92.8% of queries (282/304)
-- Semantic layer: 4.6% of queries (14/304)
-- LLM layer: 2.6% of queries (8/304)
+#### Standard Dataset (301 queries):
+- Algorithmic layer: 92.7% of queries (279/301)
+- Semantic layer: 4.7% of queries (14/301)
+- LLM layer: 2.7% of queries (8/301)
 
 #### Extended Dataset (400 queries with edge cases):
-- Algorithmic layer: 84.3% of queries (337/400)
+- Algorithmic layer: 84.0% of queries (336/400)
 - Semantic layer: 10.8% of queries (43/400)
-- LLM layer: 5.0% of queries (20/400)
+- LLM layer: 5.2% of queries (21/400)
 
 ### Boost Engine Impact
 
-Comparison with and without contextual boost rules (400 queries with edge cases):
-
-#### Algorithmic Only Pipeline
+Comparison with and without contextual boost rules on full pipeline (400 queries with edge cases):
 
 | Metric | Without Boost | With Boost | Improvement |
 |--------|---------------|------------|-------------|
-| Accuracy | 83.75% | 89.75% | +6.00% |
-| Correct Predictions | 335 | 359 | +24 |
-| High Confidence | 203 | 264 | +61 |
-
-#### Full Pipeline
-
-| Metric | Without Boost | With Boost | Improvement |
-|--------|---------------|------------|-------------|
-| Accuracy | 94.50% | 98.75% | +4.25% |
-| Correct Predictions | 378 | 395 | +17 |
-| Query Time | 31.9ms | 19.4ms | 39% faster |
-| Algorithmic Usage | 305 | 337 | +32 |
+| Accuracy | 93.75% | 98.00% | +4.25% |
+| Correct Predictions | 375 | 392 | +17 |
+| Query Time | 32.2ms | 20.1ms | 37% faster |
+| Algorithmic Usage | 304 | 336 | +32 |
 | Semantic Fallback | 60 | 43 | -17 |
-| LLM Fallback | 35 | 20 | -15 |
+| LLM Fallback | 36 | 21 | -15 |
 
-See `testResults/` directory for detailed comparative analyses.
+### Confusion Matrix Results (Full Pipeline - 400 queries)
+
+#### Per-Intent Performance
+
+| Intent | Precision | Recall | F1-Score | Support |
+|--------|-----------|--------|----------|---------|
+| complaint | 100.00% | 98.81% | 99.40% | 84 |
+| delivery | 91.80% | 98.25% | 94.92% | 57 |
+| general | 95.65% | 100.00% | 97.78% | 22 |
+| hours_location | 100.00% | 95.16% | 97.52% | 62 |
+| menu_inquiry | 100.00% | 100.00% | 100.00% | 87 |
+| order | 97.70% | 96.59% | 97.14% | 88 |
+
+
+See `testResults/` directory for detailed  analyses.
 
 ## Key Technical Features
 

@@ -1,0 +1,61 @@
+
+================================================================================
+CONFUSION MATRIX TEST
+================================================================================
+
+
+Configuration:
+  Algorithmic: True
+  Semantic: True
+  LLM: True
+  LLM Backend: Ollama
+  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Boost Engine: True
+  Edge Cases: True
+
+Test Dataset Size: 400 queries
+
+
+================================================================================
+CONFUSION MATRIX ANALYSIS
+================================================================================
+
+Rows = Actual Intent, Columns = Predicted Intent
+
+                     complaint        delivery         general  hours_location    menu_inquiry           order  
+----------------------------------------------------------------------------------------------------------------
+complaint                   83               1               0               0               0               0
+delivery                     0              56               0               0               0               1
+general                      0               0              22               0               0               0
+hours_location               0               2               0              59               0               1
+menu_inquiry                 0               0               1               0              86               0
+order                        0               2               1               0               0              85
+
+================================================================================
+
+Overall Accuracy: 98.00% (392/400)
+
+Per-Intent Statistics:
+--------------------------------------------------------------------------------
+Intent               Precision    Recall       F1-Score     Support   
+--------------------------------------------------------------------------------
+complaint            100.00%      98.81%       99.40%       84        
+delivery             91.80%       98.25%       94.92%       57        
+general              95.65%       100.00%      97.78%       22        
+hours_location       100.00%      95.16%       97.52%       62        
+menu_inquiry         100.00%      100.00%      100.00%      87        
+order                97.70%       96.59%       97.14%       88        
+--------------------------------------------------------------------------------
+
+================================================================================
+
+Top Misclassifications (Total: 6 types):
+
+Actual Intent        Predicted As         Count      % of Actual    
+--------------------------------------------------------------------
+hours_location       delivery             2          3.2
+order                delivery             2          2.3
+complaint            delivery             1          1.2
+delivery             order                1          1.8
+hours_location       order                1          1.6
+order                general              1          1.1

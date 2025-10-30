@@ -12,33 +12,33 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 304 queries
+Test Dataset Size: 301 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 99.01%
-Correct: 301 / 304
-Avg Query Time: 10.6ms
-Queries/s: 93.9
+Accuracy: 99.00%
+Correct: 298 / 301
+Avg Query Time: 10.7ms
+Queries/s: 93.4
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 282 ( 92.8%)  Acc: 99.29%
-Semantic    :  14 (  4.6%)  Acc: 92.86%
-LLM         :   8 (  2.6%)  Acc: 100.00%
+Algorithmic : 279 ( 92.7%)  Acc: 99.28%
+Semantic    :  14 (  4.7%)  Acc: 92.86%
+LLM         :   8 (  2.7%)  Acc: 100.00%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 240 ( 78.9%)
-Medium (0.6-0.8)      :  59 ( 19.4%)
-Low (<0.6)            :   5 (  1.6%)
+High (≥0.8)           : 238 ( 79.1%)
+Medium (0.6-0.8)      :  58 ( 19.3%)
+Low (<0.6)            :   5 (  1.7%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
 1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
 
-2. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.95, layer: algorithmic)
+2. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.90, layer: algorithmic)
 
 3. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.50, layer: semantic)

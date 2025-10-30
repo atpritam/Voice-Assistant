@@ -1,0 +1,255 @@
+================================================================================
+BOOST ENGINE POSITIVES ANALYSIS WITH DETAILED LOGGING
+================================================================================
+
+Configuration:
+  Semantic Model: all-mpnet-base-v2
+  llm Model: llama3.2:3b-instruct-q4_K_M
+  Algorithmic Threshold: 0.6
+  Semantic Threshold: 0.5
+
+
+================================================================================
+Query: 'Late delivery and cold food'
+Expected Intent: complaint
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'Late delivery and cold food'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'menu_inquiry', 'order']
+2025-10-30 06:01:10 [boostEngine] Negative sentiment boost (x2) [complaint]: 0.562 -> 0.912
+2025-10-30 06:01:10 [boostEngine] Negative+delivery penalty (complaint about delivery) [delivery]: 0.504 -> 0.254
+2025-10-30 06:01:10 [boostEngine] Delivery status boost [delivery]: 0.254 -> 0.454
+2025-10-30 06:01:10 [boostEngine] Order penalty for status query [order]: 0.154 -> 0.004
+2025-10-30 06:01:10 [Algorithmic] complaint (0.912, high, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: complaint (0.912, high)
+
+FINAL RESULT:
+  Predicted: complaint
+  Confidence: 0.912
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'Late delivery and cold food'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'menu_inquiry', 'order']
+2025-10-30 06:13:09 [Algorithmic] complaint (0.562, low, keyword + levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer]   - Proceeding to Semantic layer
+2025-10-30 06:13:09 [Semantic] delivery (0.503, low)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.503, low)
+
+FINAL RESULT:
+  Predicted: delivery
+  Confidence: 0.503
+  Layer: semantic
+  Match: ✗ INCORRECT
+
+================================================================================
+
+================================================================================
+Query: 'Can you give me an ETA'
+Expected Intent: delivery
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'Can you give me an ETA'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['hours_location', 'general', 'menu_inquiry', 'delivery', 'order', 'complaint']
+2025-10-30 06:01:10 [boostEngine] Delivery status boost [delivery]: 0.527 -> 0.727
+2025-10-30 06:01:10 [Algorithmic] delivery (0.727, medium, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.727, medium)
+
+FINAL RESULT:
+  Predicted: delivery
+  Confidence: 0.727
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'Can you give me an ETA'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['hours_location', 'general', 'menu_inquiry', 'delivery', 'order', 'complaint']
+2025-10-30 06:13:09 [Algorithmic] general (0.623, medium, keyword + levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: general (0.623, medium)
+
+FINAL RESULT:
+  Predicted: general
+  Confidence: 0.623
+  Layer: algorithmic
+  Match: ✗ INCORRECT
+
+================================================================================
+
+================================================================================
+Query: 'My order is late and I want to know where it is'
+Expected Intent: delivery
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'My order is late and I want to know where it is'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['order', 'complaint', 'delivery', 'hours_location', 'menu_inquiry', 'general']
+2025-10-30 06:01:10 [boostEngine] Negative sentiment boost (x1) [complaint]: 0.518 -> 0.718
+2025-10-30 06:01:10 [boostEngine] Delivery status boost [delivery]: 0.527 -> 0.727
+2025-10-30 06:01:10 [boostEngine] Order penalty for status query [order]: 0.626 -> 0.476
+2025-10-30 06:01:10 [Algorithmic] delivery (0.727, medium, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.727, medium)
+
+FINAL RESULT:
+  Predicted: delivery
+  Confidence: 0.727
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'My order is late and I want to know where it is'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['order', 'complaint', 'delivery', 'hours_location', 'menu_inquiry', 'general']
+2025-10-30 06:13:09 [Algorithmic] order (0.626, medium, keyword + levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (0.626, medium)
+
+FINAL RESULT:
+  Predicted: order
+  Confidence: 0.626
+  Layer: algorithmic
+  Match: ✗ INCORRECT
+
+================================================================================
+
+================================================================================
+Query: 'Where can I find you?'
+Expected Intent: hours_location
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'Where can I find you?'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['hours_location', 'general', 'menu_inquiry', 'delivery', 'complaint', 'order']
+2025-10-30 06:01:10 [boostEngine] Time/location boost [hours_location]: 0.598 -> 0.848
+2025-10-30 06:01:10 [boostEngine] Order penalty for time query [order]: 0.507 -> 0.357
+2025-10-30 06:01:10 [Algorithmic] hours_location (0.848, high, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: hours_location (0.848, high)
+
+FINAL RESULT:
+  Predicted: hours_location
+  Confidence: 0.848
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'Where can I find you?'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['hours_location', 'general', 'menu_inquiry', 'delivery', 'order', 'complaint']
+2025-10-30 06:13:09 [Algorithmic] general (0.692, medium, keyword + levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: general (0.692, medium)
+
+FINAL RESULT:
+  Predicted: general
+  Confidence: 0.692
+  Layer: algorithmic
+  Match: ✗ INCORRECT
+
+================================================================================
+
+================================================================================
+Query: 'How much is extra cheese'
+Expected Intent: menu_inquiry
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'How much is extra cheese'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['delivery', 'menu_inquiry', 'hours_location', 'order', 'complaint', 'general']
+2025-10-30 06:01:10 [boostEngine] Price+items boost [menu_inquiry]: 0.648 -> 0.898
+2025-10-30 06:01:10 [boostEngine] Menu item customization boost [order]: 0.145 -> 0.395
+2025-10-30 06:01:10 [boostEngine] Menu inquiry penalty (customization ordering) [menu_inquiry]: 0.898 -> 0.748
+2025-10-30 06:01:10 [Algorithmic] menu_inquiry (0.748, medium, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: menu_inquiry (0.748, medium)
+
+FINAL RESULT:
+  Predicted: menu_inquiry
+  Confidence: 0.748
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'How much is extra cheese'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['delivery', 'menu_inquiry', 'hours_location', 'order', 'complaint', 'general']
+2025-10-30 06:13:09 [Algorithmic] delivery (0.668, medium, keyword + levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.668, medium)
+
+FINAL RESULT:
+  Predicted: delivery
+  Confidence: 0.668
+  Layer: algorithmic
+  Match: ✗ INCORRECT
+
+================================================================================
+
+================================================================================
+Query: 'What are your recommended good options?'
+Expected Intent: menu_inquiry
+
+--------------------------------------------------------------------------------
+Boost Engine: True
+--------------------------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [IntentRecognizer] Processing: 'What are your recommended good options?'
+2025-10-30 06:01:10 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:01:10 [Algorithmic] Candidate intents: ['general', 'menu_inquiry', 'hours_location', 'delivery', 'complaint']
+2025-10-30 06:01:10 [boostEngine] Recommendation inquiry boost [menu_inquiry]: 0.700 -> 0.950
+2025-10-30 06:01:10 [boostEngine] Delivery penalty for recommendation inquiry [delivery]: 0.799 -> 0.649
+2025-10-30 06:01:10 [Algorithmic] menu_inquiry (0.950, high, keyword + levenshtein)
+2025-10-30 06:01:10 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: menu_inquiry (0.950, high)
+
+FINAL RESULT:
+  Predicted: menu_inquiry
+  Confidence: 0.950
+  Layer: algorithmic
+  Match: ✓ CORRECT
+
+--------------------------------------------------------------------------------
+Boost Engine: False
+--------------------------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [IntentRecognizer] Processing: 'What are your recommended good options?'
+2025-10-30 06:13:09 [IntentRecognizer] ------------------------------------------------------------
+2025-10-30 06:13:09 [Algorithmic] Candidate intents: ['general', 'menu_inquiry', 'hours_location', 'delivery', 'complaint']
+2025-10-30 06:13:09 [Algorithmic] delivery (0.799, medium, levenshtein)
+2025-10-30 06:13:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.799, medium)
+
+FINAL RESULT:
+  Predicted: delivery
+  Confidence: 0.799
+  Layer: algorithmic
+  Match: ✗ INCORRECT
+
+================================================================================
