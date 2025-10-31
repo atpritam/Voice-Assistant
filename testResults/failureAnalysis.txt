@@ -3,13 +3,13 @@
 TESTING SPECIFIC INCORRECT PREDICTIONS WITH DETAILED LOGGING
 ================================================================================
 
-2025-10-30 05:18:04 [IntentRecognizer]  Algorithmic layer initialized
-2025-10-30 05:18:04 [Semantic] Loading Sentence Transformer model on device: GPU
-2025-10-30 05:18:07 [Semantic] Loaded embeddings from cache for 6 intents, total patterns: 240
-2025-10-30 05:18:07 [IntentRecognizer]  Semantic layer initialized (model: all-mpnet-base-v2)
-2025-10-30 05:18:07 [LLM] Connected to local Ollama at http://localhost:11434
-2025-10-30 05:18:07 [LLM] Using model: llama3.2:3b-instruct-q4_K_M
-2025-10-30 05:18:07 [IntentRecognizer]  LLM layer initialized (Ollama, model: llama3.2:3b-instruct-q4_K_M)
+2025-10-31 09:49:32 [IntentRecognizer]  Algorithmic layer initialized
+2025-10-31 09:49:32 [Semantic] Loading Sentence Transformer model on device: GPU
+2025-10-31 09:49:34 [Semantic] Loaded embeddings from cache for 6 intents, total patterns: 236
+2025-10-31 09:49:34 [IntentRecognizer]  Semantic layer initialized (model: all-mpnet-base-v2)
+2025-10-31 09:49:34 [LLM] Connected to local Ollama at http://localhost:11434
+2025-10-31 09:49:34 [LLM] Using model: llama3.2:3b-instruct-q4_K_M
+2025-10-31 09:49:34 [IntentRecognizer]  LLM layer initialized (Ollama, model: llama3.2:3b-instruct-q4_K_M)
 
 Configuration:
   Semantic Model: all-mpnet-base-v2
@@ -22,13 +22,13 @@ Configuration:
 Query: 'Can you take my order?'
 Expected Intent: order
 --------------------------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] Processing: 'Can you take my order?'
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [Algorithmic] Candidate intents: ['delivery', 'general', 'menu_inquiry', 'hours_location', 'complaint', 'order']
-2025-10-30 05:18:07 [boostEngine] Order action boost [order]: 0.569 -> 0.769
-2025-10-30 05:18:07 [Algorithmic] delivery (0.775, medium, levenshtein)
-2025-10-30 05:18:07 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.775, medium)
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [IntentRecognizer] Processing: 'Can you take my order?'
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'order', 'menu_inquiry', 'hours_location', 'general']
+2025-10-31 09:49:34 [boostEngine] Order action boost [order]: 0.569 -> 0.769
+2025-10-31 09:49:34 [Algorithmic] delivery (0.775, medium, levenshtein)
+2025-10-31 09:49:34 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.775, medium)
 
 FINAL RESULT:
   Predicted: delivery
@@ -45,24 +45,29 @@ FINAL RESULT:
     keyword_bonus: 0.080
     base_score: 0.645
     final_score: 0.775
+    pre_boost_winner: delivery
+    pre_boost_winner_score: 0.775
+    current_winner_pre_boost_score: 0.775
+    boost_delta: 0.000
+    winner_changed: False
 ================================================================================
 
 ================================================================================
 Query: 'Do you have late night hours'
 Expected Intent: hours_location
 --------------------------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] Processing: 'Do you have late night hours'
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [Algorithmic] Candidate intents: ['hours_location', 'menu_inquiry', 'general', 'delivery', 'complaint']
-2025-10-30 05:18:07 [boostEngine] Negative sentiment boost (x1) [complaint]: 0.147 -> 0.347
-2025-10-30 05:18:07 [boostEngine] Delivery status boost [delivery]: 0.697 -> 0.947
-2025-10-30 05:18:07 [Algorithmic] delivery (0.947, high, levenshtein)
-2025-10-30 05:18:07 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.947, high)
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [IntentRecognizer] Processing: 'Do you have late night hours'
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [Algorithmic] Candidate intents: ['hours_location', 'menu_inquiry', 'general', 'delivery', 'complaint']
+2025-10-31 09:49:34 [boostEngine] Negative sentiment boost (x1) [complaint]: 0.147 -> 0.347
+2025-10-31 09:49:34 [boostEngine] Delivery status boost [delivery]: 0.697 -> 0.897
+2025-10-31 09:49:34 [Algorithmic] delivery (0.897, high, levenshtein + boost [+0.20])
+2025-10-31 09:49:34 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.897, high)
 
 FINAL RESULT:
   Predicted: delivery
-  Confidence: 0.947
+  Confidence: 0.897
   Layer: algorithmic
   Match: ✗ INCORRECT
 
@@ -75,20 +80,25 @@ FINAL RESULT:
     keyword_bonus: 0.080
     base_score: 0.567
     final_score: 0.697
+    pre_boost_winner: hours_location
+    pre_boost_winner_score: 0.797
+    current_winner_pre_boost_score: 0.697
+    boost_delta: 0.200
+    winner_changed: True
 ================================================================================
 
 ================================================================================
 Query: 'How do I get to your location'
 Expected Intent: hours_location
 --------------------------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] Processing: 'How do I get to your location'
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [Algorithmic] Candidate intents: ['order', 'hours_location', 'menu_inquiry', 'delivery', 'complaint', 'general']
-2025-10-30 05:18:07 [Algorithmic] delivery (0.574, low, keyword + levenshtein)
-2025-10-30 05:18:07 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-10-30 05:18:07 [Semantic] delivery (0.502, low)
-2025-10-30 05:18:07 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.502, low)
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [IntentRecognizer] Processing: 'How do I get to your location'
+2025-10-31 09:49:34 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:34 [Algorithmic] Candidate intents: ['order', 'hours_location', 'menu_inquiry', 'delivery', 'complaint', 'general']
+2025-10-31 09:49:34 [Algorithmic] delivery (0.574, low, keyword + levenshtein)
+2025-10-31 09:49:34 [IntentRecognizer]   - Proceeding to Semantic layer
+2025-10-31 09:49:35 [Semantic] delivery (0.502, low)
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.502, low)
 
 FINAL RESULT:
   Predicted: delivery
@@ -108,20 +118,20 @@ FINAL RESULT:
 Query: 'Hey there, I'm looking to get some food'
 Expected Intent: order
 --------------------------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [IntentRecognizer] Processing: 'Hey there, I'm looking to get some food'
-2025-10-30 05:18:07 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:07 [Algorithmic] Candidate intents: ['order', 'complaint', 'general', 'delivery', 'menu_inquiry', 'hours_location']
-2025-10-30 05:18:07 [Algorithmic] order (0.530, low, keyword + levenshtein)
-2025-10-30 05:18:07 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-10-30 05:18:07 [Semantic] order (0.485, low)
-2025-10-30 05:18:07 [IntentRecognizer]   - Proceeding to LLM layer
-2025-10-30 05:18:11 [LLM] [Ollama] general (0.800, high)
-2025-10-30 05:18:11 [IntentRecognizer] ✓ ACCEPTED LLM Layer: general (0.800, high)
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'Hey there, I'm looking to get some food'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['order', 'complaint', 'general', 'delivery', 'menu_inquiry', 'hours_location']
+2025-10-31 09:49:35 [Algorithmic] order (0.530, low, keyword + levenshtein)
+2025-10-31 09:49:35 [IntentRecognizer]   - Proceeding to Semantic layer
+2025-10-31 09:49:35 [Semantic] order (0.485, low)
+2025-10-31 09:49:35 [IntentRecognizer]   - Proceeding to LLM layer
+2025-10-31 09:49:35 [LLM] [Ollama] general (0.990, high)
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED LLM Layer: general (0.990, high)
 
 FINAL RESULT:
   Predicted: general
-  Confidence: 0.800
+  Confidence: 0.990
   Layer: llm
   Match: ✗ INCORRECT
 
@@ -130,22 +140,51 @@ FINAL RESULT:
 ================================================================================
 
 ================================================================================
+Query: 'How much would it cost to get my cold pizza replaced?'
+Expected Intent: complaint
+--------------------------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'How much would it cost to get my cold pizza replaced?'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['order', 'complaint', 'delivery', 'menu_inquiry', 'general', 'hours_location']
+2025-10-31 09:49:35 [boostEngine] Negative sentiment boost (x2) [complaint]: 0.141 -> 0.491
+2025-10-31 09:49:35 [boostEngine] Menu inquiry penalty (negative+price) [menu_inquiry]: 0.553 -> 0.403
+2025-10-31 09:49:35 [Algorithmic] complaint (0.491, low, keyword + levenshtein + boost [+0.35])
+2025-10-31 09:49:35 [IntentRecognizer]   - Proceeding to Semantic layer
+2025-10-31 09:49:35 [Semantic] menu_inquiry (0.651, medium)
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: menu_inquiry (0.651, medium)
+
+FINAL RESULT:
+  Predicted: menu_inquiry
+  Confidence: 0.651
+  Layer: semantic
+  Match: ✗ INCORRECT
+
+  Score Breakdown:
+    semantic_similarity: 0.651
+    matched_pattern: How much does a pizza cost?
+    top_k_patterns: ['How much does a pizza cost?', 'How much is a large pizza?', 'What pizzas do you have?']
+    top_k_scores: [0.7147817015647888, 0.6404938697814941, 0.5082182884216309]
+    all_similarities: {"What's on the menu?": 0.2225470244884491, 'Can I see the pizza menu?': 0.39606302976608276, 'What pizzas do you have?': 0.5082182884216309, 'Do you have specialty pizzas?': 0.42876917123794556, 'Do you have vegan options?': 0.15273386240005493, 'What pizza sizes do you offer?': 0.48114722967147827, 'What toppings do you have?': 0.3400973081588745, 'Do you have any deals and specials?': 0.10003988444805145, 'What crust options are available?': 0.21558108925819397, 'Do you have gluten free options?': 0.11450410634279251, 'Are there vegan options?': 0.1018788293004036, 'What are your prices?': 0.20749804377555847, 'How much does a pizza cost?': 0.7147817015647888, 'Do you have any promotions?': 0.03853384777903557, 'How much is a large pizza?': 0.6404938697814941, 'What special offers do you have?': 0.12120947986841202, 'Tell me your menu': 0.23284660279750824, 'What can I order?': 0.2422487586736679, 'What do you sell?': 0.12188872694969177, 'what drinks are available': 0.1632521152496338, 'What types of pizza do you make?': 0.4703376889228821, 'Do you have vegetarian pizzas?': 0.41227301955223083, 'What meat toppings are available?': 0.283317506313324, 'Do you offer chicken as a topping?': 0.23177316784858704, 'What vegetables can I add?': 0.12948240339756012, 'Can I see a list of toppings?': 0.25726616382598877, 'What are your signature pizzas?': 0.4209159016609192, 'Do you have a BBQ pizza?': 0.4685077965259552, "What's your most popular pizza?": 0.43154847621917725, 'Do you serve pasta?': 0.22263045608997345, 'What sides do you have?': 0.05274200811982155, 'Do you have appetizers?': 0.22350426018238068, 'What desserts are available?': 0.14606988430023193, "What's the price range?": 0.24073545634746552, 'Can I customize my pizza?': 0.5056906938552856, 'Do you have dairy-free cheese?': 0.20746035873889923, 'Is there a low-carb option?': 0.11239536851644516, 'What cheese varieties do you use?': 0.22914007306098938, 'Can I get different cheese?': 0.32012659311294556, 'Do you use mozzarella?': 0.25951215624809265, "What's your Hawaiian pizza made of?": 0.4077472686767578, 'Tell me about your supreme pizza': 0.4975883960723877, "What's in a margherita?": 0.1260068267583847, 'Describe your meat lovers pizza': 0.38316112756729126, 'What goes on a veggie pizza?': 0.42927470803260803}
+================================================================================
+
+================================================================================
 Query: 'Can I order a large pepperoni and how long will it take?'
 Expected Intent: order
 --------------------------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] Processing: 'Can I order a large pepperoni and how long will it take?'
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [Algorithmic] Candidate intents: ['order', 'delivery', 'general', 'menu_inquiry', 'complaint', 'hours_location']
-2025-10-30 05:18:11 [boostEngine] Order action boost [order]: 0.591 -> 0.791
-2025-10-30 05:18:11 [boostEngine] Delivery status boost [delivery]: 0.460 -> 0.710
-2025-10-30 05:18:11 [boostEngine] Order penalty for status query [order]: 0.791 -> 0.641
-2025-10-30 05:18:11 [Algorithmic] delivery (0.710, medium, keyword + levenshtein)
-2025-10-30 05:18:11 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.710, medium)
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'Can I order a large pepperoni and how long will it take?'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['order', 'delivery', 'general', 'menu_inquiry', 'complaint', 'hours_location']
+2025-10-31 09:49:35 [boostEngine] Order action boost [order]: 0.591 -> 0.791
+2025-10-31 09:49:35 [boostEngine] Delivery status boost [delivery]: 0.460 -> 0.660
+2025-10-31 09:49:35 [boostEngine] Order penalty for status query [order]: 0.791 -> 0.641
+2025-10-31 09:49:35 [Algorithmic] delivery (0.660, medium, keyword + levenshtein + boost [+0.20])
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.660, medium)
 
 FINAL RESULT:
   Predicted: delivery
-  Confidence: 0.710
+  Confidence: 0.660
   Layer: algorithmic
   Match: ✗ INCORRECT
 
@@ -158,20 +197,25 @@ FINAL RESULT:
     keyword_bonus: 0.080
     base_score: 0.330
     final_score: 0.460
+    pre_boost_winner: order
+    pre_boost_winner_score: 0.591
+    current_winner_pre_boost_score: 0.460
+    boost_delta: 0.200
+    winner_changed: True
 ================================================================================
 
 ================================================================================
-Query: 'I want to order but is delivery free'
+Query: 'I want to order but is delivery free?'
 Expected Intent: delivery
 --------------------------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] Processing: 'I want to order but is delivery free'
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [Algorithmic] Candidate intents: ['delivery', 'hours_location', 'complaint', 'menu_inquiry', 'order']
-2025-10-30 05:18:11 [Algorithmic] Candidate intents: ['order', 'delivery', 'complaint', 'hours_location', 'menu_inquiry', 'general']
-2025-10-30 05:18:11 [boostEngine] Order action boost [order]: 0.935 -> 1.000
-2025-10-30 05:18:11 [Algorithmic] order (1.000, high, levenshtein)
-2025-10-30 05:18:11 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (1.000, high)
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'I want to order but is delivery free?'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['delivery', 'order', 'hours_location', 'menu_inquiry', 'complaint', 'general']
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['order', 'delivery', 'complaint', 'hours_location', 'menu_inquiry', 'general']
+2025-10-31 09:49:35 [boostEngine] Order action boost [order]: 0.935 -> 1.000
+2025-10-31 09:49:35 [Algorithmic] order (1.000, high, levenshtein)
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (1.000, high)
 
 FINAL RESULT:
   Predicted: order
@@ -194,13 +238,13 @@ FINAL RESULT:
 Query: 'Can I order now or are you closed?'
 Expected Intent: hours_location
 --------------------------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] Processing: 'Can I order now or are you closed?'
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [Algorithmic] Candidate intents: ['hours_location', 'general', 'menu_inquiry', 'delivery', 'order', 'complaint']
-2025-10-30 05:18:11 [boostEngine] Order action boost [order]: 0.676 -> 0.876
-2025-10-30 05:18:11 [Algorithmic] order (0.876, high, keyword + levenshtein)
-2025-10-30 05:18:11 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (0.876, high)
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'Can I order now or are you closed?'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['hours_location', 'menu_inquiry', 'order', 'delivery', 'complaint', 'general']
+2025-10-31 09:49:35 [boostEngine] Order action boost [order]: 0.676 -> 0.876
+2025-10-31 09:49:35 [Algorithmic] order (0.876, high, keyword + levenshtein + boost [+0.20])
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (0.876, high)
 
 FINAL RESULT:
   Predicted: order
@@ -217,20 +261,25 @@ FINAL RESULT:
     keyword_bonus: 0.080
     base_score: 0.496
     final_score: 0.676
+    pre_boost_winner: order
+    pre_boost_winner_score: 0.676
+    current_winner_pre_boost_score: 0.676
+    boost_delta: 0.200
+    winner_changed: False
 ================================================================================
 
 ================================================================================
 Query: 'The delivery took forever'
 Expected Intent: complaint
 --------------------------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [IntentRecognizer] Processing: 'The delivery took forever'
-2025-10-30 05:18:11 [IntentRecognizer] ------------------------------------------------------------
-2025-10-30 05:18:11 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'menu_inquiry', 'order']
-2025-10-30 05:18:11 [Algorithmic] delivery (0.544, low, keyword + levenshtein)
-2025-10-30 05:18:11 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-10-30 05:18:11 [Semantic] delivery (0.682, medium)
-2025-10-30 05:18:11 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.682, medium)
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [IntentRecognizer] Processing: 'The delivery took forever'
+2025-10-31 09:49:35 [IntentRecognizer] ------------------------------------------------------------
+2025-10-31 09:49:35 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'menu_inquiry', 'order']
+2025-10-31 09:49:35 [Algorithmic] delivery (0.544, low, keyword + levenshtein)
+2025-10-31 09:49:35 [IntentRecognizer]   - Proceeding to Semantic layer
+2025-10-31 09:49:35 [Semantic] delivery (0.682, medium)
+2025-10-31 09:49:35 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.682, medium)
 
 FINAL RESULT:
   Predicted: delivery
@@ -251,20 +300,22 @@ FINAL RESULT:
 SUMMARY
 ================================================================================
 
-Accuracy: 0/8 (0.0%)
+Accuracy: 0/9 (0.0%)
 
 Incorrect Predictions:
   'Can you take my order?'
     Expected: order, Got: delivery (algorithmic, conf=0.78)
   'Do you have late night hours'
-    Expected: hours_location, Got: delivery (algorithmic, conf=0.95)
+    Expected: hours_location, Got: delivery (algorithmic, conf=0.90)
   'How do I get to your location'
     Expected: hours_location, Got: delivery (semantic, conf=0.50)
   'Hey there, I'm looking to get some food'
-    Expected: order, Got: general (llm, conf=0.80)
+    Expected: order, Got: general (llm, conf=0.99)
+  'How much would it cost to get my cold pizza replaced?'
+    Expected: complaint, Got: menu_inquiry (semantic, conf=0.65)
   'Can I order a large pepperoni and how long will it take?'
-    Expected: order, Got: delivery (algorithmic, conf=0.71)
-  'I want to order but is delivery free'
+    Expected: order, Got: delivery (algorithmic, conf=0.66)
+  'I want to order but is delivery free?'
     Expected: delivery, Got: order (algorithmic, conf=1.00)
   'Can I order now or are you closed?'
     Expected: hours_location, Got: order (algorithmic, conf=0.88)

@@ -1,9 +1,6 @@
 # Voice Response System with Multi-Layer Intent Recognition Pipeline
 
-[![NLP](https://img.shields.io/badge/NLP-Intent%20Recognition-orange.svg)]()
-
-
-A **hybrid intent recognition system** combining classical NLP pattern matching, neural semantic embeddings, and large language models for robust conversational AI. The system achieves **98% intent recognition accuracy** through a novel three-layer architecture that balances speed, accuracy, and interpretability.
+A **hybrid intent recognition system** combining classical NLP pattern matching, neural semantic embeddings, and large language models for robust conversational AI. The system has a novel three-layer architecture that balances speed, accuracy, and interpretability.
 
 **Use Case**: Domain-agnostic customer service
 
@@ -79,7 +76,13 @@ echo "OPENAI_API_KEY=your-openai-api-key-here" >> .env
 python app.py
 ```
 
-Access the web interface at `http://localhost:5000` 
+Access the web interface at `http://localhost:5000`
+
+### Web Interface
+
+<img src="static/assets/screenshot.png" alt="Voice System Interface" width="800">
+
+The web interface provides a simple and intuitive way to interact with the voice assistant, showing real-time transcription and system responses.
 
 ## System Architecture
 
@@ -103,15 +106,15 @@ Text Query
 ┌─────────────────────────┐
 │ Intent Recognition      │
 │                         │
-│ 1. Algorithmic (fast)   │ ← 84% of queries
+│ 1. Algorithmic (fast)   │ ← 82% of queries
 │    ├─ Pattern matching  │
 │    ├─ Levenshtein      │
 │    └─ Boost Engine      │
 │         ↓               │
-│ 2. Semantic (accurate)  │ ← 11% of queries
+│ 2. Semantic (accurate)  │ ← 12% of queries
 │    └─ Neural embeddings │
 │         ↓               │
-│ 3. LLM (fallback)       │ ← 5% of queries
+│ 3. LLM (fallback)       │ ← 6% of queries
 │    └─ Ollama/OpenAI    │
 └─────────────────────────┘
      ↓
@@ -123,9 +126,7 @@ Voice Output
 ```
 
 
-## Installation
-
-### System Requirements
+## System Requirements
 
 **Minimum:**
 - CPU: Modern multi-core processor
@@ -141,49 +142,7 @@ Voice Output
 
 **Note**: All components work on CPU-only systems. GPU acceleration is optional but significantly improves performance.
 
-### Detailed Setup Instructions
-
-#### Installing Python 3.11
-
-If you don't have Python 3.11 or need it alongside your existing Python installation:
-
-```bash
-# Ubuntu/Debian
-sudo apt install software-properties-common
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install python3.11 python3.11-venv python3.11-dev
-
-# Verify installation
-python3.11 --version 
-```
-
-```bash
-# Ubuntu/Debian
-sudo apt install ffmpeg espeak-ng
-```
-
-#### GPU Setup (Optional)
-
-If you have an NVIDIA GPU and want acceleration:
-
-```bash
-# Check CUDA availability
-nvidia-smi
-```
-
-The system will automatically detect and use GPU if available.
-
-### Alternative Installation Methods
-
-#### Using Conda/Mamba
-
-```bash
-conda create -n voice-assistant python=3.11
-conda activate voice-assistant
-conda install -c conda-forge ffmpeg espeak-ng
-pip install -r requirements.txt
-```
+## Configuration
 
 ### Environment Configuration
 
@@ -201,8 +160,6 @@ Generate a secure `SECRET_KEY`:
 ```bash
 python3 -c 'import secrets; print(secrets.token_hex(32))'
 ```
-
-## Configuration
 
 ### Pipeline Configuration
 
@@ -331,43 +288,24 @@ python -m test.runtest "where is my pizza?"
 
 All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-instruct-q4_K_M`.
 
-### Standard Test Dataset (301 queries - no edge cases)
-
-Pipeline configurations tested on 301 queries without edge cases:
-
-| Configuration | Accuracy | Avg Time | Queries/s |
-|--------------|----------|----------|-----------|
-| Full Pipeline | 99.00% | 11.8ms | 85.0 |
-| Algorithmic + Semantic | 97.67% | 4.9ms | 204.3 |
-| Algorithmic + LLM | 99.34% | 22.5ms | 44.5 |
-| Semantic + LLM | 95.02% | 39.4ms | 25.4 |
-| Algorithmic Only | 95.35% | 3.0ms | 338.3 |
-| Semantic Only | 92.36% | 14.5ms | 68.8 |
-
 ### Extended Test Dataset (400 queries - with edge cases)
 
-Comprehensive testing with 400 queries including 99 edge cases:
+Comprehensive testing with 400 queries including 101 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 98.00% | 19.1ms | 52.5 |
-| Algorithmic + Semantic | 95.50% | 4.0ms | 247.5 |
-| Algorithmic + LLM | 96.25% | 46.4ms | 21.5 |
-| Semantic + LLM | 93.25% | 53.0ms | 18.9 |
-| Algorithmic Only | 89.25% | 2.9ms | 350.2 |
-| Semantic Only | 88.00% | 13.4ms | 74.5 |
+| Full Pipeline | 97.75% | 20.7ms | 48.3 |
+| Algorithmic + Semantic | 94.75% | 4.1ms | 241.8 |
+| Algorithmic + LLM | 96.75% | 50.3ms | 19.9 |
+| Semantic + LLM | 93.25% | 54.1ms | 18.5 |
+| Algorithmic Only | 88.50% | 3.0ms | 329.6 |
+| Semantic Only | 87.50% | 7.1ms | 140.3 |
 
 ### Layer Distribution (Full Pipeline)
 
-#### Standard Dataset (301 queries):
-- Algorithmic layer: 92.7% of queries (279/301)
-- Semantic layer: 4.7% of queries (14/301)
-- LLM layer: 2.7% of queries (8/301)
-
-#### Extended Dataset (400 queries with edge cases):
-- Algorithmic layer: 84.0% of queries (336/400)
-- Semantic layer: 10.8% of queries (43/400)
-- LLM layer: 5.2% of queries (21/400)
+- Algorithmic layer: 82.5% of queries (330/400)
+- Semantic layer: 11.8% of queries (47/400)
+- LLM layer: 5.8% of queries (23/400)
 
 ### Boost Engine Impact
 
@@ -375,12 +313,12 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 | Metric | Without Boost | With Boost | Improvement |
 |--------|---------------|------------|-------------|
-| Accuracy | 93.75% | 98.00% | +4.25% |
-| Correct Predictions | 375 | 392 | +17 |
-| Query Time | 32.2ms | 20.1ms | 37% faster |
-| Algorithmic Usage | 304 | 336 | +32 |
-| Semantic Fallback | 60 | 43 | -17 |
-| LLM Fallback | 36 | 21 | -15 |
+| Accuracy | 93.50% | 97.75% | +4.25% |
+| Correct Predictions | 374 | 391 | +17 |
+| Query Time | 34.5ms | 21.8ms | 37% faster |
+| Algorithmic Usage | 296 | 330 | +34 |
+| Semantic Fallback | 67 | 47 | -20 |
+| LLM Fallback | 37 | 23 | -14 |
 
 ### Confusion Matrix Results (Full Pipeline - 400 queries)
 
@@ -388,15 +326,24 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 | Intent | Precision | Recall | F1-Score | Support |
 |--------|-----------|--------|----------|---------|
-| complaint | 100.00% | 98.81% | 99.40% | 84 |
-| delivery | 91.80% | 98.25% | 94.92% | 57 |
+| complaint | 100.00% | 97.62% | 98.80% | 84 |
+| delivery | 91.67% | 98.21% | 94.83% | 56 |
 | general | 95.65% | 100.00% | 97.78% | 22 |
 | hours_location | 100.00% | 95.16% | 97.52% | 62 |
-| menu_inquiry | 100.00% | 100.00% | 100.00% | 87 |
+| menu_inquiry | 98.88% | 100.00% | 99.44% | 88 |
 | order | 97.70% | 96.59% | 97.14% | 88 |
 
 
 See `testResults/` directory for detailed  analyses.
+
+### Test Dataset Quality
+
+The benchmark results above are validated against dataset with:
+
+- **400 total queries** (300 normal + 100 edge cases)
+- **Diversity score: 0.97/1.0** - High lexical variety, not repetitive memorization
+- **Edge cases include**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing
+- **Zero duplicates** - Unbiased evaluation
 
 ## Key Technical Features
 

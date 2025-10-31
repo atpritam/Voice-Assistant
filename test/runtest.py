@@ -16,6 +16,7 @@ Run examples:
 import sys
 import os
 import argparse
+import logging
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -24,6 +25,7 @@ from test.comparative import ComparativeTestRunner
 from test.boost_analysis import BoostEngineTestRunner
 from test.confusion_matrix import run_confusion_matrix_test
 from test.common import CONFIG, prompt_for_intent, create_single_query_dataset
+from utils.logger_config import setup_logging
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -152,6 +154,7 @@ def main():
         # single query mode
         test_data = None
         if args.query:
+            setup_logging(level=logging.DEBUG)
             expected_intent = prompt_for_intent(args.query)
             test_data = create_single_query_dataset(args.query, expected_intent)
 

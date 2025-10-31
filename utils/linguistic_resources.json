@@ -44,6 +44,9 @@
     "help": [
       "help", "assist", "support", "service", "information",
       "info", "tell", "explain", "show"
+    ],
+    "reservation": [
+      "reservation", "reservations","reserve", "book", "booking"
     ]
   },
   "filler_words": [
@@ -54,8 +57,7 @@
   "intent_critical_keywords": {
     "order": [
       "order", "buy", "purchase", "want", "get", "place", "make",
-      "grab", "need", "start", "begin", "ready", "same", "usual",
-      "regular", "typical", "always", "normally"
+      "grab", "need", "start", "begin"
     ],
     "complaint": [
       "wrong", "cold", "late", "missing", "burnt", "complaint",

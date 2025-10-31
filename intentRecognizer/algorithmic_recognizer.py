@@ -533,10 +533,25 @@ class AlgorithmicRecognizer:
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
+        # pre-boost state for tracking boost impact on winner
+        pre_boost_scores = {}
+        pre_boost_winner = None
         if self.use_boost_engine:
+            pre_boost_scores = {intent: data['similarity'] for intent, data in intent_scores.items()}
+            pre_boost_winner = max(pre_boost_scores.items(), key=lambda x: x[1])[0] if pre_boost_scores else None
             intent_scores = self.boost_engine.apply_all_boosts(query_words, intent_scores, processed_query)
 
         intent_name, similarity, pattern, breakdown = self._select_best_intent(intent_scores)
+
+        if self.use_boost_engine and pre_boost_winner and intent_name in pre_boost_scores:
+            pre_boost_winner_score = pre_boost_scores.get(pre_boost_winner, 0.0)
+            current_winner_pre_boost_score = pre_boost_scores.get(intent_name, 0.0)
+
+            breakdown['pre_boost_winner'] = pre_boost_winner
+            breakdown['pre_boost_winner_score'] = pre_boost_winner_score
+            breakdown['current_winner_pre_boost_score'] = current_winner_pre_boost_score
+            breakdown['boost_delta'] = similarity - current_winner_pre_boost_score
+            breakdown['winner_changed'] = (pre_boost_winner != intent_name)
 
         # Fallback: If but-clause was used but resulted in general/unknown, retry with full query
         if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
@@ -561,7 +576,10 @@ class AlgorithmicRecognizer:
         confidence_level = IntentRecognizerUtils.determine_confidence_level(similarity)
 
         method = 'none'
+        boost_info = None
+
         if breakdown:
+            # Determine base processing method
             if breakdown.get('keyword_similarity', 0) > 0.7:
                 method = 'keyword'
             elif breakdown.get('levenshtein_similarity', 0) > 0.7:
@@ -569,13 +587,26 @@ class AlgorithmicRecognizer:
             else:
                 method = 'keyword + levenshtein'
 
+            if self.use_boost_engine and 'boost_delta' in breakdown:
+                boost_delta = breakdown['boost_delta']
+                winner_changed = breakdown.get('winner_changed', False)
+
+                if winner_changed or abs(boost_delta) > 0.15:
+                    method = f"{method} + boost"
+                    boost_info = f"{boost_delta:+.2f}"
+
         self.stats['intent_distribution'][intent_name] += 1
         self.stats['avg_confidence'].append(similarity)
 
         if self.enable_logging:
-            self.logger.info(
-                f"{intent_name} ({similarity:.3f}, {confidence_level}, {method})"
-            )
+            if boost_info:
+                self.logger.info(
+                    f"{intent_name} ({similarity:.3f}, {confidence_level}, {method} [{boost_info}])"
+                )
+            else:
+                self.logger.info(
+                    f"{intent_name} ({similarity:.3f}, {confidence_level}, {method})"
+                )
 
         return AlgorithmicResult(
             intent=intent_name,

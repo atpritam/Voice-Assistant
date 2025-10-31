@@ -152,19 +152,22 @@ class LLMRecognizer:
             self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
             self.stats["avg_confidence"].append(result.confidence)
 
+            if (not self.test_mode and
+                original_conf is not None and
+                override_thres is not None and
+                result.intent != recognized_intent and
+                result.confidence >= override_thres and
+                result.confidence > original_conf and
+                result.intent != "unknown"):
+                result.override = True
+
             if self.enable_logging:
                 provider = "Ollama" if self.use_local_llm else "OpenAI"
                 if original_conf is None:
                     self.logger.info(
                         f"[{provider}] {result.intent} ({result.confidence:.3f}, {result.confidence_level})")
                 elif not self.test_mode and original_conf is not None:
-                    if (result.intent != recognized_intent and
-                        result.confidence >= override_thres and
-                        result.confidence > original_conf and
-                        result.intent != "unknown"
-                        ):
-
-                        result.override = True
+                    if result.override:
                         self.logger.info(
                             f"[{provider}] OVERRIDE: '{recognized_intent}' "
                             f"({original_conf:.3f}) -> '{result.intent}' ({result.confidence:.3f}, {result.confidence_level})"
@@ -298,7 +301,7 @@ class LLMRecognizer:
             prompt += '\n\nRespond ONLY with valid JSON, no markdown formatting:\n{{"intent": "intent_name", "confidence": 0.85}}'
             return prompt
 
-        if recognized_intent in valid_intents and original_conf > 0.7:
+        if recognized_intent in valid_intents and original_conf is not None and original_conf > 0.7:
             info = self._get_selective_business_info(recognized_intent)
         else:
             info = json.dumps(self.res_info, indent=2)
@@ -322,7 +325,7 @@ class LLMRecognizer:
     >=0.8 high | >=0.6 medium | <0.6 low
     """
 
-        if recognized_intent in valid_intents and original_conf > 0.5:
+        if recognized_intent in valid_intents and original_conf is not None and original_conf > 0.5:
             prompt += f"""
     Previous layer suggested: {recognized_intent} ({original_conf:.2f})
     You may override intent if wrong. Previous layer had no chat history.

@@ -12,26 +12,26 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 301 queries
+Test Dataset Size: 299 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
 Accuracy: 99.00%
-Correct: 298 / 301
-Avg Query Time: 10.7ms
-Queries/s: 93.4
+Correct: 296 / 299
+Avg Query Time: 13.3ms
+Queries/s: 75.3
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 279 ( 92.7%)  Acc: 99.28%
-Semantic    :  14 (  4.7%)  Acc: 92.86%
-LLM         :   8 (  2.7%)  Acc: 100.00%
+Algorithmic : 273 ( 91.3%)  Acc: 99.27%
+Semantic    :  16 (  5.4%)  Acc: 93.75%
+LLM         :  10 (  3.3%)  Acc: 100.00%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 238 ( 79.1%)
-Medium (0.6-0.8)      :  58 ( 19.3%)
+High (≥0.8)           : 231 ( 77.3%)
+Medium (0.6-0.8)      :  63 ( 21.1%)
 Low (<0.6)            :   5 (  1.7%)
 
 INCORRECT PREDICTIONS

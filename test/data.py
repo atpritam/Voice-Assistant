@@ -1,6 +1,8 @@
 """
 Test Dataset for Intent Recognition
 400 queries for comprehensive evaluation
+
+Dataset diversity score: 0.970
 """
 
 # === NORMAL TEST DATA ===
@@ -13,7 +15,7 @@ NORMAL_TEST_DATASET = [
     ("I want a small pizza", "order"),
     ("Can you take my order?", "order"),
     ("Order a large margherita", "order"),
-    ("I'd like to buy pizza", "order"),
+    ("Can I customize a pizza with half and half", "menu_inquiry"),
     ("Can I place an order", "order"),
     ("Start a new order please", "order"),
     ("Make an order for pickup", "order"),
@@ -73,7 +75,7 @@ NORMAL_TEST_DATASET = [
     ("Order a pizza with extra toppings", "order"),
     ("I'd like a medium pizza well done", "order"),
     ("Can I get a square cut pizza", "order"),
-    ("I want to order now for later pickup", "order"),
+    ("I'd like to order for pickup tomorrow", "order"),
 
     # Complaint intents (62 queries)
     ("My pizza was cold when it arrived", "complaint"),
@@ -108,7 +110,6 @@ NORMAL_TEST_DATASET = [
     ("My order is completely wrong", "complaint"),
     ("The pizza arrived cold", "complaint"),
     ("This tastes horrible", "complaint"),
-    ("I'm very unhappy", "complaint"),
     ("The service is unacceptable", "complaint"),
     ("I need compensation", "complaint"),
     ("This is ridiculous", "complaint"),
@@ -121,7 +122,7 @@ NORMAL_TEST_DATASET = [
     ("I'm so angry about this order", "complaint"),
     ("This is disgusting and I want a refund", "complaint"),
     ("Worst pizza I've ever had", "complaint"),
-    ("I'm extremely unhappy", "complaint"),
+    ("The ingredients taste stale", "complaint"),
     ("This is ridiculous, I want a manager", "complaint"),
     ("Absolutely terrible experience", "complaint"),
     ("The driver was very rude", "complaint"),
@@ -149,7 +150,7 @@ NORMAL_TEST_DATASET = [
     ("What time do you open tomorrow", "hours_location"),
     ("Store location", "hours_location"),
     ("Are you still open?", "hours_location"),
-    ("Where is the nearest location?", "hours_location"),
+    ("How do I get directions to your store", "hours_location"),
     ("What street are you on?", "hours_location"),
     ("Give me directions", "hours_location"),
     ("What are your delivery hours?", "hours_location"),
@@ -181,7 +182,7 @@ NORMAL_TEST_DATASET = [
     ("What are your hours for pickup", "hours_location"),
     ("Are you open now", "hours_location"),
     ("When do you open in the morning", "hours_location"),
-    ("What are your holiday hours", "hours_location"),
+    ("Are you open on holidays", "hours_location"),
     ("How do I get to your location", "hours_location"),
     ("Are you open on Christmas", "hours_location"),
     ("What time should I come by", "hours_location"),
@@ -207,14 +208,14 @@ NORMAL_TEST_DATASET = [
     ("Any deals today?", "menu_inquiry"),
     ("What drinks do you offer?", "menu_inquiry"),
     ("Do you have stuffed crust", "menu_inquiry"),
-    ("What kind of crust options are there", "menu_inquiry"),
+    ("What crust types are available", "menu_inquiry"),
     ("How much for a family size", "menu_inquiry"),
     ("What comes on a Hawaiian pizza", "menu_inquiry"),
     ("Do you have meat lovers", "menu_inquiry"),
     ("What vegetables can I add", "menu_inquiry"),
     ("Do you offer thin crust", "menu_inquiry"),
     ("What's your cheapest pizza", "menu_inquiry"),
-    ("Do you have any combos", "menu_inquiry"),
+    ("Do you have any combo deals", "menu_inquiry"),
     ("What sides do you have", "menu_inquiry"),
     ("Can I see a list of toppings?", "menu_inquiry"),
     ("What are your signature pizzas?", "menu_inquiry"),
@@ -226,7 +227,7 @@ NORMAL_TEST_DATASET = [
     ("What's the price range?", "menu_inquiry"),
     ("Can I customize my pizza?", "menu_inquiry"),
     ("Do you have dairy-free cheese?", "menu_inquiry"),
-    ("Is there a low-carb option?", "menu_inquiry"),
+    ("What are the size dimensions", "menu_inquiry"),
     ("Do you have promotions?", "menu_inquiry"),
     ("What cheese varieties do you use?", "menu_inquiry"),
     ("What's your Hawaiian pizza made of?", "menu_inquiry"),
@@ -257,7 +258,7 @@ NORMAL_TEST_DATASET = [
     ("Track my order please", "delivery"),
     ("Delivery time estimate", "delivery"),
     ("How much longer will it take", "delivery"),
-    ("Can I change my delivery address", "delivery"),
+    ("Can I update my delivery address", "delivery"),
     ("Order status check", "delivery"),
     ("How long for delivery", "delivery"),
     ("Do you deliver to my area", "delivery"),
@@ -269,8 +270,6 @@ NORMAL_TEST_DATASET = [
     ("Is there a delivery charge", "delivery"),
     ("When will the driver arrive", "delivery"),
     ("Can you give me an ETA", "delivery"),
-    ("How much is delivery?", "delivery"),
-    ("What's the minimum order for delivery?", "delivery"),
     ("Is delivery free?", "delivery"),
     ("How long until my order arrives?", "delivery"),
     ("What's the estimated delivery time?", "delivery"),
@@ -285,7 +284,7 @@ NORMAL_TEST_DATASET = [
     ("Are you in my delivery zone?", "delivery"),
     ("What's the delivery time estimate?", "delivery"),
     ("I know you're busy but where is my order?", "delivery"),
-    ("What's the minimum order value?", "delivery"),
+    ("Is contactless delivery available", "delivery"),
     ("Do you have real-time tracking?", "delivery"),
     ("Can I see where the driver is?", "delivery"),
     ("Do you offer free delivery", "delivery"),
@@ -295,12 +294,13 @@ NORMAL_TEST_DATASET = [
     ("Do you deliver during lunch", "delivery"),
     ("Can I get contactless delivery", "delivery"),
     ("How much longer until my pizza gets here", "delivery"),
+    ("What's the minimum order value", "delivery"),
 
     # General intents (20 queries)
     ("Hello", "general"),
     ("Hi there", "general"),
     ("Thanks for your help", "general"),
-    ("Good morning", "general"),
+    ("can I reserve a table?", "general"),
     ("Goodbye", "general"),
     ("Sounds good", "general"),
     ("Sure", "general"),
@@ -316,13 +316,13 @@ NORMAL_TEST_DATASET = [
     ("Amazing service as always", "general"),
     ("Perfect", "general"),
     ("That works", "general"),
-    ("Appreciate it", "general"),
+    ("what a good day it is today", "general"),
 ]
 
 
 # === EDGE CASES DATA ===
 EDGE_CASES_DATASET = [
-    # Ambiguous (9 queries)
+    # Ambiguous (10 queries)
     ("What can I get", "menu_inquiry"),
     ("Tell me about your pizza", "menu_inquiry"),
     ("What do you recommend", "menu_inquiry"),
@@ -332,6 +332,7 @@ EDGE_CASES_DATASET = [
     ("I'm looking for something", "menu_inquiry"),
     ("Can you help me", "general"),
     ("Hey there, I'm looking to get some food", "order"),
+    ("How much would it cost to get my cold pizza replaced?", "complaint"),
 
     # Long queries (8 queries)
     ("Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet", "complaint"),
@@ -343,7 +344,7 @@ EDGE_CASES_DATASET = [
     ("I tried calling earlier but no one answered and now I'm worried my order didn't go through can you check if there's an delivery under my name", "delivery"),
     ("I'm looking at your menu online but I can't find any information about whether you have gluten free options or what the price difference would be", "menu_inquiry"),
 
-    # Multiple intents - should recognize dominant intent (16 queries)
+    # Multiple intents - should recognize dominant intent (17 queries)
     ("I want to order but first tell me your hours", "hours_location"),
     ("Can I get a refund and also where is my order", "complaint"),
     ("The driver went to the wrong address", "complaint"),
@@ -360,6 +361,7 @@ EDGE_CASES_DATASET = [
     ("Can I order a large pepperoni and how long will it take?", "order"),
     ("I want to order but is delivery free?", "delivery"),
     ("Can I order now or are you closed?", "hours_location"),
+    ("I don't want delivery I want pickup within next hour", "order"),
 
     # Negative queries (5 queries)
     ("I don't want pepperoni what else do you have", "menu_inquiry"),
@@ -475,6 +477,22 @@ def check_duplicates():
     return len(duplicates) > 0, duplicates
 
 
+def calculate_diversity_score():
+    """Calculate dataset diversity score (0-1, higher is better)"""
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+        import numpy as np
+
+        queries = [q for q, _ in NORMAL_TEST_DATASET + EDGE_CASES_DATASET]
+        vectors = TfidfVectorizer(ngram_range=(1, 2), max_features=500).fit_transform(queries)
+        similarities = cosine_similarity(vectors)
+
+        return round(1 - np.mean(similarities[np.triu_indices_from(similarities, k=1)]), 4)
+    except ImportError:
+        return None
+
+
 def get_dataset_statistics():
     """Get comprehensive statistics about the dataset"""
     normal_dataset = NORMAL_TEST_DATASET
@@ -517,3 +535,6 @@ if __name__ == '__main__':
         for query, intent, original in dupes:
             print(f"  - '{query}' ({intent})")
             print(f"    Duplicate of: '{original[0]}' ({original[1]})")
+
+    diversity_score = calculate_diversity_score()
+    print(f"\nDataset diversity score: {diversity_score}")

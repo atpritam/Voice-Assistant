@@ -255,6 +255,7 @@ class IntentRecognizer:
             self.logger.info("-" * 60)
 
         recognized_intent = None
+        recognized_confidence = None
 
         if self.enable_algorithmic:
             result, algo_result = self._try_layer('algorithmic', self.algorithmic_recognizer, query,
@@ -263,6 +264,7 @@ class IntentRecognizer:
                 return result
             if algo_result and algo_result.intent != "unknown":
                 recognized_intent = algo_result.intent
+                recognized_confidence = algo_result.confidence
 
         if self.enable_semantic:
             result, semantic_result = self._try_layer('semantic', self.semantic_recognizer, query,
@@ -271,9 +273,10 @@ class IntentRecognizer:
                 return result
             if semantic_result and semantic_result.intent != "unknown":
                 recognized_intent = semantic_result.intent
+                recognized_confidence = semantic_result.confidence
 
         if self.enable_llm:
-            result = self._try_llm_layer(query, conversation_history, recognized_intent)
+            result = self._try_llm_layer(query, conversation_history, recognized_intent, recognized_confidence)
             if result:
                 return result
 
@@ -298,9 +301,9 @@ class IntentRecognizer:
         return final_result, result
 
     def _try_llm_layer(self, query: str, conversation_history: Optional[List[Dict]] = None,
-                      recognized_intent: Optional[str] = None) -> RecognitionResult:
+                      recognized_intent: Optional[str] = None, recognized_confidence: Optional[float] = None) -> RecognitionResult:
         """Try LLM fallback layer"""
-        llm_result = self.llm_recognizer.recognize(query, self.patterns, conversation_history, recognized_intent)
+        llm_result = self.llm_recognizer.recognize(query, self.patterns, conversation_history, recognized_intent, recognized_confidence)
         self.stats['llm_used'] += 1
         return self._create_result(query, llm_result, layer='llm', conversation_history=conversation_history)
 

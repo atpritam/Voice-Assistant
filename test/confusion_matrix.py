@@ -133,7 +133,7 @@ class ConfusionMatrixAnalyzer:
         for actual, predicted, count in misclassifications[:15]:  # Top 15
             actual_total = np.sum(self.matrix[self.intent_to_idx[actual], :])
             percentage = (count / actual_total * 100) if actual_total > 0 else 0
-            print(f"{actual:<20} {predicted:<20} {count:<10} {percentage:<15.1f}%")
+            print(f"{actual:<20} {predicted:<20} {count:<10} {percentage:<15.1f}")
 
 
 class ConfusionMatrixTestRunner:

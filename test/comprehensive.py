@@ -28,7 +28,8 @@ class ComprehensiveTestRunner:
 
     def __init__(self, custom_data=None):
         """Initialize test runner"""
-        setup_logging(level=logging.INFO)
+        if not logging.getLogger().handlers:
+            setup_logging(level=logging.INFO)
         self.factory = RecognizerFactory()
         self.analyzer = ResultAnalyzer()
         self.test_data = custom_data if custom_data is not None else get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)

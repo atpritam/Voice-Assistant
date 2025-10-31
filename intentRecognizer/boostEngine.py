@@ -63,7 +63,9 @@ class BoostRuleEngine:
             'wrong', 'bad', 'terrible', 'horrible', 'disappointed', 'complain',
             'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold',
             'late', 'issue', 'problem', 'never', 'poor', 'nasty', 'disgusting',
-            'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale', 'furious'
+            'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale', 'furious',
+            'mistake', 'wrong', 'error', 'incorrect', 'cancel', 'cancellation',
+            'replace', 'replaced', 'replacement', 'redo', 'remake', 'fix', 'broken'
         }
 
     def _load_res_info(self, res_info_file: str = None) -> Dict:
@@ -198,10 +200,18 @@ class BoostRuleEngine:
 
         has_size = bool(query_words & {'small', 'medium', 'large', 'family'})
         has_items = bool(query_words & ({'drinks', 'toppings'} | set(self.menu_items or [])))
+        has_negative = bool(query_words & self.negative_words)
 
         if has_price and (has_size or has_items):
-            boost_label = "Price+size boost" if has_size else "Price+items boost"
-            self._boost_intent('menu_inquiry', intent_scores, PRICE_SIZE_BOOST, boost_label)
+            if not has_negative:
+                boost_label = "Price+size boost" if has_size else "Price+items boost"
+                self._boost_intent('menu_inquiry', intent_scores, PRICE_SIZE_BOOST, boost_label)
+            else:
+                self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
+                                     "Menu inquiry penalty (complaint context)")
+        elif has_price and has_negative:
+            self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
+                               "Menu inquiry penalty (negative+price)")
 
     def _apply_time_location_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -313,6 +323,7 @@ class BoostRuleEngine:
         has_recommendation = bool(query_words & recommendation_words)
         has_menu_context = bool(query_words & menu_context_words)
         is_recommendation_query = has_recommendation and has_menu_context
+        has_negative = bool(query_words & self.negative_words)
 
         if has_inquiry and has_about:
             if query_words & self.synonyms.get('delivery', set()):
@@ -328,7 +339,7 @@ class BoostRuleEngine:
                                    "Order penalty for hours inquiry")
 
             price_related_words = {'menu'} | self.synonyms.get('price', set())
-            if query_words & price_related_words:
+            if query_words & price_related_words and not has_negative:
                 self._boost_intent('menu_inquiry', intent_scores, PRICE_INQUIRY_BOOST,
                                    "Price inquiry boost")
                 self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,

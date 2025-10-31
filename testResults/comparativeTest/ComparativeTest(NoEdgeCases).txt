@@ -11,44 +11,44 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 301 queries
+Test Dataset Size: 299 queries
 
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 99.00% (298/301 correct)
-Time: 3.54s
+✓ Accuracy: 99.00% (296/299 correct)
+Time: 4.09s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> Semantic
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 97.67% (294/301 correct)
-Time: 1.47s
+✓ Accuracy: 96.99% (290/299 correct)
+Time: 1.15s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 99.34% (299/301 correct)
-Time: 6.77s
+✓ Accuracy: 99.00% (296/299 correct)
+Time: 7.88s
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 95.02% (286/301 correct)
-Time: 11.85s
+✓ Accuracy: 95.65% (286/299 correct)
+Time: 10.13s
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 95.35% (287/301 correct)
-Time: 889.7ms
+✓ Accuracy: 94.31% (282/299 correct)
+Time: 863.1ms
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 92.36% (278/301 correct)
-Time: 4.37s
+✓ Accuracy: 92.31% (276/299 correct)
+Time: 2.16s
 
 ================================================================================
 COMPARATIVE ANALYSIS
@@ -59,21 +59,21 @@ Pipeline Comparison
 --------------------------------------------------------------------------------
 Configuration             Accuracy   Total Time   Avg Time   Q/s       
 --------------------------------------------------------------------------------
-Full Pipeline               99.00%       3.54s    11.8ms      85.0
-Algorithmic -> Semantic     97.67%       1.47s     4.9ms     204.3
-Algorithmic -> LLM          99.34%       6.77s    22.5ms      44.5
-Semantic -> LLM             95.02%      11.85s    39.4ms      25.4
-Algorithmic Only            95.35%     889.7ms     3.0ms     338.3
-Semantic Only               92.36%       4.37s    14.5ms      68.8
+Full Pipeline               99.00%       4.09s    13.7ms      73.1
+Algorithmic -> Semantic     96.99%       1.15s     3.8ms     260.2
+Algorithmic -> LLM          99.00%       7.88s    26.3ms      38.0
+Semantic -> LLM             95.65%      10.13s    33.9ms      29.5
+Algorithmic Only            94.31%     863.1ms     2.9ms     346.4
+Semantic Only               92.31%       2.16s     7.2ms     138.3
 
 LAYER USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             Algo     Semantic   LLM      Unrecognized Intent
 --------------------------------------------------------------------------------
-Full Pipeline                279        14       8        0
-Algorithmic -> Semantic      279        19       0        3
-Algorithmic -> LLM           279         0      22        0
-Semantic -> LLM                0       276      25        0
-Algorithmic Only             296         0       0        5
-Semantic Only                  0       295       0        6
+Full Pipeline                273        16      10        0
+Algorithmic -> Semantic      273        21       0        5
+Algorithmic -> LLM           273         0      26        0
+Semantic -> LLM                0       274      25        0
+Algorithmic Only             292         0       0        7
+Semantic Only                  0       290       0        9
 
