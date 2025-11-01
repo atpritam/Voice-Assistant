@@ -1,0 +1,64 @@
+
+================================================================================
+BOOST ENGINE COMPARATIVE ANALYSIS
+================================================================================
+
+Comparing Algorithmic Only and Full Pipeline with/without Boost Engine
+Semantic Model: all-mpnet-base-v2
+LLM Model: llama3.2:3b-instruct-q4_K_M
+Mode: TEST MODE (intent recognition only)
+Edge Cases Included: True
+Test Dataset Size: 400 queries
+
+
+────────────────────────────────────────────────────────────────────────────────
+Algorithmic Only (WITH Boost)
+────────────────────────────────────────────────────────────────────────────────
+✓ Accuracy: 90.25% (361/400 correct)
+  Time: 1.18s | Avg: 3.0ms | 339.0 q/s
+  Layers Used - Algo: 384, Semantic: 0, LLM: 0
+
+────────────────────────────────────────────────────────────────────────────────
+Algorithmic Only (NO Boost)
+────────────────────────────────────────────────────────────────────────────────
+✓ Accuracy: 83.50% (334/400 correct)
+  Time: 1.17s | Avg: 2.9ms | 342.3 q/s
+  Layers Used - Algo: 381, Semantic: 0, LLM: 0
+
+────────────────────────────────────────────────────────────────────────────────
+Full Pipeline (WITH Boost)
+────────────────────────────────────────────────────────────────────────────────
+✓ Accuracy: 95.50% (382/400 correct)
+  Time: 7.85s | Avg: 19.6ms | 51.0 q/s
+  Layers Used - Algo: 355, Semantic: 23, LLM: 22
+
+────────────────────────────────────────────────────────────────────────────────
+Full Pipeline (NO Boost)
+────────────────────────────────────────────────────────────────────────────────
+✓ Accuracy: 90.00% (360/400 correct)
+  Time: 10.81s | Avg: 27.0ms | 37.0 q/s
+  Layers Used - Algo: 333, Semantic: 37, LLM: 30
+
+================================================================================
+BOOST ENGINE IMPACT ANALYSIS
+================================================================================
+
+Algorithmic Only Pipeline:
+--------------------------------------------------------------------------------
+Metric                 Without Boost   With Boost      Impact
+--------------------------------------------------------------------------------
+Accuracy               83.50%          90.25%          +6.75%
+Correct Predictions    334             361             +27
+Time                   1.17s           1.18s           +1%
+High Confidence        244             300             +56
+
+Full Pipeline Pipeline:
+--------------------------------------------------------------------------------
+Metric                 Without Boost   With Boost      Impact
+--------------------------------------------------------------------------------
+Accuracy               90.00%          95.50%          +5.50%
+Correct Predictions    360             382             +22
+Time                   10.81s          7.85s           -27%
+Algo Layer Usage       333             355             +22
+Semantic Usage         37              23              -14
+LLM Fallback           30              22              -8

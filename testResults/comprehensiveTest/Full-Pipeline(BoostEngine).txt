@@ -1,0 +1,60 @@
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 95.25%
+Correct: 381 / 400
+Avg Query Time: 20.0ms
+Queries/s: 50.1
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 355 ( 88.8%)  Acc: 96.62%
+Semantic    :  23 (  5.8%)  Acc: 91.30%
+LLM         :  22 (  5.5%)  Acc: 77.27%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 320 ( 80.0%)
+Medium (0.6-0.8)      :  72 ( 18.0%)
+Low (<0.6)            :   8 (  2.0%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'I booked an hour ago where is my confirmation' -> cancellation_modification (exp: booking, conf: 0.57, layer: semantic)
+
+2. 'I booked a suite but got a standard' -> booking (exp: complaint, conf: 0.77, layer: algorithmic)
+
+3. 'Can I upgrade my room' -> booking (exp: cancellation_modification, conf: 0.88, layer: algorithmic)
+
+4. 'What suites do you offer' -> amenities_inquiry (exp: room_types, conf: 0.89, layer: algorithmic)
+
+5. 'What services do you provide' -> general (exp: amenities_inquiry, conf: 1.00, layer: algorithmic)
+
+6. 'What's your pet policy' -> cancellation_modification (exp: amenities_inquiry, conf: 0.85, layer: algorithmic)
+
+7. 'What information do you need?' -> room_types (exp: general, conf: 0.65, layer: algorithmic)
+
+8. 'how much' -> general (exp: booking, conf: 0.90, layer: llm)
+
+9. 'i wanna bokk a rom' -> room_types (exp: booking, conf: 0.65, layer: llm)
+
+10. 'wher r u' -> general (exp: hours_location, conf: 0.99, layer: llm)
+
+11. 'yes I'll take it' -> booking (exp: general, conf: 0.92, layer: llm)
+
+12. 'do you have availability' -> room_types (exp: booking, conf: 0.81, layer: algorithmic)
+
+13. 'I have two small dogs' -> booking (exp: amenities_inquiry, conf: 0.63, layer: algorithmic)
+
+14. 'is there a discount' -> amenities_inquiry (exp: booking, conf: 0.76, layer: algorithmic)
+
+15. 'do you have anything available now' -> room_types (exp: booking, conf: 0.70, layer: algorithmic)
+
+16. 'last minute booking' -> cancellation_modification (exp: booking, conf: 0.63, layer: semantic)
+
+17. 'not happy with my stay' -> amenities_inquiry (exp: complaint, conf: 0.66, layer: algorithmic)
+
+18. 'what's good for families' -> amenities_inquiry (exp: room_types, conf: 0.96, layer: llm)
+
+19. 'update my reservation please' -> booking (exp: cancellation_modification, conf: 0.75, layer: algorithmic)

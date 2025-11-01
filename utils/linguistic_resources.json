@@ -1,0 +1,102 @@
+{
+  "synonyms": {
+    "booking": [
+      "booking", "book", "reserve", "reservation", "get", "want", "place", "make",
+      "secure", "need", "take", "request", "schedule"
+    ],
+    "complaint": [
+      "complaint", "complain", "wrong", "issue", "problem",
+      "bad", "terrible", "horrible", "disappointed", "unhappy",
+      "refund", "unsatisfied", "dissatisfied", "upset", "angry",
+      "unacceptable", "poor", "awful", "disgusting", "nasty", "furious"
+    ],
+    "cancellation": [
+      "cancel", "cancellation", "cancelled", "cancelling", "terminate",
+      "void", "revoke", "withdraw", "rescind", "abort"
+    ],
+    "modification": [
+      "modify", "modification", "change", "update", "adjust",
+      "alter", "switch", "move", "shift", "reschedule", "extend"
+    ],
+    "amenities": [
+      "amenities", "amenity", "facilities", "services", "features",
+      "perks", "benefits", "offerings", "provisions", "conveniences"
+    ],
+    "room": [
+      "room", "suite", "accommodation", "lodging", "chamber",
+      "quarters", "unit", "space"
+    ],
+    "hours": [
+      "hours", "open", "close", "time", "opening", "closing",
+      "schedule", "when", "until", "from", "available"
+    ],
+    "location": [
+      "location", "address", "where", "place", "hotel",
+      "property", "building", "at", "situated", "find", "near"
+    ],
+    "price": [
+      "price", "cost", "much", "expensive", "cheap", "charge",
+      "fee", "prices", "pay", "payment", "total", "amount", "rate"
+    ],
+    "quality": [
+      "quality", "clean", "dirty", "messy", "filthy", "spotless",
+      "tidy", "neat", "comfortable", "uncomfortable", "noisy", "quiet"
+    ],
+    "help": [
+      "help", "assist", "support", "service", "information",
+      "info", "tell", "explain", "show"
+    ],
+    "check_in": [
+      "check-in", "check in", "checking in", "arrival", "arrive"
+    ],
+    "check_out": [
+      "check-out", "check out", "checking out", "departure", "depart", "leave"
+    ]
+  },
+  "filler_words": [
+    "um", "uh", "umm", "uhh", "like", "you know", "basically", "actually",
+    "literally", "just", "really", "very", "so", "well", "i mean",
+    "kind of", "sort of", "please"
+  ],
+  "intent_critical_keywords": {
+    "booking": [
+      "book", "reserve", "reservation", "want", "get", "need",
+      "make", "place", "secure", "schedule", "room", "suite",
+      "accommodation", "stay", "night", "nights"
+    ],
+    "complaint": [
+      "wrong", "dirty", "noisy", "broken", "complaint",
+      "problem", "issue", "refund", "manager", "terrible",
+      "horrible", "bad", "disgusting", "disappointed", "upset",
+      "angry", "unacceptable", "poor", "awful", "nasty",
+      "supervisor", "compensation", "money", "never", "smells",
+      "uncomfortable", "rude", "worst"
+    ],
+    "hours_location": [
+      "hours", "open", "close", "address", "location",
+      "where", "when", "time", "until", "schedule",
+      "directions", "find", "near", "situated", "located",
+      "check-in", "check-out", "front desk"
+    ],
+    "amenities_inquiry": [
+      "amenities", "facilities", "services", "have", "offer",
+      "available", "included", "provide", "pool", "gym",
+      "WiFi", "parking", "breakfast", "restaurant", "spa",
+      "fitness", "shuttle", "concierge", "bar", "valet",
+      "pets", "accessible", "wheelchair"
+    ],
+    "room_types": [
+      "rooms", "types", "options", "suites", "sizes",
+      "price", "cost", "much", "description", "difference",
+      "beds", "king", "queen", "view", "balcony",
+      "kitchen", "upgrade", "deluxe", "standard", "executive",
+      "family", "luxury"
+    ],
+    "cancellation_modification": [
+      "cancel", "cancellation", "modify", "change", "reschedule",
+      "refund", "policy", "move", "update", "adjust",
+      "extend", "shorten", "switch", "downgrade", "upgrade",
+      "dates", "fee", "free", "postpone"
+    ]
+  }
+}

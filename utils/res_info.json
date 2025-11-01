@@ -1,0 +1,103 @@
+{
+  "name": "Grand Horizon Hotel",
+  "business_type": "Hotel",
+  "hours": {
+    "front_desk": "24/7 availability",
+    "check_in": "3 PM",
+    "check_out": "11 AM",
+    "concierge": "7 AM to 10 PM daily"
+  },
+  "location": {
+    "address": "456 Harbor Boulevard, Waterfront District",
+    "phone": "(555) 987-6543",
+    "email": "reservations@grandhorizon.com"
+  },
+  "booking": {
+    "cancellation_policy": "Free cancellation up to 48 hours before check-in",
+    "deposit_required": "One night's stay",
+    "payment_methods": ["Credit Card", "Debit Card", "Digital Wallet"],
+    "advance_booking": "Up to 12 months in advance"
+  },
+  "room_types": {
+    "Standard Room": {
+      "description": "Comfortable room with city view, queen bed, work desk",
+      "capacity": "2 guests",
+      "bed_type": "Queen bed",
+      "prices": {
+        "weekday": "$150/night",
+        "weekend": "$180/night"
+      },
+      "amenities": ["Free WiFi", "Air conditioning", "Coffee maker", "Mini fridge"]
+    },
+    "Deluxe Room": {
+      "description": "Spacious room with city or partial harbor view, king bed",
+      "capacity": "2 guests",
+      "bed_type": "King bed",
+      "prices": {
+        "weekday": "$200/night",
+        "weekend": "$240/night"
+      },
+      "amenities": ["Free WiFi", "Air conditioning", "Coffee maker", "Mini fridge", "Smart TV", "Work desk"]
+    },
+    "Suite": {
+      "description": "Large suite with separate living area and full harbor view",
+      "capacity": "4 guests",
+      "bed_type": "King bed + sofa bed",
+      "prices": {
+        "weekday": "$350/night",
+        "weekend": "$420/night"
+      },
+      "amenities": ["Free WiFi", "Air conditioning", "Coffee maker", "Full kitchen", "Smart TV", "Balcony", "Jacuzzi tub"]
+    },
+    "Family Room": {
+      "description": "Large room with two queen beds, perfect for families",
+      "capacity": "4 guests",
+      "bed_type": "Two queen beds",
+      "prices": {
+        "weekday": "$250/night",
+        "weekend": "$300/night"
+      },
+      "amenities": ["Free WiFi", "Air conditioning", "Coffee maker", "Mini fridge", "Smart TV", "Microwave"]
+    },
+    "Executive Suite": {
+      "description": "Premium suite with panoramic harbor view, separate bedroom and living room",
+      "capacity": "4 guests",
+      "bed_type": "King bed + sofa bed",
+      "prices": {
+        "weekday": "$500/night",
+        "weekend": "$600/night"
+      },
+      "amenities": ["Free WiFi", "Air conditioning", "Full kitchen", "Smart TV", "Balcony", "Jacuzzi tub", "Premium toiletries", "Complimentary breakfast"]
+    }
+  },
+  "hotel_amenities": {
+    "General": ["Free WiFi throughout", "24-hour front desk", "Concierge service", "Luggage storage", "Valet parking"],
+    "Dining": ["Restaurant", "Bar & Lounge", "Room service (24/7)", "Complimentary breakfast (some rooms)"],
+    "Recreation": ["Fitness center", "Rooftop pool", "Spa services", "Business center"],
+    "Accessibility": ["Wheelchair accessible", "Elevator access", "Accessible parking", "Service animals welcome"]
+  },
+  "services": {
+    "Parking": {
+      "valet": "$35/night",
+      "self_parking": "$20/night",
+      "electric_vehicle_charging": "Available"
+    },
+    "Pet_policy": {
+      "allowed": true,
+      "fee": "$50/night per pet",
+      "restrictions": "Maximum 2 pets, under 50 lbs each"
+    },
+    "Airport_shuttle": {
+      "available": true,
+      "fee": "$15 per person one-way",
+      "schedule": "Every hour from 6 AM to 11 PM"
+    }
+  },
+  "nearby_attractions": [
+    "Waterfront Pier (5 min walk)",
+    "City Museum (10 min drive)",
+    "Shopping District (15 min walk)",
+    "Convention Center (5 min drive)",
+    "Beach (20 min drive)"
+  ]
+}

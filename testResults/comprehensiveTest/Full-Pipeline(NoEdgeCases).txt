@@ -1,0 +1,36 @@
+
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 97.83%
+Correct: 316 / 323
+Avg Query Time: 7.7ms
+Queries/s: 130.0
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 308 ( 95.4%)  Acc: 98.05%
+Semantic    :  10 (  3.1%)  Acc: 90.00%
+LLM         :   5 (  1.5%)  Acc: 100.00%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 281 ( 87.0%)
+Medium (0.6-0.8)      :  39 ( 12.1%)
+Low (<0.6)            :   3 (  0.9%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'I booked an hour ago where is my confirmation' -> cancellation_modification (exp: booking, conf: 0.57, layer: semantic)
+
+2. 'I booked a suite but got a standard' -> booking (exp: complaint, conf: 0.77, layer: algorithmic)
+
+3. 'Can I upgrade my room' -> booking (exp: cancellation_modification, conf: 0.88, layer: algorithmic)
+
+4. 'What suites do you offer' -> amenities_inquiry (exp: room_types, conf: 0.89, layer: algorithmic)
+
+5. 'What services do you provide' -> general (exp: amenities_inquiry, conf: 1.00, layer: algorithmic)
+
+6. 'What's your pet policy' -> cancellation_modification (exp: amenities_inquiry, conf: 0.85, layer: algorithmic)
+
+7. 'What information do you need?' -> room_types (exp: general, conf: 0.65, layer: algorithmic)

@@ -1,0 +1,43 @@
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 96.28%
+Correct: 311 / 323
+Avg Query Time: 3.2ms
+Queries/s: 315.0
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 322 ( 99.7%)  Acc: 96.58%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 275 ( 85.1%)
+Medium (0.6-0.8)      :  33 ( 10.2%)
+Low (<0.6)            :  15 (  4.6%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'I booked an hour ago where is my confirmation' -> hours_location (exp: booking, conf: 0.50, layer: algorithmic)
+
+2. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+3. 'I booked a suite but got a standard' -> booking (exp: complaint, conf: 0.77, layer: algorithmic)
+
+4. 'How do I get directions to your hotel' -> cancellation_modification (exp: hours_location, conf: 0.55, layer: algorithmic)
+
+5. 'How do I get to your location' -> cancellation_modification (exp: hours_location, conf: 0.60, layer: algorithmic)
+
+6. 'Can I upgrade my room' -> booking (exp: cancellation_modification, conf: 0.88, layer: algorithmic)
+
+7. 'What suites do you offer' -> amenities_inquiry (exp: room_types, conf: 0.89, layer: algorithmic)
+
+8. 'What are weekday rates' -> hours_location (exp: room_types, conf: 0.50, layer: algorithmic)
+
+9. 'What services do you provide' -> general (exp: amenities_inquiry, conf: 1.00, layer: algorithmic)
+
+10. 'What's your pet policy' -> cancellation_modification (exp: amenities_inquiry, conf: 0.85, layer: algorithmic)
+
+11. 'Hi there' -> amenities_inquiry (exp: general, conf: 0.46, layer: algorithmic)
+
+12. 'What information do you need?' -> room_types (exp: general, conf: 0.65, layer: algorithmic)

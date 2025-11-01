@@ -1,0 +1,69 @@
+
+================================================================================
+CONFUSION MATRIX TEST
+================================================================================
+
+
+Configuration:
+  Algorithmic: True
+  Semantic: True
+  LLM: True
+  LLM Backend: Ollama
+  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Boost Engine: True
+  Edge Cases: True
+
+Test Dataset Size: 400 queries
+
+
+================================================================================
+CONFUSION MATRIX ANALYSIS
+================================================================================
+
+Rows = Actual Intent, Columns = Predicted Intent
+
+                                   amenities_inquiry                    booking  cancellation_modification                  complaint                    general             hours_location                 room_types
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+amenities_inquiry                                 56                          1                          1                          0                          1                          0                          0
+booking                                            1                         81                          2                          0                          1                          0                          3
+cancellation_modification                          0                          2                         22                          0                          0                          0                          0
+complaint                                          1                          1                          0                         71                          0                          0                          0
+general                                            0                          0                          0                          0                         39                          0                          1
+hours_location                                     0                          0                          0                          0                          0                         52                          0
+room_types                                         3                          0                          0                          0                          0                          0                         61
+
+================================================================================
+
+Overall Accuracy: 95.50% (382/400)
+
+Per-Intent Statistics:
+--------------------------------------------------------------------------------
+Intent                          Precision    Recall       F1-Score     Support
+--------------------------------------------------------------------------------
+amenities_inquiry               91.80%       94.92%       93.33%       59
+booking                         95.29%       92.05%       93.64%       88
+cancellation_modification       88.00%       91.67%       89.80%       24
+complaint                       100.00%      97.26%       98.61%       73
+general                         95.12%       97.50%       96.30%       40
+hours_location                  100.00%      100.00%      100.00%      52
+room_types                      93.85%       95.31%       94.57%       64
+--------------------------------------------------------------------------------
+
+================================================================================
+
+Top Misclassifications (Total: 12 types):
+
+Actual Intent               Predicted As                   Count      % of Actual
+------------------------------------------------------------------------------------
+booking                     room_types                     3          3.4
+room_types                  amenities_inquiry              3          4.7
+booking                     cancellation_modification      2          2.3
+cancellation_modification   booking                        2          8.3
+amenities_inquiry           booking                        1          1.7
+amenities_inquiry           cancellation_modification      1          1.7
+amenities_inquiry           general                        1          1.7
+booking                     amenities_inquiry              1          1.1
+booking                     general                        1          1.1
+complaint                   amenities_inquiry              1          1.4
+complaint                   booking                        1          1.4
+general                     room_types                     1          2.5
