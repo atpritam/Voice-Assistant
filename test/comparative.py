@@ -34,6 +34,8 @@ class ComparativeTestRunner:
         ("Semantic Only", False, True, False),
     ]
 
+    CONFIGS += [("LLM Only", False, False, True)] if CONFIG.use_local_llm else []
+
     def __init__(self, custom_data=None):
         """Initialize test runner"""
         setup_logging(level=logging.INFO)
@@ -73,6 +75,11 @@ class ComparativeTestRunner:
                 self.factory.warmup(rec, semantic, llm, CONFIG.use_local_llm)
                 ev, duration = self._run_evaluation(rec)
 
+                stats = rec.get_statistics()
+                llm_stats = stats.get('llm_layer', {})
+                tokens = llm_stats.get('total_tokens_used', 0)
+                llm_calls = llm_stats.get('total_api_calls', 0)
+
                 results.append({
                     "name": name,
                     "acc": ev["accuracy"],
@@ -83,15 +90,20 @@ class ComparativeTestRunner:
                     "qps": len(self.test_data) / duration,
                     "algo": ev.get("algo_used_count", 0),
                     "sem": ev.get("semantic_used_count", 0),
-                    "llm": ev.get("llm_used_count", 0)
+                    "llm": ev.get("llm_used_count", 0),
+                    "tokens": tokens,
+                    "llm_calls": llm_calls
                 })
                 print(f"✓ Accuracy: {ev['accuracy']:.2%} ({ev['correct']}/{ev['total_queries']} correct)\n"
                       f"Time: {format_time(duration)}")
+                if tokens > 0:
+                    print(f"Tokens: {tokens:,} ({tokens/len(self.test_data):.1f} avg/query)")
             except Exception as e:
                 print(f"✗ {name} failed: {e}")
                 results.append({
                     "name": name, "acc": 0, "correct": 0, "total": len(self.test_data),
-                    "time": 0, "qps": 0, "algo": 0, "sem": 0, "llm": 0, "unknown": len(self.test_data)
+                    "time": 0, "qps": 0, "algo": 0, "sem": 0, "llm": 0, "unknown": len(self.test_data),
+                    "tokens": 0, "llm_calls": 0
                 })
         return results
 
@@ -132,4 +144,23 @@ class ComparativeTestRunner:
         print("-"*80)
         for r in results:
             print(f"{r['name']:<25} {r['algo']:>6}  {r['sem']:>8}  {r['llm']:>6} {r['unknown']:>8}")
+
+        # Token usage comparison
+        if any(r.get('tokens', 0) > 0 for r in results):
+            print("\nTOKEN USAGE COMPARISON\n" + "-"*80)
+            print(f"{'Configuration':<25} {'LLM Calls':<12} {'Total Tokens':<15} {'Avg/Query':<12} {'vs Full Pipeline':<15}")
+            print("-"*80)
+            full_pipeline_tokens = next((r['tokens'] for r in results if r['name'] == 'Full Pipeline'), 0)
+            for r in results:
+                tokens = r.get('tokens', 0)
+                llm_calls = r.get('llm_calls', 0)
+                if tokens > 0 or llm_calls > 0:
+                    avg_tokens = tokens / len(self.test_data) if len(self.test_data) > 0 else 0
+                    if full_pipeline_tokens > 0 and r['name'] != 'Full Pipeline':
+                        comparison = f"+{((tokens/full_pipeline_tokens - 1) * 100):>6.1f}%"
+                    elif r['name'] == 'Full Pipeline':
+                        comparison = "baseline"
+                    else:
+                        comparison = "N/A"
+                    print(f"{r['name']:<25} {llm_calls:>10}  {tokens:>13,}  {avg_tokens:>10.1f}  {comparison:>13}")
         print()

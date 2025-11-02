@@ -72,6 +72,11 @@ class BoostEngineTestRunner:
                 self.factory.warmup(rec, semantic, llm, CONFIG.use_local_llm)
                 ev, duration = self._run_evaluation(rec)
 
+                stats = rec.get_statistics()
+                llm_stats = stats.get('llm_layer', {})
+                tokens = llm_stats.get('total_tokens_used', 0)
+                llm_calls = llm_stats.get('total_api_calls', 0)
+
                 results.append({
                     "name": name,
                     "boost": boost,
@@ -89,7 +94,9 @@ class BoostEngineTestRunner:
                     "low_conf": ev.get("low_confidence_count", 0),
                     "algo_acc": ev.get("algo_accuracy", 0),
                     "sem_acc": ev.get("semantic_accuracy", 0),
-                    "llm_acc": ev.get("llm_accuracy", 0)
+                    "llm_acc": ev.get("llm_accuracy", 0),
+                    "tokens": tokens,
+                    "llm_calls": llm_calls
                 })
 
                 print(f"✓ Accuracy: {ev['accuracy']:.2%} ({ev['correct']}/{ev['total_queries']} correct)")
@@ -97,6 +104,8 @@ class BoostEngineTestRunner:
                       f"{len(self.test_data)/duration:.1f} q/s")
                 print(f"  Layers Used - Algo: {ev.get('algo_used_count', 0)}, "
                       f"Semantic: {ev.get('semantic_used_count', 0)}, LLM: {ev.get('llm_used_count', 0)}")
+                if tokens > 0:
+                    print(f"  Tokens: {tokens:,} ({tokens/len(self.test_data):.1f} avg/query)")
 
             except Exception as e:
                 print(f"✗ {name} failed: {e}")

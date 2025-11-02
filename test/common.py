@@ -160,6 +160,18 @@ class ResultAnalyzer:
                 print(f"{layer:<12}: {count:3d} ({pct:5.1f}%)  Acc: {acc:.2%}")
 
     @staticmethod
+    def print_token_usage(stats: Dict, total: int) -> None:
+        """Print LLM token usage statistics"""
+        llm_stats = stats.get('llm_layer', {})
+        tokens = llm_stats.get('total_tokens_used', 0)
+        llm_calls = llm_stats.get('total_api_calls', 0)
+
+        if tokens > 0 or llm_calls > 0:
+            print("\nLLM TOKEN USAGE\n" + "-" * 80)
+            print(f"Total Tokens: {tokens:,}")
+            print(f"Avg Tokens/Query: {tokens/total:.1f}")
+
+    @staticmethod
     def print_confidence_levels(ev: Dict, total: int) -> None:
         """Print confidence level distribution"""
         print("\nCONFIDENCE LEVELS\n" + "-" * 80)

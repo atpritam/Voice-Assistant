@@ -70,13 +70,16 @@ class ComprehensiveTestRunner:
         # Run evaluation
         ev, duration = self._run_evaluation(recognizer)
 
+        stats = recognizer.get_statistics()
+
         # Print results
         self.analyzer.print_overall_results(ev, duration, len(self.test_data))
         self.analyzer.print_layer_usage(ev, len(self.test_data))
+        self.analyzer.print_token_usage(stats, len(self.test_data))
         self.analyzer.print_confidence_levels(ev, len(self.test_data))
         self.analyzer.print_incorrect_predictions(ev)
 
-        return ev, recognizer.get_statistics()
+        return ev, stats
 
     def _run_evaluation(self, recognizer: IntentRecognizer) -> Tuple[Dict, float]:
         """
