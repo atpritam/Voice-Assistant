@@ -140,9 +140,11 @@ Modern large language models (e.g., GPT-5, Claude, Llama) can perform intent cla
 
 **Key Advantages:**
 
-1. **Accuracy**: 97.75% vs 93.50% (+4.25%)
-2. **14x Faster**: Algorithmic/Semantic layers handle 94% of queries in <10ms, reserving LLM for complex cases
-3. **Cost Efficiency**: Early layers minimize LLM token usage and context size, cutting inference costs by > 10×
+1. **14× Lower Latency**: 208ms vs 2.98s (GPT-5)
+     - ~90% of queries handled by fast layers (<5ms)
+     - LLM reserved only for complex edge cases
+2. **Cost Efficiency**: 36 tokens/query vs 519 tokens/query (GPT-5)
+3. **Accuracy**:  98.0% vs 93.5% (+4.5% with GPT-5)
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 

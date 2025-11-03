@@ -39,7 +39,7 @@
       "hot", "warm", "undercooked", "overcooked", "raw", "hard", "soggy"
     ],
     "recommendation": [
-      "recommendations", "recommend", "recommended", "recommendations", "suggestion", "suggestions", "suggest"
+      "recommendations", "recommend", "recommended", "recommendations", "suggestion", "suggestions", "suggest", "popular"
     ],
     "help": [
       "help", "assist", "support", "service", "information",

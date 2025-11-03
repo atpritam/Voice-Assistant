@@ -20,7 +20,6 @@ DEFAULT_ALGORITHMIC_THRESHOLD = 0.6
 DEFAULT_SEMANTIC_THRESHOLD = 0.5
 DEFAULT_LLM_MODEL = "gpt-5-nano"
 DEFAULT_SEMANTIC_MODEL = "all-MiniLM-L6-v2"
-LLM_OVERRIDE_THRESHOLD = 0.9
 
 
 @dataclass
@@ -168,7 +167,6 @@ class IntentRecognizer:
             'algorithmic_used': 0,
             'semantic_used': 0,
             'llm_used': 0,
-            'llm_overrides': 0,
             'intent_distribution': defaultdict(int),
             'avg_confidence': [],
             'layer_configuration': {
@@ -228,7 +226,7 @@ class IntentRecognizer:
                     min_confidence=self.min_confidence,
                     use_local_llm=self.use_local_llm,
                     ollama_base_url=self.ollama_base_url,
-                    test_mode=self.test_mode
+                    test_mode=self.test_mode,
                 )
                 provider_type = "Ollama" if self.use_local_llm else "OpenAI"
                 if self.enable_logging:
@@ -282,6 +280,15 @@ class IntentRecognizer:
 
         return self._create_unknown_result("No layers produced a result")
 
+    def _log_layer_acceptance(self, layer_name: str, result) -> None:
+        """Log and track layer acceptance"""
+        self.stats[f'{layer_name}_used'] += 1
+        if self.enable_logging:
+            self.logger.info(
+                f"✓ ACCEPTED {layer_name.upper()} Layer: {result.intent} "
+                f"({result.confidence:.3f}, {result.confidence_level})"
+            )
+
     def _try_layer(self, layer_name: str, recognizer, query: str, threshold: float,
                    conversation_history: Optional[List[Dict]] = None) -> tuple[Optional[RecognitionResult], any]:
         """Generic layer trying logic for algorithmic and semantic layers"""
@@ -294,7 +301,7 @@ class IntentRecognizer:
                     self.logger.info(f"  - Proceeding to {next_layer} layer")
             return None, result
 
-        self.stats[f'{layer_name}_used'] += 1
+        self._log_layer_acceptance(layer_name, result)
         final_result = self._create_result(query, result, layer=layer_name,
                                   conversation_history=conversation_history,
                                   original_confidence=result.confidence)
@@ -304,13 +311,13 @@ class IntentRecognizer:
                       recognized_intent: Optional[str] = None, recognized_confidence: Optional[float] = None) -> RecognitionResult:
         """Try LLM fallback layer"""
         llm_result = self.llm_recognizer.recognize(query, self.patterns, conversation_history, recognized_intent, recognized_confidence)
-        self.stats['llm_used'] += 1
+        self._log_layer_acceptance('llm', llm_result)
         return self._create_result(query, llm_result, layer='llm', conversation_history=conversation_history)
 
     def _create_result(self, query: str, result, layer: str,
                        conversation_history: Optional[List[Dict]] = None,
                        original_confidence: float = None) -> RecognitionResult:
-        """Create unified RecognitionResult from any layer with LLM override capability"""
+        """Create unified RecognitionResult from any layer with LLM for response generation"""
         original_conf = original_confidence if original_confidence is not None else result.confidence
         response = getattr(result, 'response', '')
 
@@ -322,15 +329,8 @@ class IntentRecognizer:
 
             try:
                 llm_result = self.llm_recognizer.recognize(
-                    query, self.patterns, conversation_history, result.intent, original_conf, LLM_OVERRIDE_THRESHOLD
+                    query, self.patterns, conversation_history, result.intent, original_conf
                 )
-
-                if llm_result.override:
-                    result.intent = llm_result.intent
-                    result.confidence = llm_result.confidence
-                    result.confidence_level = llm_result.confidence_level
-                    layer = 'llm'
-                    self.stats['llm_overrides'] += 1
 
                 response = llm_result.response
 
@@ -351,12 +351,6 @@ class IntentRecognizer:
 
         self.stats['intent_distribution'][result.intent] += 1
         self.stats['avg_confidence'].append(result.confidence)
-
-        if self.enable_logging:
-            self.logger.info(
-                f"✓ ACCEPTED {layer.upper()} Layer: {result.intent} "
-                f"({result.confidence:.3f}, {result.confidence_level})"
-            )
 
         return RecognitionResult(
             intent=result.intent,
@@ -466,8 +460,7 @@ class IntentRecognizer:
                 'llm': {
                     'count': self.stats['llm_used'],
                     'percentage': (self.stats['llm_used'] / total * 100) if total > 0 else 0
-                },
-                'llm_overrides': self.stats.get('llm_overrides', 0)
+                }
             },
             'intent_distribution': dict(self.stats['intent_distribution']),
             'average_confidence': avg_conf
