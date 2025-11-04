@@ -2,12 +2,12 @@
   "synonyms": {
     "order": [
       "order", "buy", "purchase", "get", "want", "place", "make",
-      "grab", "need", "take", "request", "reserve"
+      "grab", "need", "take", "request"
     ],
     "complaint": [
-      "complaint", "complain", "wrong", "issue", "problem",
+      "complaint", "complain", "wrong", "issue", "problem", "botched",
       "bad", "terrible", "horrible", "disappointed", "unhappy",
-      "refund", "unsatisfied", "dissatisfied", "upset", "angry",
+      "refund", "compensation","unsatisfied", "dissatisfied", "upset", "angry",
       "unacceptable", "poor", "awful", "disgusting", "nasty", "furious"
     ],
     "delivery": [
@@ -27,8 +27,8 @@
       "restaurant", "shop", "at", "situated", "find", "near"
     ],
     "track": [
-      "track", "status", "where", "find", "locate", "check",
-      "progress", "eta", "arriving", "coming"
+      "track", "status", "where", "find", "locate", "check", "update",
+      "progress", "eta", "arriving", "coming", "expect", "estimated"
     ],
     "price": [
       "price", "cost", "much", "expensive", "cheap", "charge",
@@ -39,7 +39,8 @@
       "hot", "warm", "undercooked", "overcooked", "raw", "hard", "soggy"
     ],
     "recommendation": [
-      "recommendations", "recommend", "recommended", "recommendations", "suggestion", "suggestions", "suggest", "popular"
+      "recommendations", "recommend", "recommended", "recommendations",
+      "suggestion", "suggestions", "suggest", "popular", "options", "selection"
     ],
     "help": [
       "help", "assist", "support", "service", "information",
@@ -80,7 +81,7 @@
     "delivery": [
       "track", "status", "eta", "arrive", "fee", "charge",
       "where", "coming", "delivering", "progress", "time",
-      "long", "wait", "minimum", "area", "zone", "estimated arrival", "eta"
+      "long", "wait", "minimum", "area", "zone", "estimated arrival"
     ]
   }
 }

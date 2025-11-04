@@ -24,7 +24,7 @@ except ImportError:
         from sentence_transformers import SentenceTransformer
         import torch
 
-DEFAULT_MODEL = "all-MiniLM-L6-v2"
+DEFAULT_MODEL = "all-mpnet-base-v2"
 CACHE_DIR = Path.home() / ".cache" / "voice-assistant" / "embeddings"
 
 

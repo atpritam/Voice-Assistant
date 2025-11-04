@@ -14,30 +14,32 @@ Test Dataset Size: 400 queries
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 88.50% (354/400 correct)
-  Time: 1.09s | Avg: 2.7ms | 365.6 q/s
-  Layers Used - Algo: 376, Semantic: 0, LLM: 0
+✓ Accuracy: 90.00% (360/400 correct)
+  Time: 868.4ms | Avg: 2.2ms | 460.6 q/s
+  Layers Used - Algo: 381, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 82.50% (330/400 correct)
-  Time: 1.06s | Avg: 2.6ms | 377.5 q/s
-  Layers Used - Algo: 373, Semantic: 0, LLM: 0
+✓ Accuracy: 85.00% (340/400 correct)
+  Time: 872.7ms | Avg: 2.2ms | 458.3 q/s
+  Layers Used - Algo: 375, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 97.75% (391/400 correct)
-  Time: 8.72s | Avg: 21.8ms | 45.9 q/s
-  Layers Used - Algo: 330, Semantic: 47, LLM: 23
+  Time: 9.10s | Avg: 22.8ms | 44.0 q/s
+  Layers Used - Algo: 323, Semantic: 53, LLM: 24
+  Tokens: 377 (0.9 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 93.50% (374/400 correct)
-  Time: 13.80s | Avg: 34.5ms | 29.0 q/s
-  Layers Used - Algo: 296, Semantic: 67, LLM: 37
+✓ Accuracy: 95.00% (380/400 correct)
+  Time: 13.77s | Avg: 34.4ms | 29.0 q/s
+  Layers Used - Algo: 268, Semantic: 95, LLM: 37
+  Tokens: 581 (1.5 avg/query)
 
 ================================================================================
 BOOST ENGINE IMPACT ANALYSIS
@@ -47,19 +49,19 @@ Algorithmic Only Pipeline:
 --------------------------------------------------------------------------------
 Metric                 Without Boost   With Boost      Impact                             
 --------------------------------------------------------------------------------
-Accuracy               82.50%          88.50%          +6.00%                             
-Correct Predictions    330             354             +24                                
-Time                   1.06s           1.09s           +3%                                
-High Confidence        195             251             +56                                
+Accuracy               85.00%          90.00%          +5.00%                             
+Correct Predictions    340             360             +20                                
+Time                   872.7ms         868.4ms         -0%                                
+High Confidence        207             262             +55                                
 
 Full Pipeline Pipeline:
 --------------------------------------------------------------------------------
 Metric                 Without Boost   With Boost      Impact                             
 --------------------------------------------------------------------------------
-Accuracy               93.50%          97.75%          +4.25%                             
-Correct Predictions    374             391             +17                                
-Time                   13.80s          8.72s           -37%                               
-Algo Layer Usage       296             330             +34                                
-Semantic Usage         67              47              -20                                
-LLM Fallback           37              23              -14                                
+Accuracy               95.00%          97.75%          +2.75%                             
+Correct Predictions    380             391             +11                                
+Time                   13.77s          9.10s           -34%                               
+Algo Layer Usage       268             323             +55                                
+Semantic Usage         95              53              -42                                
+LLM Fallback           37              24              -13                                
 

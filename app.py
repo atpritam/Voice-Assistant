@@ -45,7 +45,7 @@ ENABLE_ALGORITHMIC = True
 ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
-ALGORITHMIC_THRESHOLD = 0.6
+ALGORITHMIC_THRESHOLD = 0.65
 SEMANTIC_THRESHOLD = 0.5
 
 SEMANTIC_MODEL = "all-mpnet-base-v2" # all-MiniLM-L6-v2"
@@ -158,6 +158,7 @@ def perform_system_warmup():
             logger.warning(f"\nWarning: TTS warmup failed: {e}")
 
     total_warmup_time = time.time() - warmup_start
+    intent_recognizer.reset_statistics()
     logger.info(f"Total System Warm-up Time: {total_warmup_time:.2f}s")
 
 def generate_tts_audio(tts, response):

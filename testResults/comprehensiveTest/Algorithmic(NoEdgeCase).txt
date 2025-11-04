@@ -10,59 +10,57 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 299 queries
+Test Dataset Size: 295 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 94.31%
-Correct: 282 / 299
-Avg Query Time: 2.7ms
-Queries/s: 372.3
+Accuracy: 94.58%
+Correct: 279 / 295
+Avg Query Time: 1.9ms
+Queries/s: 537.0
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 292 ( 97.7%)  Acc: 96.58%
+Algorithmic : 287 ( 97.3%)  Acc: 97.21%
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 220 ( 73.6%)
-Medium (0.6-0.8)      :  53 ( 17.7%)
-Low (<0.6)            :  26 (  8.7%)
+High (≥0.8)           : 223 ( 75.6%)
+Medium (0.6-0.8)      :  48 ( 16.3%)
+Low (<0.6)            :  24 (  8.1%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
+1. 'The box was damaged when it arrived' -> delivery (exp: complaint, conf: 0.44, layer: algorithmic)
 
-2. 'The box was damaged when it arrived' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
+2. 'I need to talk to someone about my order' -> order (exp: complaint, conf: 0.90, layer: algorithmic)
 
-3. 'This is not what I ordered at all' -> hours_location (exp: complaint, conf: 0.48, layer: algorithmic)
+3. 'Driver still hasn't shown up' -> unknown (exp: complaint, conf: 0.00, layer: none)
 
 4. 'The driver was very rude' -> delivery (exp: complaint, conf: 0.50, layer: algorithmic)
 
 5. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
 
-6. 'How do I get directions to your store' -> delivery (exp: hours_location, conf: 0.56, layer: algorithmic)
+6. 'I ordered large but got medium' -> unknown (exp: complaint, conf: 0.00, layer: none)
 
-7. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.90, layer: algorithmic)
+7. 'What specials are running' -> hours_location (exp: menu_inquiry, conf: 0.52, layer: algorithmic)
 
-8. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.57, layer: algorithmic)
+8. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.75, layer: algorithmic)
 
-9. 'What specials are running' -> hours_location (exp: menu_inquiry, conf: 0.52, layer: algorithmic)
+9. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.59, layer: algorithmic)
 
-10. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.58, layer: algorithmic)
+10. 'Hi there' -> unknown (exp: general, conf: 0.00, layer: none)
 
-11. 'Hi there' -> unknown (exp: general, conf: 0.00, layer: none)
+11. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
 
-12. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
+12. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
 
-13. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
+13. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
 
-14. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
+14. 'Amazing service as always' -> complaint (exp: general, conf: 0.40, layer: algorithmic)
 
-15. 'Amazing service as always' -> unknown (exp: general, conf: 0.00, layer: none)
+15. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
 
-16. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
-
-17. 'what a good day it is today' -> menu_inquiry (exp: general, conf: 0.49, layer: algorithmic)
+16. 'what a good day it is today' -> menu_inquiry (exp: general, conf: 0.49, layer: algorithmic)

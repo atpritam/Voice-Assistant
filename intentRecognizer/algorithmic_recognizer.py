@@ -1,8 +1,7 @@
 """
-Optimized Algorithmic Intent Recognizer
+Algorithmic Intent Recognizer
 Handles pattern matching, keyword analysis, and Levenshtein distance-based recognition
-Optimized for ASR (Automatic Speech Recognition) input with multi-stage filtering
-Enhanced with optional TF-IDF weighted inverted index
+TF-IDF weighted inverted index for fast intent candidate selection and ranking
 """
 
 import os
@@ -23,29 +22,9 @@ LEVENSHTEIN_WEIGHT = 0.50
 EXACT_OVERLAP_WEIGHT = 0.7
 SYNONYM_WEIGHT = 0.3
 
-# PHRASE MATCHING BONUSES
-PHRASE_3_WORD_BONUS = 0.10
-PHRASE_2_WORD_BONUS = 0.05
-
-# KEYWORD BONUSES
-FIRST_KEYWORD_BONUS = 0.08
-ADDITIONAL_KEYWORD_BONUS = 0.04
-MAX_KEYWORD_BONUS = 0.20
-
-# LENGTH FILTERING THRESHOLDS
-MAX_LENGTH_DIFF_LONG_STRINGS = 30
-MIN_LENGTH_RATIO = 0.4
-MAX_LENGTH_RATIO = 2.5
-LONG_STRING_THRESHOLD = 15
-
-# EARLY EXIT THRESHOLDS
-HIGH_SIMILARITY_EARLY_EXIT = 0.92
-
-# OPTIMIZATION FLAGS
-LEVENSHTEIN_SKIP_THRESHOLD = 0.17
-LENGTH_DIFF_FILTER_ENABLED = True
-INVERTED_INDEX_ENABLED = True
-BUT_CLAUSE_HANDLING_ENABLED = True
+# OPTIMIZATION THRESHOLDS
+INTENT_HIGH_SIMILARITY_EXIT = 0.85
+HIGH_SIMILARITY_IN_INTENT_EXIT = 0.85
 
 @dataclass
 class SimilarityMetrics:
@@ -214,13 +193,16 @@ class SimilarityCalculator:
         len_query = len(query_norm)
         len_pattern = len(pattern_norm)
 
-        if len_query <= LONG_STRING_THRESHOLD or len_pattern <= LONG_STRING_THRESHOLD:
+        if len_query <= 15 or len_pattern <= 15:
+            return True
+
+        if len_query >= 80 or len_pattern >= 80:
             return True
 
         len_diff = abs(len_query - len_pattern)
         len_ratio = len_query / len_pattern if len_pattern > 0 else 0
 
-        return len_diff <= MAX_LENGTH_DIFF_LONG_STRINGS and MIN_LENGTH_RATIO <= len_ratio <= MAX_LENGTH_RATIO
+        return len_diff <= 30 and 0.4 <= len_ratio <= 2.5
 
     def calculate_keyword_similarity(self, query_set: Set[str], pattern_set: Set[str]) -> Tuple[float, float, float]:
         """Calculate keyword-based similarity metrics"""
@@ -255,7 +237,7 @@ class SimilarityCalculator:
             if len(pattern_words) >= n:
                 for i in range(len(pattern_words) - n + 1):
                     if ' '.join(pattern_words[i:i + n]) in query_text:
-                        return PHRASE_3_WORD_BONUS if n == 3 else PHRASE_2_WORD_BONUS
+                        return 0.10 if n == 3 else 0.05
         return 0.0
 
     def calculate_keyword_bonus(self, query_set: Set[str], intent_name: Optional[str],
@@ -265,13 +247,13 @@ class SimilarityCalculator:
             critical_keywords = intent_critical_keywords[intent_name]
             num_matches = len(query_set & critical_keywords)
             if num_matches:
-                return min(MAX_KEYWORD_BONUS, FIRST_KEYWORD_BONUS + (num_matches - 1) * ADDITIONAL_KEYWORD_BONUS)
+                return min(0.20, 0.08 + (num_matches - 1) * 0.04)
 
         max_bonus = 0.0
         for critical_keywords in intent_critical_keywords.values():
             num_matches = len(query_set & critical_keywords)
             if num_matches:
-                bonus = min(MAX_KEYWORD_BONUS, FIRST_KEYWORD_BONUS + (num_matches - 1) * ADDITIONAL_KEYWORD_BONUS)
+                bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
                 max_bonus = max(max_bonus, bonus)
         return max_bonus
 
@@ -295,7 +277,7 @@ class SimilarityCalculator:
 
         keyword_sim, exact_sim, synonym_sim = self.calculate_keyword_similarity(query_set, pattern_set)
 
-        if keyword_sim < LEVENSHTEIN_SKIP_THRESHOLD:
+        if keyword_sim < 0.2:
             metrics = SimilarityMetrics(keyword_sim, exact_sim, synonym_sim, 0.0, 0.0, 0.0, keyword_sim, keyword_sim)
             return keyword_sim, metrics
 
@@ -346,7 +328,7 @@ class AlgorithmicRecognizer:
         if self.use_boost_engine:
             self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, self.synonyms, enable_logging)
 
-        self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer) if INVERTED_INDEX_ENABLED else None
+        self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer)
 
         self._intent_keywords_cache = {}
         self._normalized_patterns_cache = {}
@@ -388,11 +370,8 @@ class AlgorithmicRecognizer:
             query: Original user query
 
         Returns:
-            Processed query (either second part after 'but' or original query)
+            Processed query (second part after 'but')
         """
-        if not BUT_CLAUSE_HANDLING_ENABLED:
-            return query
-
         query_lower = query.lower()
         words = query.split()
 
@@ -413,7 +392,13 @@ class AlgorithmicRecognizer:
                                    normalized_patterns: List[str]) -> List[Tuple[int, str, str]]:
         """Filter patterns by length difference"""
         query_len = len(query)
-        max_diff = 40 if query_len < 20 else 30
+
+        if query_len < 20:
+            max_diff = 40
+        elif query_len < 60:
+            max_diff = 30
+        else:
+            max_diff = min(120, int(query_len * 0.75))
 
         return [(i, p, norm) for i, (p, norm) in enumerate(zip(patterns, normalized_patterns))
                 if abs(query_len - len(p)) <= max_diff]
@@ -427,10 +412,7 @@ class AlgorithmicRecognizer:
         if not patterns:
             return None
 
-        if LENGTH_DIFF_FILTER_ENABLED:
-            filtered = self._filter_patterns_by_length(query, patterns, normalized_patterns)
-        else:
-            filtered = [(i, p, normalized_patterns[i] if i < len(normalized_patterns)
+        filtered = [(i, p, normalized_patterns[i] if i < len(normalized_patterns)
                         else self.text_normalizer.normalize(p)) for i, p in enumerate(patterns)]
 
         if not filtered:
@@ -460,30 +442,31 @@ class AlgorithmicRecognizer:
                 best_pattern = pattern
                 best_breakdown = metrics.to_dict()
 
-            if similarity > HIGH_SIMILARITY_EARLY_EXIT:
+            if similarity > HIGH_SIMILARITY_IN_INTENT_EXIT:
                 break
 
         self.stats['patterns_evaluated'].append(len(patterns_to_check))
 
         return IntentEvaluation(max_similarity, best_pattern, best_breakdown)
 
-    def _evaluate_all_intents_optimized(self, query: str, query_words: Set[str]) -> Dict:
+    def _evaluate_all_intents_optimized(self, query: str, query_words: Set[str],
+                                        early_exit_threshold: Optional[float] = None) -> Dict:
         """Optimized intent evaluation using inverted index (if enabled)"""
-        if INVERTED_INDEX_ENABLED and self.inverted_index:
-            candidate_intents = self.inverted_index.get_candidate_intents(query_words)
-        else:
-            candidate_intents = [(intent, 0.0) for intent in self.patterns.keys() if intent != 'unknown']
+
+        candidate_intents = self.inverted_index.get_candidate_intents(query_words)
 
         if not candidate_intents:
             candidate_intents = [(intent, 0.0) for intent in self.patterns.keys() if intent != 'unknown']
-
-        self.stats['intents_evaluated'].append(len(candidate_intents))
 
         if self.enable_logging:
             self.logger.debug(f"Candidate intents: {[intent for intent, _ in candidate_intents]}")
 
         intent_scores = {}
+        intents_processed = 0
+
         for intent_name, _ in candidate_intents:
+            intents_processed += 1
+
             intent_data = self.patterns.get(intent_name)
             if not intent_data:
                 continue
@@ -495,6 +478,11 @@ class AlgorithmicRecognizer:
                     'pattern': evaluation.pattern,
                     'breakdown': evaluation.breakdown
                 }
+
+                if early_exit_threshold is not None and evaluation.similarity >= early_exit_threshold:
+                    break
+
+        self.stats['intents_evaluated'].append(intents_processed)
 
         return intent_scores
 
@@ -529,7 +517,13 @@ class AlgorithmicRecognizer:
         if not query_words:
             return "unknown", 0.0, "", {}
 
-        intent_scores = self._evaluate_all_intents_optimized(processed_query, query_words)
+        early_exit_threshold = INTENT_HIGH_SIMILARITY_EXIT
+
+        intent_scores = self._evaluate_all_intents_optimized(
+            processed_query,
+            query_words,
+            early_exit_threshold=early_exit_threshold
+        )
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
@@ -557,7 +551,11 @@ class AlgorithmicRecognizer:
         if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
 
             full_query_words = set(self.text_normalizer.extract_filtered_words(query))
-            full_intent_scores = self._evaluate_all_intents_optimized(query, full_query_words)
+            full_intent_scores = self._evaluate_all_intents_optimized(
+                query,
+                full_query_words,
+                early_exit_threshold=early_exit_threshold
+            )
 
             if full_intent_scores:
                 if self.use_boost_engine:

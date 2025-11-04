@@ -20,10 +20,10 @@ ERROR_FALLBACK_CONFIDENCE = 0.3
 RESPONSE_MODE_THRESHOLD = 0.65
 
 # System Prompt Constants
-INTENT_DESCRIPTIONS = """- general: Greetings, thanks, confirmations, chitchat
+INTENT_DESCRIPTIONS = """- general: Greetings, thanks, confirmations, chitchat, general business questions
 - order: Placing NEW orders, pickup, menu item customization, returning customers wanting order like last time
 - delivery: Order status checks, tracking, "where is my order", delivery related questions, "when will it arrive?"
-- menu_inquiry: Asking about prices, options, recommendations, deals, "what do you have", deciding items
+- menu_inquiry: Asking about prices, menu options, recommendations, deals, "what do you have", deciding items
 - hours_location: Store hours, location, address
 - complaint: Problems with order/food issues, wrong items/size, sarcastic complaints, service/delivery issues"""
 

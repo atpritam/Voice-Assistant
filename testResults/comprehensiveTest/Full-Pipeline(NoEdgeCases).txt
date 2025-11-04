@@ -12,33 +12,38 @@ Mode: TEST MODE (intent recognition only)
 Boost Engine: True
 Edge Cases Included: False
 
-Test Dataset Size: 299 queries
+Test Dataset Size: 295 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 99.00%
-Correct: 296 / 299
-Avg Query Time: 13.3ms
-Queries/s: 75.3
+Accuracy: 98.98%
+Correct: 292 / 295
+Avg Query Time: 15.7ms
+Queries/s: 63.5
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 273 ( 91.3%)  Acc: 99.27%
-Semantic    :  16 (  5.4%)  Acc: 93.75%
-LLM         :  10 (  3.3%)  Acc: 100.00%
+Algorithmic : 261 ( 88.5%)  Acc: 99.23%
+Semantic    :  22 (  7.5%)  Acc: 95.45%
+LLM         :  12 (  4.1%)  Acc: 100.00%
+
+LLM TOKEN USAGE
+--------------------------------------------------------------------------------
+Total Tokens: 187
+Avg Tokens/Query: 0.6
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 231 ( 77.3%)
-Medium (0.6-0.8)      :  63 ( 21.1%)
-Low (<0.6)            :   5 (  1.7%)
+High (≥0.8)           : 237 ( 80.3%)
+Medium (0.6-0.8)      :  55 ( 18.6%)
+Low (<0.6)            :   3 (  1.0%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'Can you take my order?' -> delivery (exp: order, conf: 0.78, layer: algorithmic)
+1. 'I need to talk to someone about my order' -> order (exp: complaint, conf: 0.90, layer: algorithmic)
 
-2. 'Do you have late night hours' -> delivery (exp: hours_location, conf: 0.90, layer: algorithmic)
+2. 'Driver still hasn't shown up' -> delivery (exp: complaint, conf: 0.62, layer: semantic)
 
-3. 'How do I get to your location' -> delivery (exp: hours_location, conf: 0.50, layer: semantic)
+3. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.75, layer: algorithmic)

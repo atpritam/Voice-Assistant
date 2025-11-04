@@ -3,14 +3,14 @@ Test script for Intent Recognizer
 Default dataset in data.py
 
 Run examples:
-  python -m test.runtest                                    # Comprehensive test
-  python -m test.runtest "where is my pizza?"               # Single query test
-  python -m test.runtest -c                                 # Comparative analysis
-  python -m test.runtest -b                                 # Boost engine analysis
-  python -m test.runtest -mx                                # Confusion matrix
-  python -m test.runtest -c --no-boost                      # Comparative without boost
-  python -m test.runtest -b --no-edge                       # Boost analysis without edge cases
-  python -m test.runtest --no-semantic --no-llm             # Comprehensive with only algorithmic layer
+  python -m test.runtest                                                    # Comprehensive test
+  python -m test.runtest "where is my pizza?" --exp delivery                # Single query test
+  python -m test.runtest -c                                                 # Comparative analysis
+  python -m test.runtest -b                                                 # Boost engine analysis
+  python -m test.runtest -mx                                                # Confusion matrix
+  python -m test.runtest -c --no-boost                                      # Comparative without boost
+  python -m test.runtest -b --no-edge                                       # Boost analysis without edge cases
+  python -m test.runtest --no-semantic --no-llm                             # Comprehensive with only algorithmic layer
 """
 
 import sys
@@ -24,7 +24,8 @@ from test.comprehensive import ComprehensiveTestRunner
 from test.comparative import ComparativeTestRunner
 from test.boost_analysis import BoostEngineTestRunner
 from test.confusion_matrix import run_confusion_matrix_test
-from test.common import CONFIG, prompt_for_intent, create_single_query_dataset
+from test.common import CONFIG, create_single_query_dataset, get_available_intents
+from test.data import get_test_dataset
 from utils.logger_config import setup_logging
 
 
@@ -40,12 +41,13 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python -m test.runtest                       # Comprehensive test with all layers
-  python -m test.runtest -c                    # Compare all pipeline configurations
-  python -m test.runtest -b                    # Analyze boost engine impact
-  python -m test.runtest -mx                   # Generate confusion matrix
-  python -m test.runtest --no-semantic         # Test without semantic layer
-  python -m test.runtest -c --no-boost         # Comparative test without boost engine
+  python -m test.runtest                                                    # Comprehensive test with all layers
+  python -m test.runtest "where is my pizza?" --exp delivery                # Single query test (requires --exp)
+  python -m test.runtest -c                                                 # Compare all pipeline configurations
+  python -m test.runtest -b                                                 # Analyze boost engine impact
+  python -m test.runtest -mx                                                # Generate confusion matrix
+  python -m test.runtest --no-semantic                                      # Test without semantic layer
+  python -m test.runtest -c --no-boost                                      # Comparative test without boost engine
         """
     )
 
@@ -80,6 +82,8 @@ Examples:
     # Single query test
     parser.add_argument("query", nargs='?', default=None,
                         help="Single query to test")
+    parser.add_argument("--exp", type=str, default=None,
+                        help="Expected intent for single query test")
 
     return parser.parse_args()
 
@@ -108,6 +112,12 @@ def validate_arguments(args: argparse.Namespace) -> None:
         print("\nWARNING: Pipeline configuration flags (--no-algo, --no-semantic, --no-llm) "
               "are ignored in comparative test mode.")
         print("Comparative test runs all pipeline configurations.\n")
+
+    if args.query and not args.exp:
+        available_intents = [i for i in get_available_intents() if i != "unknown"]
+        print("\nERROR: Single query test require expected intent, specify using --exp arg")
+        print(f"\nValid intents: {', '.join(available_intents)}\n")
+        sys.exit(1)
 
 
 def configure_from_args(args: argparse.Namespace) -> None:
@@ -146,17 +156,32 @@ def main():
     validate_arguments(args)
     configure_from_args(args)
 
+    default_data = get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)
+
     try:
         if args.matrix and args.query:
             print("\nERROR: Confusion matrix mode does not support single query testing")
             sys.exit(1)
 
-        # single query mode
-        test_data = None
         if args.query:
             setup_logging(level=logging.DEBUG)
-            expected_intent = prompt_for_intent(args.query)
+            available_intents = [i for i in get_available_intents() if i != "unknown"]
+            intent_lower = args.exp.lower()
+            expected_intent = None
+            for intent in available_intents:
+                if intent.lower() == intent_lower:
+                    expected_intent = intent
+                    break
+
+            if expected_intent is None:
+                print(f"\nERROR: Invalid intent '{args.exp}'")
+                print(f"\nValid intents: {', '.join(available_intents)}\n")
+                sys.exit(1)
+
+            print(f"\nUsing expected intent: {expected_intent}\n")
             test_data = create_single_query_dataset(args.query, expected_intent)
+        else:
+            test_data = default_data
 
         # Route to appropriate test runner
         if args.matrix:
@@ -167,7 +192,8 @@ def main():
                 use_boost_engine=CONFIG.use_boost_engine,
                 include_edge_cases=CONFIG.include_edge_cases,
                 use_local_llm=CONFIG.use_local_llm,
-                llm_model=CONFIG.llm_model_name
+                llm_model=CONFIG.llm_model_name,
+                test_data=test_data
             )
         elif args.boost:
             BoostEngineTestRunner(custom_data=test_data).run()

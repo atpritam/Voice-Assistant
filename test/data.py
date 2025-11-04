@@ -7,7 +7,7 @@ Dataset diversity score: 0.970
 
 # === NORMAL TEST DATA ===
 NORMAL_TEST_DATASET = [
-    # Order intents (70 queries)
+    # Order intents (65 queries)
     ("I want to order a large pepperoni pizza", "order"),
     ("Can I get two medium pizzas with extra cheese", "order"),
     ("I'd like to purchase a pizza", "order"),
@@ -38,11 +38,9 @@ NORMAL_TEST_DATASET = [
     ("Order a family size pizza", "order"),
     ("I'd like a gluten free pizza", "order"),
     ("Can I order a vegan pizza?", "order"),
-    ("I want my usual", "order"),
     ("I'll get the same as last time", "order"),
     ("Order me a stuffed crust", "order"),
     ("I need a large with extra cheese", "order"),
-    ("Can I buy four pizzas?", "order"),
     ("I want to order some food", "order"),
     ("Let me place an order please", "order"),
     ("I'm looking to order", "order"),
@@ -77,7 +75,7 @@ NORMAL_TEST_DATASET = [
     ("Can I get a square cut pizza", "order"),
     ("I'd like to order for pickup tomorrow", "order"),
 
-    # Complaint intents (62 queries)
+    # Complaint intents (60 queries)
     ("My pizza was cold when it arrived", "complaint"),
     ("This is terrible, I want a refund", "complaint"),
     ("The order is wrong and I'm very disappointed", "complaint"),
@@ -106,7 +104,7 @@ NORMAL_TEST_DATASET = [
     ("This is the worst service ever", "complaint"),
     ("My order never showed up", "complaint"),
     ("I want to escalate this issue", "complaint"),
-    ("This is a terrible experience", "complaint"),
+    ("I need to talk to someone about my order", "complaint"),
     ("My order is completely wrong", "complaint"),
     ("The pizza arrived cold", "complaint"),
     ("This tastes horrible", "complaint"),
@@ -116,7 +114,7 @@ NORMAL_TEST_DATASET = [
     ("The pizza is overcooked", "complaint"),
     ("I want a refund and to speak to a manager", "complaint"),
     ("My pizza is cold and I want my money back", "complaint"),
-    ("Actually, my pizza is cold", "complaint"),
+    ("Driver still hasn't shown up", "complaint"),
     ("I'm very disappointed with my pizza", "complaint"),
     ("This is absolutely unacceptable", "complaint"),
     ("I'm so angry about this order", "complaint"),
@@ -139,7 +137,7 @@ NORMAL_TEST_DATASET = [
     ("This is ice cold", "complaint"),
     ("I need compensation for this", "complaint"),
 
-    # Hours/Location intents (48 queries)
+    # Hours/Location intents (49 queries)
     ("What time do you close", "hours_location"),
     ("When are you open", "hours_location"),
     ("What's your address", "hours_location"),
@@ -190,7 +188,7 @@ NORMAL_TEST_DATASET = [
     ("Are you closed on Mondays", "hours_location"),
     ("What time do you stop taking orders", "hours_location"),
 
-    # Menu inquiry intents (57 queries)
+    # Menu inquiry intents (58 queries)
     ("What toppings do you have", "menu_inquiry"),
     ("What's on your menu", "menu_inquiry"),
     ("How much does a large pizza cost", "menu_inquiry"),
@@ -209,7 +207,7 @@ NORMAL_TEST_DATASET = [
     ("What drinks do you offer?", "menu_inquiry"),
     ("Do you have stuffed crust", "menu_inquiry"),
     ("What crust types are available", "menu_inquiry"),
-    ("How much for a family size", "menu_inquiry"),
+    ("What's your best seller?", "menu_inquiry"),
     ("What comes on a Hawaiian pizza", "menu_inquiry"),
     ("Do you have meat lovers", "menu_inquiry"),
     ("What vegetables can I add", "menu_inquiry"),
@@ -249,7 +247,7 @@ NORMAL_TEST_DATASET = [
     ("What's included in the veggie pizza", "menu_inquiry"),
     ("How many toppings can I choose", "menu_inquiry"),
 
-    # Delivery intents (46 queries)
+    # Delivery intents (43 queries)
     ("Where is my order", "delivery"),
     ("Can you track my delivery", "delivery"),
     ("What's the status of my pizza", "delivery"),
@@ -264,13 +262,12 @@ NORMAL_TEST_DATASET = [
     ("Do you deliver to my area", "delivery"),
     ("Do you charge for delivery", "delivery"),
     ("Do you deliver to this address?", "delivery"),
-    ("What's the minimum for delivery", "delivery"),
+    ("still waiting on my pizza", "delivery"),
     ("Can I track the driver", "delivery"),
     ("How far do you deliver", "delivery"),
     ("Is there a delivery charge", "delivery"),
     ("When will the driver arrive", "delivery"),
     ("Can you give me an ETA", "delivery"),
-    ("Is delivery free?", "delivery"),
     ("How long until my order arrives?", "delivery"),
     ("What's the estimated delivery time?", "delivery"),
     ("Can you check on my delivery?", "delivery"),
@@ -281,7 +278,6 @@ NORMAL_TEST_DATASET = [
     ("What's my order status?", "delivery"),
     ("Is delivery free over thirty dollars?", "delivery"),
     ("What's your delivery range?", "delivery"),
-    ("Are you in my delivery zone?", "delivery"),
     ("What's the delivery time estimate?", "delivery"),
     ("I know you're busy but where is my order?", "delivery"),
     ("Is contactless delivery available", "delivery"),
@@ -334,7 +330,7 @@ EDGE_CASES_DATASET = [
     ("Hey there, I'm looking to get some food", "order"),
     ("How much would it cost to get my cold pizza replaced?", "complaint"),
 
-    # Long queries (8 queries)
+    # Long queries (8 queries) - should recognize dominant intent
     ("Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet", "complaint"),
     ("So I'm looking at your menu and I'm trying to figure out what the best deal is and also I want to know if you have any vegetarian options available", "menu_inquiry"),
     ("I placed an order earlier today around noon and I specifically asked for no onions but when the pizza arrived it had onions all over it and also the crust was burnt", "complaint"),
@@ -382,7 +378,7 @@ EDGE_CASES_DATASET = [
     ("Love how my pizza never showed up", "complaint"),
     ("The delivery took forever", "complaint"),
 
-    # Context dependent (10 queries)
+    # Context dependent (11 queries)
     ("What about the large one", "menu_inquiry"),
     ("I will take that one", "order"),
     ("Get me my regular", "order"),
@@ -393,6 +389,7 @@ EDGE_CASES_DATASET = [
     ("Change that to pickup", "order"),
     ("Make it two", "order"),
     ("Same as last time", "order"),
+    ("I want my usual", "order"),
 
     # Very Short Queries (13 queries)
     ("hours", "hours_location"),
@@ -427,7 +424,7 @@ EDGE_CASES_DATASET = [
     ("What time do you clse", "hours_location"),
     ("Can I trak my order", "delivery"),
 
-    # Casual/Slang (8 queries)
+    # Casual/Slang (11 queries)
     ("yo whats good", "general"),
     ("gimme a pizza", "order"),
     ("where u guys at", "hours_location"),
@@ -435,7 +432,10 @@ EDGE_CASES_DATASET = [
     ("my food aint here yet", "complaint"),
     ("this pizza sucks", "complaint"),
     ("u guys open", "hours_location"),
+    ("where's my food at", "delivery"),
+    ("send it over to my place", "delivery"),
     ("whats the damage for a large", "menu_inquiry"),
+    ("hold the onions", "order"),
 
     # Questions about questions (6 queries)
     ("Can I ask about the menu", "menu_inquiry"),

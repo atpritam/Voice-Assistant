@@ -139,11 +139,11 @@ class ConfusionMatrixAnalyzer:
 class ConfusionMatrixTestRunner:
     """Run confusion matrix analysis"""
 
-    def __init__(self):
+    def __init__(self, test_data=None):
         """Initialize test runner"""
         setup_logging(level=logging.WARNING)
         self.factory = RecognizerFactory()
-        self.test_data = get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)
+        self.test_data = test_data if test_data is not None else get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)
 
     def run(self) -> ConfusionMatrixAnalyzer:
         """
@@ -212,7 +212,8 @@ def run_confusion_matrix_test(
     use_boost_engine: bool = True,
     include_edge_cases: bool = True,
     use_local_llm: bool = True,
-    llm_model: str = "llama3.2:3b-instruct-q4_K_M"
+    llm_model: str = "llama3.2:3b-instruct-q4_K_M",
+    test_data=None
 ):
     """
     Run test and generate confusion matrix (backward compatibility wrapper)
@@ -225,6 +226,7 @@ def run_confusion_matrix_test(
         include_edge_cases: Include edge cases in test
         use_local_llm: Use local Ollama LLM instead of OpenAI API
         llm_model: LLM model to use
+        test_data: Optional custom test dataset (list of tuples)
     """
     CONFIG.enable_algo = enable_algorithmic
     CONFIG.enable_semantic = enable_semantic
@@ -235,5 +237,5 @@ def run_confusion_matrix_test(
     if llm_model:
         CONFIG.llm_model = llm_model
 
-    runner = ConfusionMatrixTestRunner()
+    runner = ConfusionMatrixTestRunner(test_data=test_data)
     return runner.run()

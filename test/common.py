@@ -34,7 +34,7 @@ class Config:
     enable_semantic: bool = True
     enable_llm: bool = True
     use_boost_engine: bool = True
-    thresh_algo: float = 0.6
+    thresh_algo: float = 0.65
     thresh_semantic: float = 0.5
 
     # Test settings
@@ -87,7 +87,7 @@ class RecognizerFactory:
         """Create IntentRecognizer with given configuration"""
         try:
             return IntentRecognizer(
-                enable_logging=log,
+                enable_logging=False,
                 enable_algorithmic=algo,
                 enable_semantic=semantic,
                 enable_llm=llm,
@@ -109,7 +109,7 @@ class RecognizerFactory:
     @staticmethod
     def warmup(recognizer: IntentRecognizer, semantic: bool, llm: bool, local_llm: bool) -> None:
         """
-        Warmup pipeline by running a dummy query
+        Warmup pipeline by running a dummy query and reset statistics
         """
         if semantic or (llm and local_llm):
             logger = logging.getLogger()
@@ -120,6 +120,9 @@ class RecognizerFactory:
                 recognizer.recognize_intent("sample text", [])
             finally:
                 logger.setLevel(original_level)
+
+        # Reset statistics after warmup to exclude warmup call from metrics
+        recognizer.reset_statistics()
 
 
 # === RESULT ANALYSIS ===
@@ -194,7 +197,6 @@ class ResultAnalyzer:
                   f"(exp: {r['expected']}, conf: {r['confidence']:.2f}, layer: {r['layer_used']})")
 
 
-# === SINGLE QUERY TESTING ===
 def get_available_intents() -> List[str]:
     """Load available intents from intent_patterns.json"""
     try:
@@ -204,45 +206,6 @@ def get_available_intents() -> List[str]:
     except Exception as e:
         print(f"Error loading intents: {e}")
         return []
-
-
-def prompt_for_intent(query: str) -> str:
-    """Interactive prompt for selecting expected intent"""
-    intents = get_available_intents()
-
-    if not intents:
-        print("ERROR: No intents found in intent_patterns.json")
-        sys.exit(1)
-
-    print(f"\n{'='*80}")
-    print(f"Query: \"{query}\"")
-    print(f"{'='*80}\n")
-    print("Select the expected intent for this query:\n")
-
-    filtered_intents = [(i, intent) for i, intent in enumerate(intents, 1) if intent != "unknown"]
-    for i in range(0, len(filtered_intents), 3):
-        row = filtered_intents[i:i+3]
-        print("  " + "".join(f"{num}. {intent:<22}" for num, intent in row))
-
-    print()
-
-    while True:
-        try:
-            choice = input(f"Enter choice (1-{len(intents)}): ").strip()
-            idx = int(choice) - 1
-
-            if 0 <= idx < len(intents):
-                selected = intents[idx]
-                print(f"\n✓ Selected intent: {selected}\n")
-                return selected
-            else:
-                print(f"Please enter a number between 1 and {len(intents)}")
-        except ValueError:
-            print("Please enter a valid number")
-        except KeyboardInterrupt:
-            print("\n\nTest cancelled by user\n")
-            sys.exit(0)
-
 
 def create_single_query_dataset(query: str, expected_intent: str) -> List[Tuple[str, str]]:
     """Create a minimal test dataset with a single query"""

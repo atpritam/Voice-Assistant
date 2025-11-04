@@ -88,6 +88,8 @@ def setup_logging(level=logging.INFO):
     logging.getLogger('TTS').setLevel(logging.WARNING)
     logging.getLogger('openai').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
+    logging.getLogger('httpcore').setLevel(logging.WARNING)
+    logging.getLogger('http11').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 

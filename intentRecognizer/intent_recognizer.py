@@ -484,3 +484,52 @@ class IntentRecognizer:
                     self.logger.warning(f"Could not get LLM statistics: {e}")
 
         return stats_dict
+
+    def reset_statistics(self) -> None:
+        """Reset all statistics counters across all layers"""
+        from collections import defaultdict
+
+        # Reset main pipeline statistics
+        self.stats = {
+            'total_queries': 0,
+            'algorithmic_used': 0,
+            'semantic_used': 0,
+            'llm_used': 0,
+            'intent_distribution': defaultdict(int),
+            'avg_confidence': [],
+            'layer_configuration': self.stats['layer_configuration']
+        }
+
+        # Reset algorithmic layer statistics
+        if self.enable_algorithmic and self.algorithmic_recognizer:
+            self.algorithmic_recognizer.stats = {
+                'total_queries': 0,
+                'intent_distribution': defaultdict(int),
+                'avg_confidence': [],
+                'intents_evaluated': [],
+                'patterns_evaluated': []
+            }
+
+        # Reset semantic layer statistics
+        if self.enable_semantic and self.semantic_recognizer:
+            self.semantic_recognizer.stats = {
+                'total_queries': 0,
+                'intent_distribution': {},
+                'avg_confidence': []
+            }
+
+        # Reset LLM layer statistics
+        if self.enable_llm and self.llm_recognizer:
+            llm_provider = self.llm_recognizer.stats.get("llm_provider", "ollama" if self.use_local_llm else "openai")
+            self.llm_recognizer.stats = {
+                "total_queries": 0,
+                "successful_queries": 0,
+                "failed_queries": 0,
+                "intent_distribution": {},
+                "avg_confidence": [],
+                "total_tokens_used": 0,
+                "total_api_calls": 0,
+                "llm_provider": llm_provider,
+                "response_generation_count": 0,
+                "classification_count": 0
+            }

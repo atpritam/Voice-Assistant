@@ -33,6 +33,7 @@ DELIVERY_COMPLAINT_PENALTY = 0.25
 MENU_INQUIRY_PENALTY = 0.15
 ORDER_INQUIRY_PENALTY = 0.15
 HOURS_MENU_PENALTY = 0.15
+GENERAL_INQUIRY_PENALTY = 0.15
 DELIVERY_RECOMMENDATION_PENALTY = 0.15
 
 
@@ -64,7 +65,7 @@ class BoostRuleEngine:
             'unhappy', 'angry', 'upset', 'disgusted', 'awful', 'missing', 'cold',
             'late', 'issue', 'problem', 'never', 'poor', 'nasty', 'disgusting',
             'unacceptable', 'burnt', 'undercooked', 'overcooked', 'stale', 'furious',
-            'mistake', 'wrong', 'error', 'incorrect', 'cancel', 'cancellation',
+            'mistake', 'wrong', 'error', 'incorrect', 'cancel', 'cancellation', 'botched',
             'replace', 'replaced', 'replacement', 'redo', 'remake', 'fix', 'broken'
         }
 
@@ -127,7 +128,7 @@ class BoostRuleEngine:
         self._apply_order_action_boost(query_words, intent_scores)
         self._apply_negative_sentiment_boost(query_words, intent_scores)
         self._apply_price_size_boost(query_words, intent_scores)
-        self._apply_time_location_boost(query_words, intent_scores)
+        self._apply_time_location_boost(query_text, query_words, intent_scores)
         self._apply_escalation_boost(query_words, intent_scores)
         self._apply_delivery_status_boost(query_words, intent_scores)
         self._apply_sarcasm_boost(query_words, intent_scores)
@@ -213,25 +214,23 @@ class BoostRuleEngine:
             self._penalty_intent('menu_inquiry', intent_scores, MENU_INQUIRY_PENALTY,
                                "Menu inquiry penalty (negative+price)")
 
-    def _apply_time_location_boost(self, query_words: Set[str], intent_scores: Dict):
+    def _apply_time_location_boost(self, query: str, query_words: Set[str], intent_scores: Dict):
         """
         RULE 4: Time/location questions boost hours_location
         This rule is generally applicable across domains.
         """
         time_location_context = {
-            'when', 'what time', 'how long', 'until when', 'from when',
+            'when', 'what time', 'until when', 'from when',
             'where', 'which', 'what address', 'how far', 'late night', 'get to'
         }
         hours_keywords = {'open', 'close', 'hours', 'location', 'address', 'store', 'at', 'find', 'there'}
 
-        has_question = bool(query_words & time_location_context)
+        has_question = any(phrase in query for phrase in time_location_context)
         has_hours = bool(query_words & hours_keywords)
 
         if has_question and has_hours:
-            self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST,
-                               "Time/location boost")
-            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY,
-                               "Order penalty for time query")
+            self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST, "Time/location boost")
+            self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY, "Order penalty for time query")
 
     def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
         """
@@ -253,7 +252,8 @@ class BoostRuleEngine:
         RULE 6: Delivery status indicators
         Queries asking about order status should boost delivery
         """
-        status_indicators = {'late', 'track', 'status', 'eta', 'arrive', 'long', 'estimated', 'arrival', 'much longer'}
+        status_indicators = {'late', 'track', 'status', 'eta', 'arrive', 'long', 'estimated',
+                             'arrival', 'longer', 'expect', 'update', 'waiting'}
         order_context = {'order', 'pizza', 'food', 'delivery'}
 
         has_status = bool(query_words & status_indicators)
@@ -271,8 +271,8 @@ class BoostRuleEngine:
         """
         RULE 7: Enhanced sarcasm/negative complaint indicators
         """
-        sarcasm_markers = {'amazing', 'wonderful', 'perfect', 'great', 'love', 'exactly', 'brilliant'}
-        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever', 'still', 'yet', 'didnt'}
+        sarcasm_markers = {'amazing', 'wonderful', 'perfect', 'great', 'love', 'exactly', 'brilliant', 'incredibly'}
+        negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever', 'still', 'yet', 'didnt', 'rude'}
 
         # Temporal disappointment words
         expectation_words = {'waited', 'waiting', 'only', 'still', 'yet', 'finally'}
@@ -331,12 +331,16 @@ class BoostRuleEngine:
                                    "Delivery inquiry boost")
                 self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
                                    "Order penalty for delivery inquiry")
+                self._penalty_intent('general', intent_scores, GENERAL_INQUIRY_PENALTY,
+                                     "General penalty for delivery inquiry")
 
-            if query_words & {'hours', 'time', 'open', 'close'}:
+            if (query_words & self.synonyms.get('hours', set())) or (query_words & self.synonyms.get('location', set())):
                 self._boost_intent('hours_location', intent_scores, HOURS_INQUIRY_BOOST,
-                                   "Hours inquiry boost")
+                                   "Hours/Location inquiry boost")
                 self._penalty_intent('order', intent_scores, ORDER_INQUIRY_PENALTY,
-                                   "Order penalty for hours inquiry")
+                                   "Order penalty for Hours/Location inquiry")
+                self._penalty_intent('general', intent_scores, GENERAL_INQUIRY_PENALTY,
+                                     "General penalty for Hours/Location inquiry")
 
             price_related_words = {'menu'} | self.synonyms.get('price', set())
             if query_words & price_related_words and not has_negative:
@@ -346,6 +350,8 @@ class BoostRuleEngine:
                                    "Order penalty for price inquiry")
                 self._penalty_intent('hours_location', intent_scores, HOURS_MENU_PENALTY,
                                    "Hours penalty for menu/price inquiry")
+                self._penalty_intent('general', intent_scores, GENERAL_INQUIRY_PENALTY,
+                                     "General penalty for Price inquiry")
 
         if is_recommendation_query:
             self._boost_intent('menu_inquiry', intent_scores, RECOMMENDATION_INQUIRY_BOOST,
@@ -363,7 +369,7 @@ class BoostRuleEngine:
         quality_issues = self.synonyms.get('quality', set())
         has_quality_issue = bool(query_words & quality_issues)
 
-        customization_words = {'no', 'without', 'extra', 'add', 'remove', 'different'}
+        customization_words = {'no', 'without', 'extra', 'add', 'remove', 'different', 'more', 'less'}
         has_customization = bool(query_words & customization_words)
 
         if has_menu_item:

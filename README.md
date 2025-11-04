@@ -106,12 +106,12 @@ Text Query
 ┌─────────────────────────┐
 │ Intent Recognition      │
 │                         │
-│ 1. Algorithmic (fast)   │ ← 82% of queries
+│ 1. Algorithmic (fast)   │ ← 80% of queries
 │    ├─ Pattern matching  │
 │    ├─ Levenshtein      │
 │    └─ Boost Engine      │
 │         ↓               │
-│ 2. Semantic (accurate)  │ ← 12% of queries
+│ 2. Semantic (accurate)  │ ← 14% of queries
 │    └─ Neural embeddings │
 │         ↓               │
 │ 3. LLM (fallback)       │ ← 6% of queries
@@ -129,22 +129,22 @@ Voice Output
 
 Modern large language models (e.g., GPT-5, Claude, Llama) can perform intent classification and response generation directly. However, the hybrid cascading architecture provides significant advantages in both speed and efficiency.
 
-**Comparative Performance (400 queries, GPT-5 & llama 3B):**
+**Comparative Performance (400 queries, GPT-5 & Llama 3.2-3B):**
 
 | Configuration                | Accuracy   | Latency | Q/s | Tokens/Query | Total Tokens |
 |------------------------------|------------|---------|-----|--------------|--------------|
-| **Full Pipeline (Llama 3B)** | **97.75%** | **22.0ms** | **45.4** | **1.0** | **384**      |
-| **Full Pipeline (GPT-5)**    | **98.00%** | **207.8ms** | **4.8** | **35.9** | **14,360**   |
-| LLM-Only (Llama 3B, local)   | 86.75%     | 268.2ms | 3.7 | 15.8 | 6,309        |
-| LLM-Only (GPT-5, cloud)      | 93.50%     | **2.98s** | 0.3 | **519.0** | **207,580**  |
+| **Full Pipeline (Llama 3B)** | **97.75%** | **22.1ms** | **45.3** | **0.9** | **377**      |
+| **Full Pipeline (GPT-5)**    | **97.75%** | **379.5ms** | **2.6** | **32.4** | **12,941**   |
+| LLM-Only (Llama 3B, local)   | 88.50%     | 272.1ms | 3.7 | 15.9 | 6,363        |
+| LLM-Only (GPT-5, cloud)      | 92.50%     | **6.65s** | 0.2 | **511.3** | **204,503**  |
 
 **Key Advantages:**
 
-1. **14× Lower Latency**: 208ms vs 2.98s (GPT-5)
-     - ~90% of queries handled by fast layers (<5ms)
-     - LLM reserved only for complex edge cases
-2. **Cost Efficiency**: 36 tokens/query vs 519 tokens/query (GPT-5)
-3. **Accuracy**:  98.0% vs 93.5% (+4.5% with GPT-5)
+1. **17× Lower Latency**: 379ms vs 6.65s (GPT-5)
+     - ~81% of queries handled by fast algorithmic layer (<5ms)
+     - LLM reserved only for complex edge cases (6% of queries)
+2. **Cost Efficiency**: 32 tokens/query vs 511 tokens/query (15.8× reduction with GPT-5)
+3. **Accuracy**: 97.75% vs 92.50% (+5.25% improvement over LLM-only with GPT-5)
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 
@@ -303,7 +303,7 @@ python -m test.runtest --no-edge
 python -m test.runtest --openai
 
 # Single query test
-python -m test.runtest "where is my pizza?"
+python -m test.runtest "where is my pizza?" --exp delivery
 ```
 
 ## Performance Benchmarks
@@ -312,35 +312,36 @@ All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-inst
 
 ### Extended Test Dataset (400 queries - with edge cases)
 
-Comprehensive testing with 400 queries including 101 edge cases:
+Comprehensive testing with 400 queries including 105 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 97.75% | 20.7ms | 48.3 |
-| Algorithmic + Semantic | 94.75% | 4.1ms | 241.8 |
-| Algorithmic + LLM | 96.75% | 50.3ms | 19.9 |
-| Semantic + LLM | 93.25% | 54.1ms | 18.5 |
-| Algorithmic Only | 88.50% | 3.0ms | 329.6 |
-| Semantic Only | 87.50% | 7.1ms | 140.3 |
+| Full Pipeline | 97.75% | 22.1ms | 45.3 |
+| Algorithmic + Semantic | 94.75% | 7.2ms | 138.5 |
+| Algorithmic + LLM | 96.00% | 54.0ms | 18.5 |
+| Semantic + LLM | 93.75% | 44.6ms | 22.4 |
+| Algorithmic Only | 90.00% | 2.7ms | 365.0 |
+| Semantic Only | 89.25% | 9.8ms | 102.4 |
+| LLM Only | 88.50% | 272.1ms | 3.7 |
 
 ### Layer Distribution (Full Pipeline)
 
-- Algorithmic layer: 82.5% of queries (330/400)
-- Semantic layer: 11.8% of queries (47/400)
-- LLM layer: 5.8% of queries (23/400)
+- Algorithmic layer: 80.8% of queries (323/400)
+- Semantic layer: 13.3% of queries (53/400)
+- LLM layer: 6.0% of queries (24/400)
 
 ### Boost Engine Impact
 
 Comparison with and without contextual boost rules on full pipeline (400 queries with edge cases):
 
-| Metric | Without Boost | With Boost | Improvement |
-|--------|---------------|------------|-------------|
-| Accuracy | 93.50% | 97.75% | +4.25% |
-| Correct Predictions | 374 | 391 | +17 |
-| Query Time | 34.5ms | 21.8ms | 37% faster |
-| Algorithmic Usage | 296 | 330 | +34 |
-| Semantic Fallback | 67 | 47 | -20 |
-| LLM Fallback | 37 | 23 | -14 |
+| Metric              | Without Boost | With Boost | Improvement |
+|---------------------|---------------|------------|-------------|
+| Accuracy            | 95.00% | 97.75% | +2.75% |
+| Correct Predictions | 380 | 391 | +11 |
+| Query Time          | 34.4ms | 22.8ms | 34% faster |
+| Algorithmic Usage   | 268 | 323 | +55 |
+| Semantic Usage      | 95 | 53 | -42 |
+| LLM Fallback        | 37 | 24 | -13 |
 
 ### Confusion Matrix Results (Full Pipeline - 400 queries)
 
@@ -348,12 +349,12 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 | Intent | Precision | Recall | F1-Score | Support |
 |--------|-----------|--------|----------|---------|
-| complaint | 100.00% | 97.62% | 98.80% | 84 |
-| delivery | 91.67% | 98.21% | 94.83% | 56 |
-| general | 95.65% | 100.00% | 97.78% | 22 |
-| hours_location | 100.00% | 95.16% | 97.52% | 62 |
-| menu_inquiry | 98.88% | 100.00% | 99.44% | 88 |
-| order | 97.70% | 96.59% | 97.14% | 88 |
+| complaint | 100.00% | 95.24% | 97.56% | 84 |
+| delivery | 96.43% | 96.43% | 96.43% | 56 |
+| general | 100.00% | 100.00% | 100.00% | 22 |
+| hours_location | 96.83% | 98.39% | 97.60% | 62 |
+| menu_inquiry | 98.85% | 97.73% | 98.29% | 88 |
+| order | 95.65% | 100.00% | 97.78% | 88 |
 
 
 See `testResults/` directory for detailed  analyses.
@@ -362,7 +363,8 @@ See `testResults/` directory for detailed  analyses.
 
 The benchmark results above are validated against dataset with:
 
-- **400 total queries** (300 normal + 100 edge cases)
+- **400 total queries** (295 normal + 105 edge cases)
+- **6 intent categories**: order (88), complaint (84), menu_inquiry (88), hours_location (62), delivery (56), general (22)
 - **Diversity score: 0.97/1.0** - High lexical variety, not repetitive memorization
 - **Edge cases include**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing
 - **Zero duplicates** - Unbiased evaluation
