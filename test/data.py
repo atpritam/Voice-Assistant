@@ -524,11 +524,13 @@ def get_dataset_statistics():
 
 
 if __name__ == '__main__':
+    import json
     stats = get_dataset_statistics()
-    print(stats)
+    print()
+    print(json.dumps(stats, indent=4))
 
     has_dupes, dupes = check_duplicates()
-    print("Duplicates found:", has_dupes)
+    print("\nDuplicates found:", has_dupes)
 
     if has_dupes:
         print(f"\nFound {len(dupes)} duplicate(s):")

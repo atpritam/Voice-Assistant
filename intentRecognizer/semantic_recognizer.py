@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -64,9 +64,7 @@ class SemanticRecognizer:
         self.use_cache = use_cache
         self.enable_logging = enable_logging
         self.device = device
-
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
+        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
         logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
@@ -78,11 +76,7 @@ class SemanticRecognizer:
         else:
             self._compute_embeddings()
 
-        self.stats = {
-            'total_queries': 0,
-            'intent_distribution': {},
-            'avg_confidence': [],
-        }
+        self.stats = StatisticsHelper.init_base_stats()
 
     def _load_model(self):
         """Load sentence transformer model"""
@@ -95,13 +89,11 @@ class SemanticRecognizer:
             else:
                 device = self.device
 
-            if self.enable_logging:
-                self.logger.info(f"Loading Sentence Transformer model on device: {'GPU' if device == 'cuda' else 'CPU'}")
+            self.logger.info(f"Loading Sentence Transformer model on device: {'GPU' if device == 'cuda' else 'CPU'}")
 
             return SentenceTransformer(self.model_name, device=device)
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error loading model: {e}")
+            self.logger.error(f"Error loading model: {e}")
             raise
 
     def _get_cache_path(self) -> Path:
@@ -110,8 +102,7 @@ class SemanticRecognizer:
             with open(self.patterns_file, 'rb') as f:
                 patterns_hash = hashlib.md5(f.read()).hexdigest()
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error hashing patterns file: {e}")
+            self.logger.error(f"Error hashing patterns file: {e}")
             patterns_hash = ""
         return CACHE_DIR / f"{self.model_name.replace('/', '_')}_{patterns_hash}.pkl"
 
@@ -119,8 +110,7 @@ class SemanticRecognizer:
         """Load precomputed embeddings from cache"""
         cache_path = self._get_cache_path()
         if not cache_path.exists():
-            if self.enable_logging:
-                self.logger.info("No cache found, will compute embeddings")
+            self.logger.info("No cache found, will compute embeddings")
             return False
 
         try:
@@ -128,24 +118,20 @@ class SemanticRecognizer:
                 cached_data = pickle.load(f)
 
             if not all(k in cached_data for k in ['embeddings', 'model_name']):
-                if self.enable_logging:
-                    self.logger.warning("Invalid cache format, will recompute")
+                self.logger.warning("Invalid cache format, will recompute")
                 return False
 
             if cached_data['model_name'] != self.model_name:
-                if self.enable_logging:
-                    self.logger.warning("Cache model mismatch, will recompute")
+                self.logger.warning("Cache model mismatch, will recompute")
                 return False
 
             self.intent_embeddings = cached_data['embeddings']
-            if self.enable_logging:
-                total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
-                self.logger.info(f"Loaded embeddings from cache for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
+            total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
+            self.logger.info(f"Loaded embeddings from cache for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
             return True
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error loading cache: {e}")
+            self.logger.error(f"Error loading cache: {e}")
             return False
 
     def _save_embeddings_to_cache(self):
@@ -153,8 +139,7 @@ class SemanticRecognizer:
         cache_path = self._get_cache_path()
         try:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
-            if self.enable_logging:
-                self.logger.info(f"Saving embeddings to cache: {cache_path}")
+            self.logger.info(f"Saving embeddings to cache: {cache_path}")
 
             cache_data = {
                 'embeddings': self.intent_embeddings,
@@ -164,16 +149,13 @@ class SemanticRecognizer:
             with open(cache_path, 'wb') as f:
                 pickle.dump(cache_data, f)
 
-            if self.enable_logging:
-                self.logger.info("Embeddings cached successfully")
+            self.logger.info("Embeddings cached successfully")
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error saving cache: {e}")
+            self.logger.error(f"Error saving cache: {e}")
 
     def _compute_embeddings(self):
         """Compute embeddings for all intent patterns"""
-        if self.enable_logging:
-            self.logger.info("Precomputing pattern embeddings...")
+        self.logger.info("Precomputing pattern embeddings...")
 
         for intent_name, intent_data in self.patterns.items():
             if intent_name == "unknown" or not intent_data.get("patterns"):
@@ -188,15 +170,13 @@ class SemanticRecognizer:
                 'threshold': intent_data.get('similarity_threshold', self.min_confidence)
             }
 
-        if self.enable_logging:
-            total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
-            self.logger.info(f"Precomputed embeddings for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
+        total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
+        self.logger.info(f"Precomputed embeddings for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
 
     def _load_or_compute_embeddings(self):
         """Load embeddings from cache or compute if not available"""
         if not self._load_embeddings_from_cache():
-            if self.enable_logging:
-                self.logger.info("Computing embeddings (cache miss)")
+            self.logger.info("Computing embeddings (cache miss)")
             self._compute_embeddings()
             self._save_embeddings_to_cache()
 
@@ -206,11 +186,9 @@ class SemanticRecognizer:
             if CACHE_DIR.exists():
                 for cache_file in CACHE_DIR.glob("*.pkl"):
                     cache_file.unlink()
-                if self.enable_logging:
-                    self.logger.info("Cache cleared successfully")
+                self.logger.info("Cache cleared successfully")
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error clearing cache: {e}")
+            self.logger.error(f"Error clearing cache: {e}")
 
     def _calculate_semantic_similarity(self, query_embedding: np.ndarray, intent_name: str, top_k: int = 3) -> Tuple[
         float, str, Dict]:
@@ -273,11 +251,10 @@ class SemanticRecognizer:
             threshold = self.intent_embeddings[best_intent_name]['threshold']
 
             if best_similarity < threshold:
-                if self.enable_logging:
-                    self.logger.info(
-                        f"unknown (best: {best_intent_name} {best_similarity:.3f}, "
-                        f"threshold: {threshold:.3f})"
-                    )
+                self.logger.info(
+                f"unknown (best: {best_intent_name} {best_similarity:.3f}, "
+                f"threshold: {threshold:.3f})"
+                )
                 return self._create_unknown_result(f"Best match {best_intent_name} below threshold", best_similarity)
 
             confidence_level = IntentRecognizerUtils.determine_confidence_level(best_similarity)
@@ -285,8 +262,7 @@ class SemanticRecognizer:
             self.stats['intent_distribution'][best_intent_name] = self.stats['intent_distribution'].get(best_intent_name, 0) + 1
             self.stats['avg_confidence'].append(best_similarity)
 
-            if self.enable_logging:
-                self.logger.info(f"{best_intent_name} ({best_similarity:.3f}, {confidence_level})")
+            self.logger.info(f"{best_intent_name} ({best_similarity:.3f}, {confidence_level})")
 
             return SemanticResult(
                 intent=best_intent_name,
@@ -298,8 +274,7 @@ class SemanticRecognizer:
             )
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Error during semantic recognition: {e}")
+            self.logger.error(f"Error during semantic recognition: {e}")
             return self._create_unknown_result(f"Error: {str(e)}")
 
     def _create_unknown_result(self, reason: str, confidence: float = 0.0) -> SemanticResult:
@@ -315,7 +290,7 @@ class SemanticRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get semantic recognizer statistics"""
-        avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) if self.stats['avg_confidence'] else 0.0
+        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
 
         return {
             'total_queries_processed': self.stats['total_queries'],

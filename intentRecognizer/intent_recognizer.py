@@ -109,6 +109,69 @@ class IntentRecognizerUtils:
         return os.path.join(utils_dir, 'intent_patterns.json')
 
 
+class StatisticsHelper:
+    """Helper methods for statistics tracking across all recognizers"""
+
+    @staticmethod
+    def init_base_stats(**custom_fields):
+        """Initialize statistics with base fields and optional custom fields"""
+        stats = {
+            'total_queries': 0,
+            'intent_distribution': defaultdict(int),
+            'avg_confidence': [],
+        }
+        stats.update(custom_fields)
+        return stats
+
+    @staticmethod
+    def calculate_average(values_list):
+        """Calculate average from a list of values"""
+        return sum(values_list) / len(values_list) if values_list else 0.0
+
+    @staticmethod
+    def reset_stats(stats_dict, preserve_fields=None):
+        """Reset statistics to initial state, optionally preserving certain fields."""
+        preserved = {}
+        if preserve_fields:
+            for field in preserve_fields:
+                if field in stats_dict:
+                    preserved[field] = stats_dict[field]
+
+        for key in list(stats_dict.keys()):
+            if preserve_fields and key in preserve_fields:
+                continue
+
+            value = stats_dict[key]
+            if isinstance(value, defaultdict):
+                stats_dict[key] = defaultdict(int)
+            elif isinstance(value, dict):
+                stats_dict[key] = {}
+            elif isinstance(value, list):
+                stats_dict[key] = []
+            elif isinstance(value, (int, float)):
+                stats_dict[key] = 0
+
+        stats_dict.update(preserved)
+
+
+class ConditionalLogger:
+    def __init__(self, logger, enable_logging: bool):
+        """
+        Initialize conditional logger.
+
+        Args:
+            logger: The underlying logger instance
+            enable_logging: Whether logging is enabled
+        """
+        self._logger = logger
+        self._enable_logging = enable_logging
+
+    def __getattr__(self, name):
+        def log_method(msg, *args, **kwargs):
+            if self._enable_logging:
+                getattr(self._logger, name)(msg, *args, **kwargs)
+        return log_method
+
 from .algorithmic_recognizer import AlgorithmicRecognizer
 from .semantic_recognizer import SemanticRecognizer
 from .llm_recognizer import LLMRecognizer
@@ -158,23 +221,18 @@ class IntentRecognizer:
         self.enable_logging = enable_logging
         self.use_local_llm = use_local_llm
         self.ollama_base_url = ollama_base_url
+        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
 
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
-
-        self.stats = {
-            'total_queries': 0,
-            'algorithmic_used': 0,
-            'semantic_used': 0,
-            'llm_used': 0,
-            'intent_distribution': defaultdict(int),
-            'avg_confidence': [],
-            'layer_configuration': {
+        self.stats = StatisticsHelper.init_base_stats(
+            algorithmic_used=0,
+            semantic_used=0,
+            llm_used=0,
+            layer_configuration={
                 'algorithmic': enable_algorithmic,
                 'semantic': enable_semantic,
                 'llm': enable_llm
             }
-        }
+        )
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, self.enable_logging)
 
@@ -193,8 +251,7 @@ class IntentRecognizer:
                 min_confidence=self.min_confidence,
                 use_boost_engine=self.use_boost_engine,
             )
-            if self.enable_logging:
-                self.logger.info(" Algorithmic layer initialized")
+            self.logger.info(" Algorithmic layer initialized")
 
         if self.enable_semantic:
             device = self.device if self.device != "auto" else "cuda" if torch.cuda.is_available() else "cpu"
@@ -207,15 +264,12 @@ class IntentRecognizer:
                     min_confidence=self.min_confidence,
                     use_cache=True
                 )
-                if self.enable_logging:
-                    self.logger.info(f" Semantic layer initialized (model: {semantic_model})")
+                self.logger.info(f" Semantic layer initialized (model: {semantic_model})")
             except ImportError as e:
-                if self.enable_logging:
-                    self.logger.error(f"Semantic layer failed - missing dependencies: {e}\n  Install with: pip install sentence-transformers scikit-learn")
+                self.logger.error(f"Semantic layer failed - missing dependencies: {e}\n  Install with: pip install sentence-transformers scikit-learn")
                 raise RuntimeError("Cannot initialize semantic layer - missing dependencies. Install with: pip install sentence-transformers scikit-learn")
             except Exception as e:
-                if self.enable_logging:
-                    self.logger.error(f" Semantic layer initialization failed: {e}")
+                self.logger.error(f" Semantic layer initialization failed: {e}")
                 raise
 
         if self.enable_llm:
@@ -229,11 +283,9 @@ class IntentRecognizer:
                     test_mode=self.test_mode,
                 )
                 provider_type = "Ollama" if self.use_local_llm else "OpenAI"
-                if self.enable_logging:
-                    self.logger.info(f" LLM layer initialized ({provider_type}, model: {llm_model})")
+                self.logger.info(f" LLM layer initialized ({provider_type}, model: {llm_model})")
             except Exception as e:
-                if self.enable_logging:
-                    self.logger.error(f" LLM layer initialization failed: {e}")
+                self.logger.error(f" LLM layer initialization failed: {e}")
                 raise
 
     def recognize_intent(self, query: str, conversation_history: Optional[List[Dict]] = None) -> RecognitionResult:
@@ -247,10 +299,9 @@ class IntentRecognizer:
         """
         self.stats['total_queries'] += 1
 
-        if self.enable_logging:
-            self.logger.info("-" * 60)
-            self.logger.info(f"Processing: '{query}'")
-            self.logger.info("-" * 60)
+        self.logger.info("-" * 60)
+        self.logger.info(f"Processing: '{query}'")
+        self.logger.info("-" * 60)
 
         recognized_intent = None
         recognized_confidence = None
@@ -283,8 +334,7 @@ class IntentRecognizer:
     def _log_layer_acceptance(self, layer_name: str, result) -> None:
         """Log and track layer acceptance"""
         self.stats[f'{layer_name}_used'] += 1
-        if self.enable_logging:
-            self.logger.info(
+        self.logger.info(
                 f"✓ ACCEPTED {layer_name.upper()} Layer: {result.intent} "
                 f"({result.confidence:.3f}, {result.confidence_level})"
             )
@@ -295,10 +345,9 @@ class IntentRecognizer:
         result = recognizer.recognize(query)
 
         if result.intent == "unknown" or result.confidence < threshold:
-            if self.enable_logging:
-                next_layer = "Semantic" if layer_name == "algorithmic" and self.enable_semantic else "LLM"
-                if (layer_name == "algorithmic" and self.enable_semantic) or (layer_name == "semantic" and self.enable_llm):
-                    self.logger.info(f"  - Proceeding to {next_layer} layer")
+            next_layer = "Semantic" if layer_name == "algorithmic" and self.enable_semantic else "LLM"
+            if (layer_name == "algorithmic" and self.enable_semantic) or (layer_name == "semantic" and self.enable_llm):
+                self.logger.info(f"  - Proceeding to {next_layer} layer")
             return None, result
 
         self._log_layer_acceptance(layer_name, result)
@@ -324,8 +373,7 @@ class IntentRecognizer:
         if self.test_mode:
             response = ""
         elif not response and self.enable_llm and layer != 'llm':
-            if self.enable_logging:
-                self.logger.info("  - Using LLM for response generation")
+            self.logger.info("  - Using LLM for response generation")
 
             try:
                 llm_result = self.llm_recognizer.recognize(
@@ -335,16 +383,13 @@ class IntentRecognizer:
                 response = llm_result.response
 
                 if not response or not response.strip():
-                    if self.enable_logging:
-                        self.logger.warning("LLM returned empty response, using fallback")
+                    self.logger.warning("LLM returned empty response, using fallback")
                     response = self._generate_simple_response(result.intent)
             except json.JSONDecodeError as e:
-                if self.enable_logging:
-                    self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
+                self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
                 response = self._generate_simple_response(result.intent)
             except Exception as e:
-                if self.enable_logging:
-                    self.logger.warning(f"LLM response generation failed: {e}, using fallback")
+                self.logger.warning(f"LLM response generation failed: {e}, using fallback")
                 response = self._generate_simple_response(result.intent)
         elif not response and not self.test_mode:
             response = self._generate_simple_response(result.intent)
@@ -436,7 +481,7 @@ class IntentRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get comprehensive statistics from the pipeline"""
-        avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) if self.stats['avg_confidence'] else 0.0
+        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
         total = self.stats['total_queries']
 
         stats_dict = {
@@ -473,63 +518,29 @@ class IntentRecognizer:
             try:
                 stats_dict['semantic_layer'] = self.semantic_recognizer.get_statistics()
             except Exception as e:
-                if self.enable_logging:
-                    self.logger.warning(f"Could not get semantic statistics: {e}")
+                self.logger.warning(f"Could not get semantic statistics: {e}")
 
         if self.enable_llm and self.llm_recognizer:
             try:
                 stats_dict['llm_layer'] = self.llm_recognizer.get_statistics()
             except Exception as e:
-                if self.enable_logging:
-                    self.logger.warning(f"Could not get LLM statistics: {e}")
+                self.logger.warning(f"Could not get LLM statistics: {e}")
 
         return stats_dict
 
     def reset_statistics(self) -> None:
         """Reset all statistics counters across all layers"""
-        from collections import defaultdict
-
         # Reset main pipeline statistics
-        self.stats = {
-            'total_queries': 0,
-            'algorithmic_used': 0,
-            'semantic_used': 0,
-            'llm_used': 0,
-            'intent_distribution': defaultdict(int),
-            'avg_confidence': [],
-            'layer_configuration': self.stats['layer_configuration']
-        }
+        StatisticsHelper.reset_stats(self.stats, preserve_fields=['layer_configuration'])
 
         # Reset algorithmic layer statistics
         if self.enable_algorithmic and self.algorithmic_recognizer:
-            self.algorithmic_recognizer.stats = {
-                'total_queries': 0,
-                'intent_distribution': defaultdict(int),
-                'avg_confidence': [],
-                'intents_evaluated': [],
-                'patterns_evaluated': []
-            }
+            StatisticsHelper.reset_stats(self.algorithmic_recognizer.stats)
 
         # Reset semantic layer statistics
         if self.enable_semantic and self.semantic_recognizer:
-            self.semantic_recognizer.stats = {
-                'total_queries': 0,
-                'intent_distribution': {},
-                'avg_confidence': []
-            }
+            StatisticsHelper.reset_stats(self.semantic_recognizer.stats)
 
         # Reset LLM layer statistics
         if self.enable_llm and self.llm_recognizer:
-            llm_provider = self.llm_recognizer.stats.get("llm_provider", "ollama" if self.use_local_llm else "openai")
-            self.llm_recognizer.stats = {
-                "total_queries": 0,
-                "successful_queries": 0,
-                "failed_queries": 0,
-                "intent_distribution": {},
-                "avg_confidence": [],
-                "total_tokens_used": 0,
-                "total_api_calls": 0,
-                "llm_provider": llm_provider,
-                "response_generation_count": 0,
-                "classification_count": 0
-            }
+            StatisticsHelper.reset_stats(self.llm_recognizer.stats, preserve_fields=['llm_provider'])

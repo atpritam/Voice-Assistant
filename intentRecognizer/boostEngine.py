@@ -5,6 +5,7 @@ Current Domain: Pizza Restaurant Customer Service
 
 import logging, os, json
 from typing import Dict, Set
+from .intent_recognizer import ConditionalLogger
 
 # ============================================================================
 # BOOST VALUES - Positive adjustments to intent scores
@@ -55,8 +56,7 @@ class BoostRuleEngine:
         self.intent_critical_keywords = intent_critical_keywords
         self.synonyms = synonyms
         self.enable_logging = enable_logging
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
+        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
         self.res_info = self._load_res_info()
         self.menu_items = self._extract_menu_items(self.res_info) if self.res_info else set()
 
@@ -79,8 +79,7 @@ class BoostRuleEngine:
             with open(res_info_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            if self.enable_logging:
-                self.logger.warning(f"Could not load res_info: {e}")
+            self.logger.warning(f"Could not load res_info: {e}")
             return {}
 
     def _extract_menu_items(self, res_info: Dict) -> Set[str]:

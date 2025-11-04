@@ -5,25 +5,21 @@ Compares performance and accuracy with and without boost engine
 
 import sys
 import os
-import time
 import traceback
-import logging
-from typing import Dict, List, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from intentRecognizer.intent_recognizer import IntentRecognizer
-from test.data import get_test_dataset
+from typing import Dict, List
 from test.common import (
     CONFIG,
-    RecognizerFactory,
+    BaseTestRunner,
+    ResultPrinter,
     format_time,
     print_section
 )
-from utils.logger_config import setup_logging
 
 
-class BoostEngineTestRunner:
+class BoostEngineTestRunner(BaseTestRunner):
     """Run boost engine comparative analysis"""
 
     CONFIGS = [
@@ -35,9 +31,8 @@ class BoostEngineTestRunner:
 
     def __init__(self, custom_data=None):
         """Initialize test runner"""
-        setup_logging(level=logging.INFO)
-        self.factory = RecognizerFactory()
-        self.test_data = custom_data if custom_data is not None else get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)
+        super().__init__(custom_data)
+        self.printer = ResultPrinter()
 
     def run(self) -> None:
         """Run boost engine comparative analysis"""
@@ -49,11 +44,7 @@ class BoostEngineTestRunner:
         """Print test header with configuration info"""
         print_section("BOOST ENGINE COMPARATIVE ANALYSIS")
         print(f"Comparing Algorithmic Only and Full Pipeline with/without Boost Engine")
-        print(f"Semantic Model: {CONFIG.semantic_model}")
-        print(f"LLM Model: {CONFIG.llm_model_name}")
-        mode = "TEST MODE (intent recognition only)" if CONFIG.test_mode else "Test Mode Disabled"
-        print(f"Mode: {mode}")
-        print(f"Edge Cases Included: {CONFIG.include_edge_cases}")
+        self.printer.print_config_info()  # Don't show specific layer flags for boost test
         print(f"Test Dataset Size: {len(self.test_data)} queries\n")
 
     def _run_all_configs(self) -> List[Dict]:
@@ -71,41 +62,14 @@ class BoostEngineTestRunner:
                 rec = self.factory.create(algo, semantic, llm, log=False, boost=boost)
                 self.factory.warmup(rec, semantic, llm, CONFIG.use_local_llm)
                 ev, duration = self._run_evaluation(rec)
-
                 stats = rec.get_statistics()
-                llm_stats = stats.get('llm_layer', {})
-                tokens = llm_stats.get('total_tokens_used', 0)
-                llm_calls = llm_stats.get('total_api_calls', 0)
 
-                results.append({
-                    "name": name,
-                    "boost": boost,
-                    "acc": ev["accuracy"],
-                    "correct": ev["correct"],
-                    "unknown": sum(1 for r in ev.get("detailed_results", []) if r["predicted"] == "unknown"),
-                    "total": ev["total_queries"],
-                    "time": duration,
-                    "qps": len(self.test_data) / duration,
-                    "algo": ev.get("algo_used_count", 0),
-                    "sem": ev.get("semantic_used_count", 0),
-                    "llm": ev.get("llm_used_count", 0),
-                    "high_conf": ev.get("high_confidence_count", 0),
-                    "medium_conf": ev.get("medium_confidence_count", 0),
-                    "low_conf": ev.get("low_confidence_count", 0),
-                    "algo_acc": ev.get("algo_accuracy", 0),
-                    "sem_acc": ev.get("semantic_accuracy", 0),
-                    "llm_acc": ev.get("llm_accuracy", 0),
-                    "tokens": tokens,
-                    "llm_calls": llm_calls
-                })
+                result = self._get_result_dict(ev, name, duration, stats, boost)
+                results.append(result)
 
-                print(f"✓ Accuracy: {ev['accuracy']:.2%} ({ev['correct']}/{ev['total_queries']} correct)")
-                print(f"  Time: {format_time(duration)} | Avg: {format_time(duration/len(self.test_data))} | "
-                      f"{len(self.test_data)/duration:.1f} q/s")
-                print(f"  Layers Used - Algo: {ev.get('algo_used_count', 0)}, "
-                      f"Semantic: {ev.get('semantic_used_count', 0)}, LLM: {ev.get('llm_used_count', 0)}")
-                if tokens > 0:
-                    print(f"  Tokens: {tokens:,} ({tokens/len(self.test_data):.1f} avg/query)")
+                self.printer.print_quick_summary(
+                    ev, duration, len(self.test_data), result['tokens']
+                )
 
             except Exception as e:
                 print(f"✗ {name} failed: {e}")
@@ -117,21 +81,6 @@ class BoostEngineTestRunner:
                 })
 
         return results
-
-    def _run_evaluation(self, recognizer: IntentRecognizer) -> Tuple[Dict, float]:
-        """
-        Run evaluation and return results with duration
-
-        Args:
-            recognizer: IntentRecognizer instance
-
-        Returns:
-            Tuple of (evaluation_dict, duration_seconds)
-        """
-        start = time.time()
-        ev = recognizer.evaluate(self.test_data)
-        duration = time.time() - start
-        return ev, duration
 
     def _print_impact_analysis(self, results: List[Dict]) -> None:
         """

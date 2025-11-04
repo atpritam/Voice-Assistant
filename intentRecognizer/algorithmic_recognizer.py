@@ -13,7 +13,7 @@ from collections import defaultdict
 import math
 import Levenshtein
 
-from .intent_recognizer import IntentRecognizerUtils
+from .intent_recognizer import IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
 from .boostEngine import BoostRuleEngine
 
 # SIMILARITY CALCULATION WEIGHTS
@@ -310,9 +310,7 @@ class AlgorithmicRecognizer:
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.min_confidence = min_confidence
         self.enable_logging = enable_logging
-
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
+        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
 
@@ -334,13 +332,10 @@ class AlgorithmicRecognizer:
         self._normalized_patterns_cache = {}
         self._preprocess_patterns()
 
-        self.stats = {
-            'total_queries': 0,
-            'intent_distribution': defaultdict(int),
-            'avg_confidence': [],
-            'intents_evaluated': [],
-            'patterns_evaluated': [],
-        }
+        self.stats = StatisticsHelper.init_base_stats(
+            intents_evaluated=[],
+            patterns_evaluated=[]
+        )
 
     def _preprocess_patterns(self):
         """Preprocess all patterns for faster matching"""
@@ -458,8 +453,7 @@ class AlgorithmicRecognizer:
         if not candidate_intents:
             candidate_intents = [(intent, 0.0) for intent in self.patterns.keys() if intent != 'unknown']
 
-        if self.enable_logging:
-            self.logger.debug(f"Candidate intents: {[intent for intent, _ in candidate_intents]}")
+        self.logger.debug(f"Candidate intents: {[intent for intent, _ in candidate_intents]}")
 
         intent_scores = {}
         intents_processed = 0
@@ -596,15 +590,14 @@ class AlgorithmicRecognizer:
         self.stats['intent_distribution'][intent_name] += 1
         self.stats['avg_confidence'].append(similarity)
 
-        if self.enable_logging:
-            if boost_info:
-                self.logger.info(
-                    f"{intent_name} ({similarity:.3f}, {confidence_level}, {method} [{boost_info}])"
-                )
-            else:
-                self.logger.info(
-                    f"{intent_name} ({similarity:.3f}, {confidence_level}, {method})"
-                )
+        if boost_info:
+            self.logger.info(
+                f"{intent_name} ({similarity:.3f}, {confidence_level}, {method} [{boost_info}])"
+            )
+        else:
+            self.logger.info(
+                f"{intent_name} ({similarity:.3f}, {confidence_level}, {method})"
+            )
 
         return AlgorithmicResult(
             intent=intent_name,
@@ -617,9 +610,9 @@ class AlgorithmicRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get recognizer statistics"""
-        avg_conf = sum(self.stats['avg_confidence']) / len(self.stats['avg_confidence']) if self.stats['avg_confidence'] else 0.0
-        avg_intents_checked = sum(self.stats['intents_evaluated']) / len(self.stats['intents_evaluated']) if self.stats['intents_evaluated'] else 0
-        avg_patterns_checked = sum(self.stats['patterns_evaluated']) / len(self.stats['patterns_evaluated']) if self.stats['patterns_evaluated'] else 0
+        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
+        avg_intents_checked = StatisticsHelper.calculate_average(self.stats['intents_evaluated'])
+        avg_patterns_checked = StatisticsHelper.calculate_average(self.stats['patterns_evaluated'])
 
         return {
             'total_queries_processed': self.stats['total_queries'],

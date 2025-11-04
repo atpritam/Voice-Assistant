@@ -5,18 +5,16 @@ Generates confusion matrix and error analysis for intent recognition
 
 import sys
 import os
-import logging
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from test.data import get_test_dataset
 from test.common import (
     CONFIG,
     RecognizerFactory,
+    ResultPrinter,
     print_section
 )
-from utils.logger_config import setup_logging
 
 
 class ConfusionMatrixAnalyzer:
@@ -141,8 +139,13 @@ class ConfusionMatrixTestRunner:
 
     def __init__(self, test_data=None):
         """Initialize test runner"""
+        import logging
+        from test.data import get_test_dataset
+        from utils.logger_config import setup_logging
+
         setup_logging(level=logging.WARNING)
         self.factory = RecognizerFactory()
+        self.printer = ResultPrinter()
         self.test_data = test_data if test_data is not None else get_test_dataset(include_edge_cases=CONFIG.include_edge_cases)
 
     def run(self) -> ConfusionMatrixAnalyzer:
@@ -180,7 +183,7 @@ class ConfusionMatrixTestRunner:
         cm = ConfusionMatrixAnalyzer(all_intents)
 
         # Run predictions
-        print(f"\nTest Dataset Size: {len(self.test_data)} queries\n")
+        print(f"Test Dataset Size: {len(self.test_data)} queries\n")
         for query, expected_intent in self.test_data:
             result = recognizer.recognize_intent(query)
             cm.add_prediction(expected_intent, result.intent)
@@ -195,14 +198,11 @@ class ConfusionMatrixTestRunner:
     def _print_header(self) -> None:
         """Print test header with configuration info"""
         print_section("CONFUSION MATRIX TEST")
-        print(f"\nConfiguration:")
-        print(f"  Algorithmic: {CONFIG.enable_algo}")
-        print(f"  Semantic: {CONFIG.enable_semantic}")
-        print(f"  LLM: {CONFIG.enable_llm}")
-        print(f"  LLM Backend: {'Ollama' if CONFIG.use_local_llm else 'OpenAI'}")
-        print(f"  LLM Model: {CONFIG.llm_model_name}")
-        print(f"  Boost Engine: {CONFIG.use_boost_engine}")
-        print(f"  Edge Cases: {CONFIG.include_edge_cases}")
+        self.printer.print_config_info(
+            CONFIG.enable_algo,
+            CONFIG.enable_semantic,
+            CONFIG.enable_llm
+        )
 
 
 def run_confusion_matrix_test(

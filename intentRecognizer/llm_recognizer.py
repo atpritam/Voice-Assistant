@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
 
 DEFAULT_MODEL = "gpt-5-nano"
 INVALID_INTENT_CONFIDENCE_PENALTY = 0.7
@@ -67,6 +67,7 @@ class LLMRecognizer:
         self.test_mode = test_mode
         self.ollama_base_url = ollama_base_url
         self.response_generation_threshold = response_generation_threshold
+        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
 
         if not test_mode:
             if res_info:
@@ -74,23 +75,17 @@ class LLMRecognizer:
             else:
                 self.res_info = self._load_res_info(res_info_file)
 
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
-
         self._initialize_client()
 
-        self.stats = {
-            "total_queries": 0,
-            "successful_queries": 0,
-            "failed_queries": 0,
-            "intent_distribution": {},
-            "avg_confidence": [],
-            "total_tokens_used": 0,
-            "total_api_calls": 0,
-            "llm_provider": "ollama" if use_local_llm else "openai",
-            "response_generation_count": 0,
-            "classification_count": 0
-        }
+        self.stats = StatisticsHelper.init_base_stats(
+            successful_queries=0,
+            failed_queries=0,
+            total_tokens_used=0,
+            total_api_calls=0,
+            llm_provider="ollama" if use_local_llm else "openai",
+            response_generation_count=0,
+            classification_count=0
+        )
 
     def _load_res_info(self, res_info_file: str = None) -> Dict:
         """Load restaurant information from JSON file"""
@@ -102,12 +97,10 @@ class LLMRecognizer:
             with open(res_info_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            if self.enable_logging:
-                self.logger.error(f" Info file not found: {res_info_file}")
+            self.logger.error(f" Info file not found: {res_info_file}")
             return {}
         except json.JSONDecodeError as e:
-            if self.enable_logging:
-                self.logger.error(f" Invalid JSON in info file: {e}")
+            self.logger.error(f" Invalid JSON in info file: {e}")
             return {}
 
     def _initialize_client(self):
@@ -119,9 +112,8 @@ class LLMRecognizer:
                 response = requests.get(f"{self.ollama_base_url}/api/tags")
                 if response.status_code != 200:
                     raise ConnectionError(f"Cannot connect to Ollama at {self.ollama_base_url}")
-                if self.enable_logging:
-                    self.logger.info(f"Connected to local Ollama at {self.ollama_base_url}")
-                    self.logger.info(f"Using model: {self.model}")
+                self.logger.info(f"Connected to local Ollama at {self.ollama_base_url}")
+                self.logger.info(f"Using model: {self.model}")
             except ImportError:
                 raise ImportError("requests library required for Ollama. Install: pip install requests")
             except Exception as e:
@@ -132,8 +124,7 @@ class LLMRecognizer:
                 raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
             from openai import OpenAI
             self.client = OpenAI(api_key=self.api_key)
-            if self.enable_logging:
-                self.logger.info(f"Using OpenAI API with model: {self.model}")
+            self.logger.info(f"Using OpenAI API with model: {self.model}")
 
     def recognize(
         self,
@@ -186,39 +177,35 @@ class LLMRecognizer:
 
             if not self.test_mode:
                 if not result.response or result.response.strip() == "":
-                    if self.enable_logging:
-                        self.logger.error(f" Empty response generated for query: '{query}'")
+                    self.logger.error(f" Empty response generated for query: '{query}'")
                     result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
 
             self.stats["successful_queries"] += 1
             self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
             self.stats["avg_confidence"].append(result.confidence)
 
-            if self.enable_logging:
-                provider = "Ollama" if self.use_local_llm else "OpenAI"
-                mode_str = result.mode.upper()
+            provider = "Ollama" if self.use_local_llm else "OpenAI"
+            mode_str = result.mode.upper()
 
-                if not use_response_mode:
-                    self.logger.info(
-                        f"[{provider}] [{mode_str}] Classified as '{result.intent}' "
-                        f"({result.confidence:.3f}, {result.confidence_level})"
-                    )
+            if not use_response_mode:
+                self.logger.info(
+                    f"[{provider}] [{mode_str}] Classified as '{result.intent}' "
+                    f"({result.confidence:.3f}, {result.confidence_level})"
+                )
 
-                if not self.test_mode and result.generated_response:
-                    preview = result.generated_response[:50] + "..." if len(
-                        result.generated_response) > 50 else result.generated_response
-                    self.logger.info(f"Response: '{preview}'")
+            if not self.test_mode and result.generated_response:
+                preview = result.generated_response[:50] + "..." if len(
+                    result.generated_response) > 50 else result.generated_response
+                self.logger.info(f"Response: '{preview}'")
 
             return result
 
         except json.JSONDecodeError as e:
-            if self.enable_logging:
-                self.logger.error(f" JSON parsing error: {e}")
+            self.logger.error(f" JSON parsing error: {e}")
             self.stats["failed_queries"] += 1
             return self._get_fallback_result(f"JSON parsing failed: {str(e)}", recognized_intent, original_conf)
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f" API error: {e}")
+            self.logger.error(f" API error: {e}")
             self.stats["failed_queries"] += 1
             return self._get_fallback_result(f"API error: {str(e)}", recognized_intent, original_conf)
 
@@ -435,8 +422,7 @@ Return ONLY valid JSON (no markdown):
             generated_response = result.get("response", "")
             if not generated_response.strip():
                 generated_response = "I apologize, but I'm having trouble processing your request right now."
-                if self.enable_logging:
-                    self.logger.warning("[LLM] Generated empty response")
+                self.logger.warning("[LLM] Generated empty response")
             response_text = self._sanitize_response(generated_response)
 
         return LLMResult(
@@ -518,7 +504,7 @@ Return ONLY valid JSON (no markdown):
 
     def get_statistics(self) -> dict:
         """Get LLM recognizer statistics with calculated metrics."""
-        avg_conf = sum(self.stats["avg_confidence"]) / len(self.stats["avg_confidence"]) if self.stats.get("avg_confidence") else 0.0
+        avg_conf = StatisticsHelper.calculate_average(self.stats["avg_confidence"])
         success_rate = self.stats["successful_queries"] / self.stats["total_queries"] if self.stats.get("total_queries", 0) > 0 else 0.0
 
         return {

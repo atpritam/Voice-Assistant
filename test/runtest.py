@@ -42,7 +42,7 @@ def parse_arguments() -> argparse.Namespace:
         epilog="""
 Examples:
   python -m test.runtest                                                    # Comprehensive test with all layers
-  python -m test.runtest "where is my pizza?" --exp delivery                # Single query test (requires --exp)
+  python -m test.runtest "query" --exp intent                               # Single query test (requires expected intent)
   python -m test.runtest -c                                                 # Compare all pipeline configurations
   python -m test.runtest -b                                                 # Analyze boost engine impact
   python -m test.runtest -mx                                                # Generate confusion matrix
@@ -127,26 +127,16 @@ def configure_from_args(args: argparse.Namespace) -> None:
     Args:
         args: Parsed arguments
     """
-    # LLM backend
-    CONFIG.use_local_llm = False if args.openai else True
-
-    # edge cases
+    CONFIG.use_local_llm = not args.openai
     CONFIG.include_edge_cases = not args.no_edge
 
     # Set configuration based on test mode
-    if args.boost:
-        pass
-    elif args.comparative:
-        CONFIG.use_boost_engine = not args.no_boost
-    elif args.matrix:
+    if not (args.boost or args.comparative):
         CONFIG.enable_algo = not args.no_algo
         CONFIG.enable_semantic = not args.no_semantic
         CONFIG.enable_llm = not args.no_llm
-        CONFIG.use_boost_engine = not args.no_boost
-    else:
-        CONFIG.enable_algo = not args.no_algo
-        CONFIG.enable_semantic = not args.no_semantic
-        CONFIG.enable_llm = not args.no_llm
+
+    if not args.boost:
         CONFIG.use_boost_engine = not args.no_boost
 
 
