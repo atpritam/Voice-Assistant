@@ -34,6 +34,7 @@ HOURS_INQUIRY_BOOST = 0.25
 # PENALTY VALUES - Negative adjustments to intent scores
 
 ORDER_DELIVERY_PENALTY = 0.15
+ORDER_ESCALATION_PENALTY = 0.15
 DELIVERY_COMPLAINT_PENALTY = 0.25
 MENU_INQUIRY_PENALTY = 0.15
 ORDER_INQUIRY_PENALTY = 0.15
@@ -132,7 +133,7 @@ class BoostRuleEngine:
         self._apply_negative_sentiment_boost(query_words, intent_scores)
         self._apply_price_size_boost(query_words, intent_scores)
         self._apply_time_location_boost(query_text, query_words, intent_scores)
-        self._apply_escalation_boost(query_words, intent_scores)
+        self._apply_escalation_boost(query_text, intent_scores)
         self._apply_delivery_status_boost(query_words, intent_scores)
         self._apply_sarcasm_boost(query_words, intent_scores)
         self._apply_menu_item_ordering_boost(query_words, intent_scores)
@@ -235,19 +236,25 @@ class BoostRuleEngine:
             self._boost_intent('hours_location', intent_scores, TIME_LOCATION_BOOST, "Time/location boost")
             self._penalty_intent('order', intent_scores, ORDER_DELIVERY_PENALTY, "Order penalty for time query")
 
-    def _apply_escalation_boost(self, query_words: Set[str], intent_scores: Dict):
+    def _apply_escalation_boost(self, query: str, intent_scores: Dict):
         """
         RULE 5: Escalation keywords strongly indicate complaint
         This rule is highly universal across customer service domains.
         """
-        escalation_keywords = {
-            'refund', 'manager', 'supervisor', 'speak to', 'talk to',
-            'compensation', 'money back', 'unacceptable', 'ridiculous'
-        }
-        query_norm = ' '.join(query_words)
+        direct_escalation = {'refund', 'compensation', 'money back', 'chargeback'}
+        escalation_phrases = {'speak to', 'talk to', 'get me', 'connect me', 'transfer me'}
+        authority_figures = {'manager', 'supervisor', 'boss', 'higher up'}
 
-        if any(keyword in query_norm for keyword in escalation_keywords):
+        has_direct_escalation = any(phrase in query for phrase in direct_escalation)
+
+        # escalation - phrase and authority figure combination
+        has_escalation_phrase = any(phrase in query for phrase in escalation_phrases)
+        has_authority_figure = any(authority in query for authority in authority_figures)
+        is_hard_escalation = has_escalation_phrase and has_authority_figure
+
+        if has_direct_escalation or is_hard_escalation:
             self._boost_intent('complaint', intent_scores, ESCALATION_BOOST, "Escalation boost")
+            self._penalty_intent('order', intent_scores, ORDER_ESCALATION_PENALTY, "Order penalty for escalation query")
 
 
     def _apply_delivery_status_boost(self, query_words: Set[str], intent_scores: Dict):

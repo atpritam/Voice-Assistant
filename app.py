@@ -39,32 +39,30 @@ ENABLE_ALGORITHMIC = True
 ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
+MIN_CONFIDENCE = 0.5
 ALGORITHMIC_THRESHOLD = 0.65
 SEMANTIC_THRESHOLD = 0.5
 
-SEMANTIC_MODEL = "all-mpnet-base-v2" # all-MiniLM-L6-v2"
+SEMANTIC_MODEL = "all-mpnet-base-v2" # "all-MiniLM-L6-v2"
 
 USE_LOCAL_LLM = True
-LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" if USE_LOCAL_LLM else "gpt-5-nano"
-OLLAMA_BASE_URL = "http://localhost:11434"
+LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # "mistral:7b"
+CLOUD_LLM_MODEL = "gpt-5-nano" # "gpt-4-mini"
 
 ENABLE_LOGGING = True
-MIN_CONFIDENCE = 0.5
-
 TEST_MODE = False
 
 # TTS Configuration
-ENABLE_TTS = True
 TTS_MODEL = "tts_models/en/ljspeech/vits"
 TTS_OUTPUT_DIR = "./static/audio"
 
 # ASR Configuration
-ENABLE_ASR = True
 ASR_MODEL = "tiny.en"
 ENABLE_AUDIO_PREPROCESSING = True
 
 def initialize_intent_recognizer():
     """Initialize intent recognizer with error handling"""
+    llm_model = LOCAL_LLM_MODEL if USE_LOCAL_LLM else CLOUD_LLM_MODEL
     try:
         recognizer = IntentRecognizer(
             enable_logging=ENABLE_LOGGING,
@@ -74,12 +72,11 @@ def initialize_intent_recognizer():
             algorithmic_threshold=ALGORITHMIC_THRESHOLD,
             semantic_threshold=SEMANTIC_THRESHOLD,
             semantic_model=SEMANTIC_MODEL,
-            llm_model=LLM_MODEL,
+            llm_model=llm_model,
             device="auto", # "cuda" , "cpu" , "auto" (for semantic model)
             min_confidence=MIN_CONFIDENCE,
             test_mode=TEST_MODE,
-            use_local_llm=USE_LOCAL_LLM,
-            ollama_base_url=OLLAMA_BASE_URL,
+            use_local_llm=USE_LOCAL_LLM
         )
 
         return recognizer
@@ -143,7 +140,7 @@ def perform_system_warmup():
         except Exception as e:
             logger.warning(f"Warning: Intent recognizer warmup query failed: {e}")
 
-    if ENABLE_TTS and tts_service:
+    if tts_service:
         try:
             warmup_audio = tts_service.generate_speech("System warmup", output_filename="warmup.wav")
             if warmup_audio and os.path.exists(warmup_audio):
@@ -158,7 +155,7 @@ def perform_system_warmup():
 
 def generate_tts_audio(tts, response):
     """Generate TTS audio and return URL"""
-    if not (ENABLE_TTS and tts and response):
+    if not (tts and response):
         return None
 
     try:
@@ -244,7 +241,7 @@ def handle_disconnect():
 @socketio.on('voice_input')
 def handle_voice_input(data):
     """Handle incoming voice audio for transcription and processing"""
-    if not ENABLE_ASR or not asr_service:
+    if not asr_service:
         emit('error', {'message': 'ASR service not available'})
         return
 
@@ -322,10 +319,10 @@ def get_statistics():
     stats.pop('intent_distribution', None)
     stats.pop('average_confidence', None)
 
-    if ENABLE_TTS and tts_service:
+    if tts_service:
         stats['tts'] = tts_service.get_statistics()
 
-    if ENABLE_ASR and asr_service:
+    if asr_service:
         stats['asr'] = asr_service.get_statistics()
 
     organized = {
@@ -344,10 +341,8 @@ def get_statistics():
 
 # System Start
 intent_recognizer = initialize_intent_recognizer()
-if ENABLE_TTS:
-    tts_service = initialize_tts_service()
-if ENABLE_ASR:
-    asr_service = initialize_asr_service()
+tts_service = initialize_tts_service()
+asr_service = initialize_asr_service()
 
 layers = []
 if ENABLE_ALGORITHMIC:

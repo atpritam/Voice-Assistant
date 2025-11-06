@@ -19,10 +19,10 @@ from utils.statistics import StatisticsHelper
 HIGH_CONFIDENCE_THRESHOLD = 0.8
 MEDIUM_CONFIDENCE_THRESHOLD = 0.6
 DEFAULT_MIN_CONFIDENCE = 0.5
-DEFAULT_ALGORITHMIC_THRESHOLD = 0.6
+DEFAULT_ALGORITHMIC_THRESHOLD = 0.65
 DEFAULT_SEMANTIC_THRESHOLD = 0.5
 DEFAULT_LLM_MODEL = "gpt-5-nano"
-DEFAULT_SEMANTIC_MODEL = "all-MiniLM-L6-v2"
+DEFAULT_SEMANTIC_MODEL = "all-mpnet-base-v2"
 
 
 @dataclass
@@ -98,7 +98,7 @@ class IntentRecognizer:
             llm_model: str = DEFAULT_LLM_MODEL,
             test_mode: bool = False,
             use_local_llm: bool = False,
-            ollama_base_url: str = None,
+            ollama_base_url: str = "http://localhost:11434",
     ):
         if not (enable_algorithmic or enable_semantic or enable_llm):
             raise ValueError("Invalid configuration: At least one layer must be enabled.")

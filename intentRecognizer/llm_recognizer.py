@@ -18,9 +18,6 @@ from utils.statistics import StatisticsHelper
 from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 DEFAULT_MODEL = "gpt-5-nano"
-INVALID_INTENT_CONFIDENCE_PENALTY = 0.7
-FALLBACK_CONFIDENCE = 0.4
-ERROR_FALLBACK_CONFIDENCE = 0.3
 RESPONSE_MODE_THRESHOLD = 0.65
 
 # System Prompt Constants
@@ -413,7 +410,7 @@ Return ONLY valid JSON (no markdown):
 
             if intent not in valid_intents:
                 intent = "unknown"
-                confidence = max(FALLBACK_CONFIDENCE, confidence * INVALID_INTENT_CONFIDENCE_PENALTY)
+                confidence = confidence * 0.7
                 explanation = f"Invalid intent detected, defaulting to unknown. {explanation}"
 
             confidence_level = IntentRecognizerUtils.determine_confidence_level(confidence)
@@ -445,9 +442,6 @@ Return ONLY valid JSON (no markdown):
 
     def _sanitize_response(self, text: str) -> str:
         """Remove TTS-unfriendly characters from response."""
-
-        if not text:
-            return text
 
         def format_currency(match):
             dollars = int(match.group(1))
@@ -494,7 +488,7 @@ Return ONLY valid JSON (no markdown):
 
         return LLMResult(
             intent="unknown",
-            confidence=ERROR_FALLBACK_CONFIDENCE,
+            confidence=0.0,
             confidence_level="low",
             explanation=f"LLM API failed: {error_msg}",
             generated_response="",

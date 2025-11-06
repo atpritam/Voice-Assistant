@@ -184,13 +184,14 @@ ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
 # Confidence thresholds
-ALGORITHMIC_THRESHOLD = 0.6
+ALGORITHMIC_THRESHOLD = 0.65
 SEMANTIC_THRESHOLD = 0.5
 
 # Model selection
 SEMANTIC_MODEL = "all-MiniLM-L6-v2" # Options: all-mpnet-base-v2
 USE_LOCAL_LLM = True  # True for Ollama, False for OpenAI
-LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"  # or "gpt-5-nano" for OpenAI
+LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # Options: "mistral:7b"
+CLOUD_LLM_MODEL = "gpt-5-nano" # Options: "gpt-4-mini"
 ```
 
 ### TTS Configuration
