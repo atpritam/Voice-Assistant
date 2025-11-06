@@ -51,7 +51,7 @@ class TTSService:
 
         self.tts = None
         self.stats = StatisticsHelper.init_base_stats(
-            service='tts',
+            service='asr-tts',
             successful_generations=0,
             failed_generations=0
         )
@@ -157,17 +157,13 @@ class TTSService:
 
     def get_statistics(self) -> dict:
         """Get TTS service statistics"""
-        success_rate = StatisticsHelper.calculate_success_rate(
-            self.stats['successful_generations'],
-            self.stats['total_requests']
+        return StatisticsHelper.build_stats_response(
+            self.stats,
+            success_rate=StatisticsHelper.calculate_success_rate(
+                self.stats['successful_generations'],
+                self.stats['total_requests']
+            )
         )
-
-        return {
-            'total_requests': self.stats['total_requests'],
-            'successful_generations': self.stats['successful_generations'],
-            'failed_generations': self.stats['failed_generations'],
-            'success_rate': success_rate,
-        }
 
     def reset_statistics(self):
         """Reset TTS service statistics"""

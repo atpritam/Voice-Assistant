@@ -40,8 +40,6 @@ class RecognitionResult:
 
 class IntentRecognizerUtils:
     """Shared utilities for all recognizer layers"""
-
-
     @staticmethod
     def determine_confidence_level(confidence: float) -> str:
         """Determine confidence level based on thresholds"""
@@ -380,7 +378,7 @@ class IntentRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get comprehensive statistics from the pipeline"""
-        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
+        avg_conf = round(StatisticsHelper.calculate_average(self.stats['avg_confidence']), 3)
         total = self.stats['total_queries']
 
         stats_dict = {
@@ -395,15 +393,15 @@ class IntentRecognizer:
             'layer_usage': {
                 'algorithmic': {
                     'count': self.stats['algorithmic_used'],
-                    'percentage': (self.stats['algorithmic_used'] / total * 100) if total > 0 else 0
+                    'percentage': round((self.stats['algorithmic_used'] / total * 100), 3) if total > 0 else 0.0
                 },
                 'semantic': {
                     'count': self.stats['semantic_used'],
-                    'percentage': (self.stats['semantic_used'] / total * 100) if total > 0 else 0
+                    'percentage': round((self.stats['semantic_used'] / total * 100), 3) if total > 0 else 0.0
                 },
                 'llm': {
                     'count': self.stats['llm_used'],
-                    'percentage': (self.stats['llm_used'] / total * 100) if total > 0 else 0
+                    'percentage': round((self.stats['llm_used'] / total * 100), 3) if total > 0 else 0.0
                 }
             },
             'intent_distribution': dict(self.stats['intent_distribution']),

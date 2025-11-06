@@ -223,6 +223,6 @@ class AudioPreprocessor:
 
         return {
             'total_processed': self.stats['total_processed'],
-            'total_processing_time': self.stats['total_processing_time'],
-            'avg_processing_time_ms': avg_processing_time * 1000,
+            'total_processing_time': round(self.stats['total_processing_time'], 3),
+            'avg_processing_time_ms': round(avg_processing_time * 1000, 3),
         }

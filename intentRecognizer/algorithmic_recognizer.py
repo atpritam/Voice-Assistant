@@ -594,14 +594,9 @@ class AlgorithmicRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get recognizer statistics"""
-        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
-        avg_intents_checked = StatisticsHelper.calculate_average(self.stats['intents_evaluated'])
-        avg_patterns_checked = StatisticsHelper.calculate_average(self.stats['patterns_evaluated'])
-
-        return {
-            'total_queries_processed': self.stats['total_queries'],
-            'intent_distribution': dict(self.stats['intent_distribution']),
-            'average_confidence': avg_conf,
-            'avg_intents_evaluated_per_query': avg_intents_checked,
-            'avg_patterns_evaluated_per_query': avg_patterns_checked,
-        }
+        return StatisticsHelper.build_stats_response(
+            self.stats,
+            average_confidence=StatisticsHelper.calculate_average(self.stats['avg_confidence']),
+            avg_intents_evaluated_per_query=StatisticsHelper.calculate_average(self.stats['intents_evaluated']),
+            avg_patterns_evaluated_per_query=StatisticsHelper.calculate_average(self.stats['patterns_evaluated'])
+        )

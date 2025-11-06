@@ -49,7 +49,7 @@ class ASRService:
         self.preprocessor = None
 
         self.stats = StatisticsHelper.init_base_stats(
-            service='asr',
+            service='asr-tts',
             successful_transcriptions=0,
             failed_transcriptions=0,
             total_processing_time=0.0,
@@ -240,31 +240,25 @@ class ASRService:
 
     def get_statistics(self) -> dict:
         """Get ASR service statistics"""
-        success_rate = StatisticsHelper.calculate_success_rate(
-            self.stats['successful_transcriptions'],
-            self.stats['total_requests']
-        )
-
         avg_total_time = (
             self.stats['total_processing_time'] / self.stats['successful_transcriptions']
             if self.stats['successful_transcriptions'] > 0
             else 0.0
         )
 
-        stats_dict = {
-            'total_requests': self.stats['total_requests'],
-            'successful_transcriptions': self.stats['successful_transcriptions'],
-            'failed_transcriptions': self.stats['failed_transcriptions'],
-            'success_rate': success_rate,
-            'total_processing_time': self.stats['total_processing_time'],
-            'avg_total_processing_time_ms': avg_total_time * 1000,
+        computed_fields = {
+            'success_rate': StatisticsHelper.calculate_success_rate(
+                self.stats['successful_transcriptions'],
+                self.stats['total_requests']
+            ),
+            'avg_total_processing_time_ms': round(avg_total_time * 1000, 3),
             'preprocessing_enabled': self.enable_preprocessing
         }
 
         if self.enable_preprocessing and self.preprocessor:
-            stats_dict['preprocessor'] = self.preprocessor.get_statistics()
+            computed_fields['preprocessor'] = self.preprocessor.get_statistics()
 
-        return stats_dict
+        return StatisticsHelper.build_stats_response(self.stats, **computed_fields)
 
     def reset_statistics(self):
         """Reset ASR service statistics"""

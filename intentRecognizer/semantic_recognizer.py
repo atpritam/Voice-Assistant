@@ -295,10 +295,7 @@ class SemanticRecognizer:
 
     def get_statistics(self) -> Dict:
         """Get semantic recognizer statistics"""
-        avg_conf = StatisticsHelper.calculate_average(self.stats['avg_confidence'])
-
-        return {
-            'total_queries_processed': self.stats['total_queries'],
-            'intent_distribution': self.stats['intent_distribution'],
-            'average_confidence': avg_conf,
-        }
+        return StatisticsHelper.build_stats_response(
+            self.stats,
+            average_confidence=StatisticsHelper.calculate_average(self.stats['avg_confidence'])
+        )

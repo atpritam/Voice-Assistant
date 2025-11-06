@@ -508,19 +508,11 @@ Return ONLY valid JSON (no markdown):
 
     def get_statistics(self) -> dict:
         """Get LLM recognizer statistics with calculated metrics."""
-        avg_conf = StatisticsHelper.calculate_average(self.stats["avg_confidence"])
-        success_rate = self.stats["successful_queries"] / self.stats["total_queries"] if self.stats.get("total_queries", 0) > 0 else 0.0
-
-        return {
-            "llm_provider": self.stats.get("llm_provider", "unknown"),
-            "total_queries_processed": self.stats.get("total_queries", 0),
-            "successful_queries": self.stats.get("successful_queries", 0),
-            "failed_queries": self.stats.get("failed_queries", 0),
-            "success_rate": success_rate,
-            "intent_distribution": self.stats.get("intent_distribution", {}),
-            "average_confidence": avg_conf,
-            "total_tokens_used": self.stats.get("total_tokens_used", 0),
-            "total_api_calls": self.stats.get("total_api_calls", 0),
-            "response_generation_count": self.stats.get("response_generation_count", 0),
-            "classification_count": self.stats.get("classification_count", 0),
-        }
+        return StatisticsHelper.build_stats_response(
+            self.stats,
+            average_confidence=StatisticsHelper.calculate_average(self.stats["avg_confidence"]),
+            success_rate=StatisticsHelper.calculate_success_rate(
+                self.stats.get("successful_queries", 0),
+                self.stats.get("total_queries", 0)
+            )
+        )

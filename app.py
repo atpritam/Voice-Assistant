@@ -338,6 +338,8 @@ def get_statistics():
         "services": {k: v for k, v in stats.items() if k in ['tts', 'asr']}
     }
 
+    organized['layers'].get('algorithmic_layer', {}).pop('patterns_evaluated', None)
+
     return jsonify(organized)
 
 # System Start
