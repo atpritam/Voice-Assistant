@@ -8,13 +8,7 @@ import base64
 import logging
 from dotenv import load_dotenv
 from collections import defaultdict
-
-sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'intentRecognizer'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'ttsModule'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'asrModule'))
-
-from utils.logger_config import setup_logging
+from utils.logger import setup_logging
 setup_logging(level=logging.INFO)
 
 import warnings
@@ -159,6 +153,7 @@ def perform_system_warmup():
 
     total_warmup_time = time.time() - warmup_start
     intent_recognizer.reset_statistics()
+    tts_service.reset_statistics()
     logger.info(f"Total System Warm-up Time: {total_warmup_time:.2f}s")
 
 def generate_tts_audio(tts, response):
@@ -285,9 +280,7 @@ def handle_voice_input(data):
         emit('voice_response', result)
 
     except Exception as e:
-        logger.error(f" Voice input error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f" Voice input error: {e}", exc_info=True)
         emit('error', {'message': f'Processing error: {str(e)}'})
 
 @socketio.on('text_input')
@@ -305,9 +298,7 @@ def handle_text_input(data):
         emit('text_response', result)
 
     except Exception as e:
-        logger.error(f"Text input error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Text input error: {e}", exc_info=True)
         emit('error', {'message': f'Processing error: {str(e)}'})
 
 @socketio.on('clear_history')

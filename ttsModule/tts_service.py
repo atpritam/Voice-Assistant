@@ -3,14 +3,18 @@ Text-to-Speech Service using Coqui TTS VITS Model
 Optimized for en/ljspeech/vits - single speaker
 """
 
-import logging
+import os
+import sys
 import tempfile
-import re
 import contextlib
 import io
 from pathlib import Path
 from typing import Optional
 import torch
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
 
 try:
     from TTS.api import TTS
@@ -35,8 +39,8 @@ class TTSService:
             )
 
         self.model_name = model_name
-        self.enable_logging = enable_logging
         self.tts_device = device
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         if output_dir:
             self.output_dir = Path(output_dir)
@@ -45,15 +49,12 @@ class TTSService:
             self.output_dir = Path(tempfile.gettempdir()) / "voice-assistant-tts"
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
-
         self.tts = None
-        self.stats = {
-            'total_requests': 0,
-            'successful_generations': 0,
-            'failed_generations': 0,
-        }
+        self.stats = StatisticsHelper.init_base_stats(
+            service='tts',
+            successful_generations=0,
+            failed_generations=0
+        )
 
         self._initialize_tts()
         self._cleanup_on_start()
@@ -61,8 +62,7 @@ class TTSService:
     def _initialize_tts(self):
         """Initialize VITS TTS model"""
         try:
-            if self.enable_logging:
-                self.logger.info(f"Initializing TTS model: {self.model_name}")
+            self.logger.info(f"Initializing TTS model: {self.model_name}")
 
             if self.tts_device == "auto":
                 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -77,12 +77,10 @@ class TTSService:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 self.tts = TTS(model_name=self.model_name, progress_bar=False).to(device)
 
-            if self.enable_logging:
-                self.logger.info(f"TTS model initialized successfully")
+            self.logger.info(f"TTS model initialized successfully")
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Failed to initialize TTS model: {e}")
+            self.logger.error(f"Failed to initialize TTS model: {e}")
             raise RuntimeError(f"TTS initialization failed: {e}")
 
     def _cleanup_on_start(self):
@@ -97,14 +95,12 @@ class TTSService:
                         file_path.unlink()
                         deleted_count += 1
                     except Exception as e:
-                        if self.enable_logging:
-                            self.logger.warning(f"Failed to delete {file_path}: {e}")
+                        self.logger.warning(f"Failed to delete {file_path}: {e}")
 
-                if self.enable_logging and deleted_count > 0:
+                if deleted_count > 0:
                     self.logger.info(f"Cleaned up {deleted_count} old audio files on startup")
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Startup cleanup failed: {e}")
+            self.logger.error(f"Startup cleanup failed: {e}")
 
     def generate_speech(
             self,
@@ -126,8 +122,7 @@ class TTSService:
         self.stats['total_requests'] += 1
 
         if not text or not text.strip():
-            if self.enable_logging:
-                self.logger.warning("Empty text provided for TTS generation")
+            self.logger.warning("Empty text provided for TTS generation")
             self.stats['failed_generations'] += 1
             return None
 
@@ -150,24 +145,21 @@ class TTSService:
 
             self.stats['successful_generations'] += 1
 
-            if self.enable_logging:
-                preview = text[:40] + "..." if len(text) > 40 else text
-                self.logger.info(f"Generated: '{preview}' -> {output_path.name}")
+            preview = text[:40] + "..." if len(text) > 40 else text
+            self.logger.info(f"Generated: '{preview}' -> {output_path.name}")
 
             return str(output_path)
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"TTS generation failed: {e}")
+            self.logger.error(f"TTS generation failed: {e}")
             self.stats['failed_generations'] += 1
             return None
 
     def get_statistics(self) -> dict:
         """Get TTS service statistics"""
-        success_rate = (
-            self.stats['successful_generations'] / self.stats['total_requests']
-            if self.stats['total_requests'] > 0
-            else 0.0
+        success_rate = StatisticsHelper.calculate_success_rate(
+            self.stats['successful_generations'],
+            self.stats['total_requests']
         )
 
         return {
@@ -176,3 +168,7 @@ class TTSService:
             'failed_generations': self.stats['failed_generations'],
             'success_rate': success_rate,
         }
+
+    def reset_statistics(self):
+        """Reset TTS service statistics"""
+        StatisticsHelper.reset_stats(self.stats)

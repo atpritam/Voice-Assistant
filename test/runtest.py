@@ -26,7 +26,7 @@ from test.boost_analysis import BoostEngineTestRunner
 from test.confusion_matrix import run_confusion_matrix_test
 from test.common import CONFIG, create_single_query_dataset, get_available_intents
 from test.data import get_test_dataset
-from utils.logger_config import setup_logging
+from utils.logger import setup_logging
 
 
 def parse_arguments() -> argparse.Namespace:

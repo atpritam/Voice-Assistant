@@ -141,7 +141,7 @@ class ConfusionMatrixTestRunner:
         """Initialize test runner"""
         import logging
         from test.data import get_test_dataset
-        from utils.logger_config import setup_logging
+        from utils.logger import setup_logging
 
         setup_logging(level=logging.WARNING)
         self.factory = RecognizerFactory()

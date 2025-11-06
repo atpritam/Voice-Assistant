@@ -13,7 +13,7 @@ TESTING SPECIFIC INCORRECT PREDICTIONS WITH DETAILED LOGGING
 
 Configuration:
   Semantic Model: all-mpnet-base-v2
-  Algorithmic Threshold: 0.6
+  Algorithmic Threshold: 0.65
   Semantic Threshold: 0.5
   Boost Engine logging: ENABLED
 

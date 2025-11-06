@@ -4,9 +4,14 @@ Lightweight preprocessing for improved Whisper accuracy
 """
 
 import numpy as np
-import logging
 from typing import Tuple, Optional
 import time
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
 
 try:
     import librosa
@@ -44,19 +49,14 @@ class AudioPreprocessor:
         self.enable_normalization = enable_normalization
         self.enable_silence_trim = enable_silence_trim
         self.noise_reduction_strength = noise_reduction_strength
-        self.enable_logging = enable_logging
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
-
-        self.stats = {
-            'total_processed': 0,
-            'total_processing_time': 0.0,
-            'avg_processing_time': 0.0,
-            'noise_reduction_enabled': enable_noise_reduction,
-            'normalization_enabled': enable_normalization,
-            'silence_trim_enabled': enable_silence_trim
-        }
+        self.stats = StatisticsHelper.init_base_stats(
+            service='audio_preprocessor',
+            total_processed=0,
+            total_processing_time=0.0,
+            processing_times=[]
+        )
 
     def process_audio_file(
             self,
@@ -76,11 +76,10 @@ class AudioPreprocessor:
         try:
             audio, sr = librosa.load(audio_path, sr=None, mono=True)
 
-            if self.enable_logging:
-                self.logger.debug(
-                    f"Loaded audio: duration={len(audio) / sr:.2f}s, "
-                    f"sample_rate={sr}Hz, samples={len(audio)}"
-                )
+            self.logger.debug(
+                f"Loaded audio: duration={len(audio) / sr:.2f}s, "
+                f"sample_rate={sr}Hz, samples={len(audio)}"
+            )
 
             processed_audio = self._apply_preprocessing(audio, sr)
 
@@ -91,20 +90,16 @@ class AudioPreprocessor:
 
             self.stats['total_processed'] += 1
             self.stats['total_processing_time'] += processing_time
-            self.stats['avg_processing_time'] = (
-                    self.stats['total_processing_time'] / self.stats['total_processed']
-            )
+            self.stats['processing_times'].append(processing_time)
 
-            if self.enable_logging:
-                self.logger.info(
-                    f"Audio pre-processed successfully in {processing_time * 1000:.1f}ms"
-                )
+            self.logger.info(
+                f"Audio pre-processed successfully in {processing_time * 1000:.1f}ms"
+            )
 
             return output_path, processing_time
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Audio preprocessing failed: {e}")
+            self.logger.error(f"Audio preprocessing failed: {e}")
             return None, 0.0
 
     def _apply_preprocessing(
@@ -151,15 +146,13 @@ class AudioPreprocessor:
                 hop_length=128
             )
 
-            if self.enable_logging:
-                reduction = (1 - len(trimmed) / len(audio)) * 100
-                self.logger.debug(f"Silence trimmed: {reduction:.1f}% reduction")
+            reduction = (1 - len(trimmed) / len(audio)) * 100
+            self.logger.debug(f"Silence trimmed: {reduction:.1f}% reduction")
 
             return trimmed
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.warning(f"Silence trimming failed: {e}")
+            self.logger.warning(f"Silence trimming failed: {e}")
             return audio
 
     def _reduce_noise(
@@ -181,15 +174,13 @@ class AudioPreprocessor:
                 time_mask_smooth_ms=50
             )
 
-            if self.enable_logging:
-                noise_level = np.mean(np.abs(audio - reduced))
-                self.logger.debug(f"Noise reduced: level={noise_level:.4f}")
+            noise_level = np.mean(np.abs(audio - reduced))
+            self.logger.debug(f"Noise reduced: level={noise_level:.4f}")
 
             return reduced
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.warning(f"Noise reduction failed: {e}")
+            self.logger.warning(f"Noise reduction failed: {e}")
             return audio
 
     def _normalize_audio(
@@ -214,14 +205,24 @@ class AudioPreprocessor:
 
             normalized = np.clip(normalized, -1.0, 1.0)
 
-            if self.enable_logging:
-                self.logger.debug(
-                    f"Audio normalized: {current_db:.1f}dB -> {target_level:.1f}dB"
-                )
+            self.logger.debug(
+                f"Audio normalized: {current_db:.1f}dB -> {target_level:.1f}dB"
+            )
 
             return normalized
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.warning(f"Normalization failed: {e}")
+            self.logger.warning(f"Normalization failed: {e}")
             return audio
+
+    def get_statistics(self) -> dict:
+        """Get audio preprocessing statistics"""
+        avg_processing_time = StatisticsHelper.calculate_average(
+            self.stats['processing_times']
+        )
+
+        return {
+            'total_processed': self.stats['total_processed'],
+            'total_processing_time': self.stats['total_processing_time'],
+            'avg_processing_time_ms': avg_processing_time * 1000,
+        }

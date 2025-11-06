@@ -3,9 +3,13 @@ Domain-Specific Contextual Boost Rules for Algorithmic Intent Recognition
 Current Domain: Pizza Restaurant Customer Service
 """
 
-import logging, os, json
+import os
+import sys
+import json
 from typing import Dict, Set
-from .intent_recognizer import ConditionalLogger
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
 
 # ============================================================================
 # BOOST VALUES - Positive adjustments to intent scores
@@ -56,7 +60,7 @@ class BoostRuleEngine:
         self.intent_critical_keywords = intent_critical_keywords
         self.synonyms = synonyms
         self.enable_logging = enable_logging
-        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
+        self.logger = ConditionalLogger(__name__, enable_logging)
         self.res_info = self._load_res_info()
         self.menu_items = self._extract_menu_items(self.res_info) if self.res_info else set()
 

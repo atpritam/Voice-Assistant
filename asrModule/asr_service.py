@@ -4,12 +4,16 @@ With integrated audio preprocessing for improved accuracy
 """
 
 import os
-import logging
+import sys
 import tempfile
 from typing import Optional, Tuple
 import time
 import torch
 import math
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
 
 try:
     import whisper
@@ -39,21 +43,19 @@ class ASRService:
         self.device = self._determine_device(device)
         self.enable_logging = enable_logging
         self.enable_preprocessing = enable_preprocessing
-
-        if enable_logging:
-            self.logger = logging.getLogger(__name__)
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         self.model = None
         self.preprocessor = None
 
-        self.stats = {
-            'total_requests': 0,
-            'successful_transcriptions': 0,
-            'failed_transcriptions': 0,
-            'total_processing_time': 0.0,
-            'total_preprocessing_time': 0.0,
-            'total_transcription_time': 0.0
-        }
+        self.stats = StatisticsHelper.init_base_stats(
+            service='asr',
+            successful_transcriptions=0,
+            failed_transcriptions=0,
+            total_processing_time=0.0,
+            total_preprocessing_time=0.0,
+            total_transcription_time=0.0
+        )
 
         self._initialize_model()
 
@@ -69,17 +71,12 @@ class ASRService:
     def _initialize_model(self):
         """Initialize Whisper model"""
         try:
-            if self.enable_logging:
-                self.logger.info(f"Initializing Whisper model: {self.model_size}")
-
+            self.logger.info(f"Initializing Whisper model: {self.model_size}")
             self.model = whisper.load_model(self.model_size, device=self.device)
-
-            if self.enable_logging:
-                self.logger.info("Whisper model initialized successfully")
+            self.logger.info("Whisper model initialized successfully")
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Failed to initialize Whisper model: {e}")
+            self.logger.error(f"Failed to initialize Whisper model: {e}")
             raise RuntimeError(f"Whisper initialization failed: {e}")
 
     def _initialize_preprocessor(self, noise_reduction_strength: float):
@@ -93,25 +90,21 @@ class ASRService:
                 noise_reduction_strength=noise_reduction_strength,
                 enable_logging=self.enable_logging
             )
-
-            if self.enable_logging:
-                self.logger.info("Audio preprocessor initialized")
+            self.logger.info("Audio preprocessor initialized")
 
         except ImportError as e:
-            if self.enable_logging:
-                self.logger.warning(
-                    f"Audio preprocessor initialization failed: {e}\n"
-                    "Install with: pip install librosa soundfile noisereduce\n"
-                    "Continuing without preprocessing..."
-                )
+            self.logger.warning(
+                f"Audio preprocessor initialization failed: {e}\n"
+                "Install with: pip install librosa soundfile noisereduce\n"
+                "Continuing without preprocessing..."
+            )
             self.enable_preprocessing = False
             self.preprocessor = None
         except Exception as e:
-            if self.enable_logging:
-                self.logger.warning(
-                    f"Audio preprocessor initialization failed: {e}\n"
-                    "Continuing without preprocessing..."
-                )
+            self.logger.warning(
+                f"Audio preprocessor initialization failed: {e}\n"
+                "Continuing without preprocessing..."
+            )
             self.enable_preprocessing = False
             self.preprocessor = None
 
@@ -131,8 +124,7 @@ class ASRService:
         self.stats['total_requests'] += 1
 
         if not os.path.exists(audio_path):
-            if self.enable_logging:
-                self.logger.error(f"Audio file not found: {audio_path}")
+            self.logger.error(f"Audio file not found: {audio_path}")
             self.stats['failed_transcriptions'] += 1
             return None, 0.0
 
@@ -144,13 +136,11 @@ class ASRService:
                 processed_path, preprocess_time = self.preprocessor.process_audio_file(audio_path)
 
                 if processed_path is None:
-                    if self.enable_logging:
-                        self.logger.warning("Preprocessing failed, using original audio")
+                    self.logger.warning("Preprocessing failed, using original audio")
                     processed_path = audio_path
                 else:
                     self.stats['total_preprocessing_time'] += preprocess_time
-                    if self.enable_logging:
-                        self.logger.debug(f"Preprocessing completed in {preprocess_time*1000:.1f}ms")
+                    self.logger.debug(f"Preprocessing completed in {preprocess_time*1000:.1f}ms")
 
             transcription_start = time.time()
             result = self.model.transcribe(
@@ -164,15 +154,14 @@ class ASRService:
             transcribed_text = result["text"].strip()
 
             if not transcribed_text:
-                if self.enable_logging:
-                    self.logger.warning("No speech detected in audio")
+                self.logger.warning("No speech detected in audio")
                 self.stats['failed_transcriptions'] += 1
 
                 if processed_path != audio_path and os.path.exists(processed_path):
                     try:
                         os.unlink(processed_path)
-                    except:
-                        pass
+                    except OSError as e:
+                        self.logger.warning(f"Failed to delete temp file {processed_path}: {e}")
 
                 return None, 0.0
 
@@ -185,23 +174,21 @@ class ASRService:
             self.stats['successful_transcriptions'] += 1
             self.stats['total_processing_time'] += total_processing_time
 
-            if self.enable_logging:
-                preview = transcribed_text[:40] + "..." if len(transcribed_text) > 40 else transcribed_text
-                self.logger.info(
-                    f"'{preview}' ({confidence:.2f}, {total_processing_time*1000:.0f}ms)"
-                )
+            preview = transcribed_text[:40] + "..." if len(transcribed_text) > 40 else transcribed_text
+            self.logger.info(
+                f"'{preview}' ({confidence:.2f}, {total_processing_time*1000:.0f}ms)"
+            )
 
             if processed_path != audio_path and os.path.exists(processed_path):
                 try:
                     os.unlink(processed_path)
-                except:
-                    pass
+                except OSError as e:
+                    self.logger.warning(f"Failed to delete temp file {processed_path}: {e}")
 
             return transcribed_text, confidence
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Transcription failed: {e}")
+            self.logger.error(f"Transcription failed: {e}")
             self.stats['failed_transcriptions'] += 1
             return None, 0.0
 
@@ -236,12 +223,10 @@ class ASRService:
                     try:
                         os.unlink(temp_path)
                     except OSError as e:
-                        if self.enable_logging:
-                            self.logger.warning(f"Failed to delete temp file {temp_path}: {e}")
+                        self.logger.warning(f"Failed to delete temp file {temp_path}: {e}")
 
         except Exception as e:
-            if self.enable_logging:
-                self.logger.error(f"Failed to transcribe audio data: {e}")
+            self.logger.error(f"Failed to transcribe audio data: {e}")
             return None, 0.0
 
     def _normalize_confidence(self, avg_logprob: float) -> float:
@@ -255,10 +240,9 @@ class ASRService:
 
     def get_statistics(self) -> dict:
         """Get ASR service statistics"""
-        success_rate = (
-            self.stats['successful_transcriptions'] / self.stats['total_requests']
-            if self.stats['total_requests'] > 0
-            else 0.0
+        success_rate = StatisticsHelper.calculate_success_rate(
+            self.stats['successful_transcriptions'],
+            self.stats['total_requests']
         )
 
         avg_total_time = (
@@ -277,4 +261,12 @@ class ASRService:
             'preprocessing_enabled': self.enable_preprocessing
         }
 
+        if self.enable_preprocessing and self.preprocessor:
+            stats_dict['preprocessor'] = self.preprocessor.get_statistics()
+
         return stats_dict
+
+    def reset_statistics(self):
+        """Reset ASR service statistics"""
+        StatisticsHelper.reset_stats(self.stats)
+        StatisticsHelper.reset_stats(self.preprocessor.stats)

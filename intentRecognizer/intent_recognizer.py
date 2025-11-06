@@ -5,13 +5,16 @@ Each layer is tried when the previous layer fails or has below threshold confide
 """
 
 import os
+import sys
 import json
-import logging
 
 import torch
 from typing import Dict, Optional, List
 from dataclasses import dataclass
-from collections import defaultdict
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
 
 HIGH_CONFIDENCE_THRESHOLD = 0.8
 MEDIUM_CONFIDENCE_THRESHOLD = 0.6
@@ -93,13 +96,13 @@ class IntentRecognizerUtils:
     @staticmethod
     def load_patterns_from_file(patterns_file: str, enable_logging: bool = False) -> Dict:
         """Load intent patterns from JSON file"""
+        logger = ConditionalLogger(__name__, enable_logging)
         try:
             with open(patterns_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data.get('intents', data) if 'intents' in data else data
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            if enable_logging:
-                logging.getLogger(__name__).error(f"Error loading patterns: {e}")
+            logger.error(f"Error loading patterns: {e}")
             return {}
 
     @staticmethod
@@ -109,69 +112,7 @@ class IntentRecognizerUtils:
         return os.path.join(utils_dir, 'intent_patterns.json')
 
 
-class StatisticsHelper:
-    """Helper methods for statistics tracking across all recognizers"""
-
-    @staticmethod
-    def init_base_stats(**custom_fields):
-        """Initialize statistics with base fields and optional custom fields"""
-        stats = {
-            'total_queries': 0,
-            'intent_distribution': defaultdict(int),
-            'avg_confidence': [],
-        }
-        stats.update(custom_fields)
-        return stats
-
-    @staticmethod
-    def calculate_average(values_list):
-        """Calculate average from a list of values"""
-        return sum(values_list) / len(values_list) if values_list else 0.0
-
-    @staticmethod
-    def reset_stats(stats_dict, preserve_fields=None):
-        """Reset statistics to initial state, optionally preserving certain fields."""
-        preserved = {}
-        if preserve_fields:
-            for field in preserve_fields:
-                if field in stats_dict:
-                    preserved[field] = stats_dict[field]
-
-        for key in list(stats_dict.keys()):
-            if preserve_fields and key in preserve_fields:
-                continue
-
-            value = stats_dict[key]
-            if isinstance(value, defaultdict):
-                stats_dict[key] = defaultdict(int)
-            elif isinstance(value, dict):
-                stats_dict[key] = {}
-            elif isinstance(value, list):
-                stats_dict[key] = []
-            elif isinstance(value, (int, float)):
-                stats_dict[key] = 0
-
-        stats_dict.update(preserved)
-
-
-class ConditionalLogger:
-    def __init__(self, logger, enable_logging: bool):
-        """
-        Initialize conditional logger.
-
-        Args:
-            logger: The underlying logger instance
-            enable_logging: Whether logging is enabled
-        """
-        self._logger = logger
-        self._enable_logging = enable_logging
-
-    def __getattr__(self, name):
-        def log_method(msg, *args, **kwargs):
-            if self._enable_logging:
-                getattr(self._logger, name)(msg, *args, **kwargs)
-        return log_method
-
+# Import layer recognizers
 from .algorithmic_recognizer import AlgorithmicRecognizer
 from .semantic_recognizer import SemanticRecognizer
 from .llm_recognizer import LLMRecognizer
@@ -221,7 +162,7 @@ class IntentRecognizer:
         self.enable_logging = enable_logging
         self.use_local_llm = use_local_llm
         self.ollama_base_url = ollama_base_url
-        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         self.stats = StatisticsHelper.init_base_stats(
             algorithmic_used=0,
@@ -297,8 +238,10 @@ class IntentRecognizer:
         2. If confidence below threshold, try next enabled layer
         3. Return best result with generated response
         """
-        self.stats['total_queries'] += 1
+        if not query or not isinstance(query, str):
+            raise ValueError("Query must be a non-empty string")
 
+        self.stats['total_queries'] += 1
         self.logger.info("-" * 60)
         self.logger.info(f"Processing: '{query}'")
         self.logger.info("-" * 60)
@@ -530,17 +473,10 @@ class IntentRecognizer:
 
     def reset_statistics(self) -> None:
         """Reset all statistics counters across all layers"""
-        # Reset main pipeline statistics
         StatisticsHelper.reset_stats(self.stats, preserve_fields=['layer_configuration'])
-
-        # Reset algorithmic layer statistics
         if self.enable_algorithmic and self.algorithmic_recognizer:
             StatisticsHelper.reset_stats(self.algorithmic_recognizer.stats)
-
-        # Reset semantic layer statistics
         if self.enable_semantic and self.semantic_recognizer:
             StatisticsHelper.reset_stats(self.semantic_recognizer.stats)
-
-        # Reset LLM layer statistics
         if self.enable_llm and self.llm_recognizer:
             StatisticsHelper.reset_stats(self.llm_recognizer.stats, preserve_fields=['llm_provider'])

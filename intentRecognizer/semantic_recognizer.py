@@ -3,7 +3,8 @@ Semantic Intent Recognizer
 Handles semantic similarity-based intent recognition using local Sentence Transformers
 """
 
-import logging
+import os
+import sys
 import hashlib
 import pickle
 from typing import Dict, Tuple, TYPE_CHECKING
@@ -11,7 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
+
+from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -64,8 +69,7 @@ class SemanticRecognizer:
         self.use_cache = use_cache
         self.enable_logging = enable_logging
         self.device = device
-        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
-        logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
         self.model = self._load_model()

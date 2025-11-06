@@ -5,15 +5,19 @@ TF-IDF weighted inverted index for fast intent candidate selection and ranking
 """
 
 import os
+import sys
 import json
-import logging
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
 from collections import defaultdict
 import math
 import Levenshtein
 
-from .intent_recognizer import IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
+
+from .intent_recognizer import IntentRecognizerUtils
 from .boostEngine import BoostRuleEngine
 
 # SIMILARITY CALCULATION WEIGHTS
@@ -310,7 +314,7 @@ class AlgorithmicRecognizer:
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.min_confidence = min_confidence
         self.enable_logging = enable_logging
-        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
 

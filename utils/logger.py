@@ -5,7 +5,6 @@ Custom Logger Configuration for Voice Assistant
 import logging
 import sys
 
-
 class Colors:
     """ANSI color codes for terminal output"""
     RESET = '\033[0m'
@@ -93,5 +92,29 @@ def setup_logging(level=logging.INFO):
     logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 
-def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+class ConditionalLogger:
+    """Logger wrapper that conditionally logs based on enable_logging flag."""
+
+    def __init__(self, name, enable_logging: bool):
+        """Initialize conditional logger.
+
+        Args:
+            name: Module name string (e.g., __name__)
+            enable_logging: Whether logging is enabled
+        """
+        if isinstance(name, str):
+            self._logger = logging.getLogger(name)
+        else:
+            raise TypeError(
+                f"name must be a string (e.g., __name__),"
+                f"got {type(name).__name__}"
+            )
+
+        self._enable_logging = enable_logging
+
+    def __getattr__(self, name):
+        """Dynamically create log methods that conditionally log"""
+        def log_method(msg, *args, **kwargs):
+            if self._enable_logging:
+                getattr(self._logger, name)(msg, *args, **kwargs)
+        return log_method

@@ -4,14 +4,18 @@ Supports both OpenAI API and Local Ollama models
 """
 
 import os
+import sys
 import json
-import logging
 import re
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils, StatisticsHelper, ConditionalLogger
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.logger import ConditionalLogger
+from utils.statistics import StatisticsHelper
+
+from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 DEFAULT_MODEL = "gpt-5-nano"
 INVALID_INTENT_CONFIDENCE_PENALTY = 0.7
@@ -67,7 +71,7 @@ class LLMRecognizer:
         self.test_mode = test_mode
         self.ollama_base_url = ollama_base_url
         self.response_generation_threshold = response_generation_threshold
-        self.logger = ConditionalLogger(logging.getLogger(__name__), enable_logging)
+        self.logger = ConditionalLogger(__name__, enable_logging)
 
         if not test_mode:
             if res_info:

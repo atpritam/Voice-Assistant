@@ -27,14 +27,13 @@ class ComparativeTestRunner(BaseTestRunner):
         ("Semantic -> LLM", False, True, True),
         ("Algorithmic Only", True, False, False),
         ("Semantic Only", False, True, False),
+        ("LLM Only", False, False, True)
     ]
 
     def __init__(self, custom_data=None):
         """Initialize test runner"""
         super().__init__(custom_data)
         self.printer = ResultPrinter()
-        if CONFIG.use_local_llm:
-            self.CONFIGS = self.CONFIGS + [("LLM Only", False, False, True)]
 
     def run(self) -> None:
         """Run comparative analysis"""

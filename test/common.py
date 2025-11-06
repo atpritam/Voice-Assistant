@@ -303,7 +303,7 @@ class BaseTestRunner:
             log_level: Logging level (default: INFO)
         """
         from test.data import get_test_dataset
-        from utils.logger_config import setup_logging
+        from utils.logger import setup_logging
 
         if not logging.getLogger().handlers:
             setup_logging(level=log_level)
