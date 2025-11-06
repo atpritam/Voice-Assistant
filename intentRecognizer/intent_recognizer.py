@@ -41,48 +41,6 @@ class RecognitionResult:
 class IntentRecognizerUtils:
     """Shared utilities for all recognizer layers"""
 
-    @staticmethod
-    def expand_contractions(text: str) -> str:
-        """Expand English contractions using suffix-based matching"""
-
-        # Contraction expansion mappings
-        CONTRACTION_SUFFIXES = [
-            ("n't", " not"),
-            ("'ve", " have"),
-            ("'re", " are"),
-            ("'ll", " will"),
-            ("'d", " would"),
-            ("'m", " am"),
-            ("'s", " is"),
-        ]
-
-        CONTRACTION_SPECIAL_CASES = {
-            "won't": "will not",
-            "can't": "cannot",
-            "ain't": "am not"
-        }
-        words = text.split()
-        expanded_words = []
-
-        for word in words:
-            word_lower = word.lower()
-
-            if word_lower in CONTRACTION_SPECIAL_CASES:
-                expanded_words.append(CONTRACTION_SPECIAL_CASES[word_lower])
-                continue
-
-            expanded = False
-            for suffix, replacement in CONTRACTION_SUFFIXES:
-                if word_lower.endswith(suffix):
-                    base = word_lower[:-len(suffix)]
-                    expanded_words.append(base + replacement)
-                    expanded = True
-                    break
-
-            if not expanded:
-                expanded_words.append(word)
-
-        return ' '.join(expanded_words)
 
     @staticmethod
     def determine_confidence_level(confidence: float) -> str:
@@ -111,8 +69,6 @@ class IntentRecognizerUtils:
         utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
         return os.path.join(utils_dir, 'intent_patterns.json')
 
-
-# Import layer recognizers
 from .algorithmic_recognizer import AlgorithmicRecognizer
 from .semantic_recognizer import SemanticRecognizer
 from .llm_recognizer import LLMRecognizer
@@ -125,7 +81,7 @@ class IntentRecognizer:
     Each layer can be independently enabled/disabled:
     - Layer 1: Algorithmic (Keyword pattern Matching + Levenshtein)
     - Layer 2: Semantic (Sentence Transformers)
-    - Layer 3: LLM (OpenAI API - Fallback)
+    - Layer 3: LLM (OpenAI API/ Llama - Fallback)
     """
 
     def __init__(

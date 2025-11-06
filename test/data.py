@@ -458,16 +458,17 @@ def check_duplicates():
     """
     Check if dataset contains duplicate queries.
     """
-    import re
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    from utils.text_processor import TextProcessor
 
+    text_processor = TextProcessor()
     dataset = NORMAL_TEST_DATASET + EDGE_CASES_DATASET
     seen = {}
     duplicates = []
 
     for query, intent in dataset:
-        normalized = query.lower().strip()
-        normalized = re.sub(r'[^\w\s]', '', normalized)
-        normalized = ' '.join(normalized.split())
+        normalized = text_processor.normalize(query)
 
         if normalized in seen:
             duplicates.append((query, intent, seen[normalized]))

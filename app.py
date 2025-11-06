@@ -319,13 +319,26 @@ def get_statistics():
     from flask import jsonify
     stats = intent_recognizer.get_statistics()
 
+    stats.pop('intent_distribution', None)
+    stats.pop('average_confidence', None)
+
     if ENABLE_TTS and tts_service:
         stats['tts'] = tts_service.get_statistics()
 
     if ENABLE_ASR and asr_service:
         stats['asr'] = asr_service.get_statistics()
 
-    return jsonify(stats)
+    organized = {
+        "overview": {
+            "total_queries": stats.pop('total_queries_processed', 0),
+            "pipeline": stats.pop('pipeline_configuration', {}),
+            "layer_usage": stats.pop('layer_usage', {})
+        },
+        "layers": {k: v for k, v in stats.items() if k.endswith('_layer')},
+        "services": {k: v for k, v in stats.items() if k in ['tts', 'asr']}
+    }
+
+    return jsonify(organized)
 
 # System Start
 intent_recognizer = initialize_intent_recognizer()

@@ -16,6 +16,7 @@ import Levenshtein
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
+from utils.text_processor import TextProcessor
 
 from .intent_recognizer import IntentRecognizerUtils
 from .boostEngine import BoostRuleEngine
@@ -102,8 +103,8 @@ class LinguisticResourceLoader:
 class InvertedIndex:
     """Inverted index with TF-IDF weighting for fast intent candidate selection"""
 
-    def __init__(self, patterns: Dict, text_normalizer):
-        self.normalizer = text_normalizer
+    def __init__(self, patterns: Dict, text_processor):
+        self.text_processor = text_processor
         self.index = defaultdict(set)
         self.intent_keyword_scores = {}
         self.term_document_freq = defaultdict(int)
@@ -125,7 +126,7 @@ class InvertedIndex:
             unique_words = set()
 
             for pattern in patterns[intent_name].get("patterns", []):
-                words = self.normalizer.extract_filtered_words(pattern)
+                words = self.text_processor.extract_filtered_words(pattern)
                 for word in words:
                     self.index[word].add(intent_name)
                     word_freq[word] += 1
@@ -164,32 +165,11 @@ class InvertedIndex:
         return sorted(intent_scores.items(), key=lambda x: x[1], reverse=True)
 
 
-class TextNormalizer:
-    """Handles all text normalization and preprocessing"""
-
-    def __init__(self, filler_words: Set[str]):
-        self.filler_words = filler_words
-
-    def normalize(self, text: str) -> str:
-        """Normalize text for comparison - optimized for ASR input"""
-        if not text:
-            return ""
-        text = text.lower().strip()
-        text = IntentRecognizerUtils.expand_contractions(text)
-        text = text.translate(str.maketrans('', '', '!?.,;:\'"()[]{}/@'))
-        return ' '.join(text.split())
-
-    def extract_filtered_words(self, text: str) -> List[str]:
-        """Extract and filter words in one step"""
-        words = self.normalize(text).split()
-        return [w for w in words if w not in self.filler_words]
-
-
 class SimilarityCalculator:
     """Handles all similarity metric calculations - OPTIMIZED"""
 
-    def __init__(self, text_normalizer: TextNormalizer, synonym_lookup: Dict):
-        self.normalizer = text_normalizer
+    def __init__(self, text_processor: TextProcessor, synonym_lookup: Dict):
+        self.text_processor = text_processor
         self.synonym_lookup = synonym_lookup
 
     def passes_length_prefilter(self, query_norm: str, pattern_norm: str) -> bool:
@@ -264,14 +244,14 @@ class SimilarityCalculator:
     def calculate_similarity(self, query: str, pattern: str, intent_name: Optional[str],
                            pattern_norm: Optional[str], intent_critical_keywords: Dict) -> Tuple[float, SimilarityMetrics]:
         """Main similarity calculation coordinator - OPTIMIZED"""
-        query_norm = self.normalizer.normalize(query)
-        pattern_norm = pattern_norm or self.normalizer.normalize(pattern)
+        query_norm = self.text_processor.normalize(query)
+        pattern_norm = pattern_norm or self.text_processor.normalize(pattern)
 
         if not query_norm or not pattern_norm or not self.passes_length_prefilter(query_norm, pattern_norm):
             return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
 
-        query_words = self.normalizer.extract_filtered_words(query)
-        pattern_words = self.normalizer.extract_filtered_words(pattern)
+        query_words = self.text_processor.extract_filtered_words(query)
+        pattern_words = self.text_processor.extract_filtered_words(pattern)
 
         if not query_words or not pattern_words:
             return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
@@ -324,13 +304,13 @@ class AlgorithmicRecognizer:
         self.intent_critical_keywords = resources['intent_critical_keywords']
         self.synonym_lookup = LinguisticResourceLoader.build_synonym_lookup(self.synonyms)
 
-        self.text_normalizer = TextNormalizer(self.filler_words)
-        self.similarity_calculator = SimilarityCalculator(self.text_normalizer, self.synonym_lookup)
+        self.text_processor = TextProcessor(self.filler_words)
+        self.similarity_calculator = SimilarityCalculator(self.text_processor, self.synonym_lookup)
         self.use_boost_engine = use_boost_engine
         if self.use_boost_engine:
             self.boost_engine = BoostRuleEngine(self.intent_critical_keywords, self.synonyms, enable_logging)
 
-        self.inverted_index = InvertedIndex(self.patterns, self.text_normalizer)
+        self.inverted_index = InvertedIndex(self.patterns, self.text_processor)
 
         self._intent_keywords_cache = {}
         self._normalized_patterns_cache = {}
@@ -351,7 +331,7 @@ class AlgorithmicRecognizer:
             normalized_patterns = []
 
             for pattern in intent_data.get("patterns", []):
-                normalized = self.text_normalizer.normalize(pattern)
+                normalized = self.text_processor.normalize(pattern)
                 keywords.update(normalized.split())
                 normalized_patterns.append(normalized)
 
@@ -412,7 +392,7 @@ class AlgorithmicRecognizer:
             return None
 
         filtered = [(i, p, normalized_patterns[i] if i < len(normalized_patterns)
-                        else self.text_normalizer.normalize(p)) for i, p in enumerate(patterns)]
+                        else self.text_processor.normalize(p)) for i, p in enumerate(patterns)]
 
         if not filtered:
             return None
@@ -420,7 +400,7 @@ class AlgorithmicRecognizer:
         # Filter patterns with word overlap
         patterns_to_check = []
         for idx, pattern, pattern_norm in filtered:
-            pattern_words = set(self.text_normalizer.extract_filtered_words(pattern))
+            pattern_words = set(self.text_processor.extract_filtered_words(pattern))
             if query_words & pattern_words or len(pattern_words) <= 3:
                 patterns_to_check.append((idx, pattern, pattern_norm))
 
@@ -511,7 +491,7 @@ class AlgorithmicRecognizer:
         processed_query = self._preprocess_but_clause(query)
         but_clause_applied = processed_query != query
 
-        query_words = set(self.text_normalizer.extract_filtered_words(processed_query))
+        query_words = set(self.text_processor.extract_filtered_words(processed_query))
         if not query_words:
             return "unknown", 0.0, "", {}
 
@@ -548,7 +528,7 @@ class AlgorithmicRecognizer:
         # Fallback: If but-clause was used but resulted in general/unknown, retry with full query
         if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
 
-            full_query_words = set(self.text_normalizer.extract_filtered_words(query))
+            full_query_words = set(self.text_processor.extract_filtered_words(query))
             full_intent_scores = self._evaluate_all_intents_optimized(
                 query,
                 full_query_words,

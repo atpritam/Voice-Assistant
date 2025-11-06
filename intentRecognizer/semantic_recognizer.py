@@ -15,6 +15,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
+from utils.text_processor import TextProcessor
 
 from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
@@ -166,7 +167,7 @@ class SemanticRecognizer:
                 continue
 
             patterns = intent_data["patterns"]
-            expanded_patterns = [IntentRecognizerUtils.expand_contractions(p) for p in patterns]
+            expanded_patterns = [TextProcessor.expand_contractions(p) for p in patterns]
             embeddings = self.model.encode(expanded_patterns, convert_to_numpy=True)
             self.intent_embeddings[intent_name] = {
                 'patterns': patterns,
@@ -231,7 +232,7 @@ class SemanticRecognizer:
             return self._create_unknown_result("Empty query or no patterns")
 
         try:
-            expanded_query = IntentRecognizerUtils.expand_contractions(query)
+            expanded_query = TextProcessor.expand_contractions(query)
             query_embedding = self.model.encode(expanded_query, convert_to_numpy=True)
 
             intent_scores = {}
