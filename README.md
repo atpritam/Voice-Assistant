@@ -127,9 +127,7 @@ Voice Output
 
 ### Full Pipeline vs. LLM-Only
 
-Modern large language models (e.g., GPT-5, Claude, Llama) can perform intent classification and response generation directly. However, the hybrid cascading architecture provides significant advantages in both speed and efficiency.
-
-**Comparative Performance (400 queries, GPT-5 & Llama 3.2-3B):**
+**Intent Recognition Performance Comparison (400 queries, test mode):**
 
 | Configuration                | Accuracy   | Latency | Q/s | Tokens/Query | Total Tokens |
 |------------------------------|------------|---------|-----|--------------|--------------|
@@ -137,14 +135,6 @@ Modern large language models (e.g., GPT-5, Claude, Llama) can perform intent cla
 | **Full Pipeline (GPT-5)**    | **97.75%** | **280.1ms** | **3.6** | **33.3** | **13,328**   |
 | LLM-Only (Llama 3B, local)   | 88.50%     | 272.1ms | 3.7 | 15.9 | 6,363        |
 | LLM-Only (GPT-5, cloud)      | 92.25%     | **5.58s** | 0.2 | **518.8** | **207,507**  |
-
-**Key Advantages:**
-
-1. **20× Lower Latency**: 280ms vs 5.58s (GPT-5)
-     - ~81% of queries handled by fast algorithmic layer (<5ms)
-     - LLM reserved only for complex edge cases (6% of queries)
-2. **Cost Efficiency**: 33 tokens/query vs 519 tokens/query (15.6× reduction with GPT-5)
-3. **Accuracy**: 97.75% vs 92.25% (+5.5% improvement over LLM-only with GPT-5)
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 
