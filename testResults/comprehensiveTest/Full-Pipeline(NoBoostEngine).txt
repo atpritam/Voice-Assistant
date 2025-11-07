@@ -4,13 +4,17 @@ COMPREHENSIVE TEST
 ================================================================================
 
 
-Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
-Semantic Model: all-mpnet-base-v2
-LLM Model: llama3.2:3b-instruct-q4_K_M
-Mode: TEST MODE (intent recognition only)
-
-Boost Engine: False
-Edge Cases Included: True
+Configuration:
+  Algorithmic: True
+  Semantic: True
+  LLM: True
+  Algorithmic Threshold: 0.65
+  Semantic Threshold: 0.5
+  Semantic Model: all-mpnet-base-v2
+  LLM Backend: Ollama
+  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Boost Engine: False
+  Edge Cases: True
 
 Test Dataset Size: 400 queries
 
@@ -19,8 +23,8 @@ OVERALL RESULTS
 --------------------------------------------------------------------------------
 Accuracy: 95.00%
 Correct: 380 / 400
-Avg Query Time: 32.7ms
-Queries/s: 30.6
+Avg Query Time: 33.3ms
+Queries/s: 30.0
 
 LAYER USAGE
 --------------------------------------------------------------------------------
@@ -30,7 +34,7 @@ LLM         :  37 (  9.2%)  Acc: 94.59%
 
 LLM TOKEN USAGE
 --------------------------------------------------------------------------------
-Total Tokens: 596
+Total Tokens: 581
 Avg Tokens/Query: 1.5
 
 CONFIDENCE LEVELS

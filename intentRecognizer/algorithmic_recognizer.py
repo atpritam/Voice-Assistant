@@ -22,14 +22,16 @@ from .intent_recognizer import IntentRecognizerUtils
 from .boostEngine import BoostRuleEngine
 
 # SIMILARITY CALCULATION WEIGHTS
-KEYWORD_WEIGHT = 0.50
-LEVENSHTEIN_WEIGHT = 0.50
-EXACT_OVERLAP_WEIGHT = 0.7
-SYNONYM_WEIGHT = 0.3
+KEYWORD_WEIGHT = 0.50                       # Jaccard keyword similarity
+LEVENSHTEIN_WEIGHT = 0.50                   # Levenshtein String edit distance
 
-# OPTIMIZATION THRESHOLDS
-INTENT_HIGH_SIMILARITY_EXIT = 0.85
-HIGH_SIMILARITY_IN_INTENT_EXIT = 0.85
+# JACCARD KEYWORD SIMILARITY COMPOSITION
+EXACT_OVERLAP_WEIGHT = 0.7                  # Exact word overlap
+SYNONYM_WEIGHT = 0.3                        # synonym-expanded overlap
+
+# EARLY EXIT THRESHOLDS
+INTENT_HIGH_SIMILARITY_EXIT = 0.85          # Stops checking other intents
+HIGH_SIMILARITY_IN_INTENT_EXIT = 0.85       # Stops checking other patterns within intent
 
 @dataclass
 class SimilarityMetrics:
@@ -86,7 +88,14 @@ class LinguisticResourceLoader:
                 'intent_critical_keywords': {k: set(v) for k, v in resources.get('intent_critical_keywords', {}).items()}
             }
         except FileNotFoundError:
-            raise FileNotFoundError(f"Linguistic resources file not found: {resource_file}\nExpected file at: utils/linguistic_resources.json")
+            logger = ConditionalLogger(__name__, True)
+            logger.info(f"Linguistic resources file not found: {resource_file}. Expected at utils/linguistic_resources.json")
+            logger.info("Using blank linguistic resources.")
+            return {
+                'synonyms': {},
+                'filler_words': set(),
+                'intent_critical_keywords': {}
+            }
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in linguistic resources file: {e}")
 
@@ -231,13 +240,13 @@ class SimilarityCalculator:
             critical_keywords = intent_critical_keywords[intent_name]
             num_matches = len(query_set & critical_keywords)
             if num_matches:
-                return min(0.20, 0.08 + (num_matches - 1) * 0.04)
+                return min(0.16, 0.08 + (num_matches - 1) * 0.04)
 
         max_bonus = 0.0
         for critical_keywords in intent_critical_keywords.values():
             num_matches = len(query_set & critical_keywords)
             if num_matches:
-                bonus = min(0.20, 0.08 + (num_matches - 1) * 0.04)
+                bonus = min(0.16, 0.08 + (num_matches - 1) * 0.04)
                 max_bonus = max(max_bonus, bonus)
         return max_bonus
 

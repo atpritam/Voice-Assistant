@@ -16,11 +16,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
 
-HIGH_CONFIDENCE_THRESHOLD = 0.8
-MEDIUM_CONFIDENCE_THRESHOLD = 0.6
-DEFAULT_MIN_CONFIDENCE = 0.5
-DEFAULT_ALGORITHMIC_THRESHOLD = 0.65
-DEFAULT_SEMANTIC_THRESHOLD = 0.5
+HIGH_CONFIDENCE_THRESHOLD = 0.8               # "high" confidence level classification
+MEDIUM_CONFIDENCE_THRESHOLD = 0.6             # "medium" confidence level classification
+DEFAULT_MIN_CONFIDENCE = 0.5                  # Minimum confidence to accept intent (else "unknown")
+DEFAULT_ALGORITHMIC_THRESHOLD = 0.65          # Min confidence for algorithmic layer to skip next layers
+DEFAULT_SEMANTIC_THRESHOLD = 0.5              # Min confidence for semantic layer to skip LLM layer
 DEFAULT_LLM_MODEL = "gpt-5-nano"
 DEFAULT_SEMANTIC_MODEL = "all-mpnet-base-v2"
 

@@ -8,8 +8,7 @@ Configuration:
   Algorithmic: False
   Semantic: True
   LLM: False
-  LLM Backend: Ollama
-  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Semantic Model: all-mpnet-base-v2
   Boost Engine: True
   Edge Cases: True
 
@@ -22,7 +21,7 @@ CONFUSION MATRIX ANALYSIS
 
 Rows = Actual Intent, Columns = Predicted Intent
 
-                     complaint        delivery         general  hours_location    menu_inquiry           order  
+                     complaint        delivery         general  hours_location    menu_inquiry           order
 ----------------------------------------------------------------------------------------------------------------
 complaint                   70               5               0               2               2               3
 delivery                     1              51               0               0               0               3

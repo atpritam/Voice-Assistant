@@ -14,33 +14,33 @@ from utils.logger import ConditionalLogger
 # ============================================================================
 # BOOST VALUES - Positive adjustments to intent scores
 
-ORDER_ACTION_BOOST = 0.20
+ORDER_ACTION_BOOST = 0.15
 DELIVERY_STATUS_BOOST = 0.20
-NEGATIVE_SENTIMENT_BOOST = 0.4
-PRICE_SIZE_BOOST = 0.25
-TIME_LOCATION_BOOST = 0.25
-ESCALATION_BOOST = 0.35
-SARCASM_COMPLAINT_BOOST = 0.35
-INQUIRY_QUESTION_BOOST = 0.25
 DELIVERY_INQUIRY_BOOST = 0.20
 MENU_ITEM_ORDERING_BOOST = 0.20
+PRICE_INQUIRY_BOOST = 0.20
+PRICE_SIZE_BOOST = 0.25
+TIME_LOCATION_BOOST = 0.25
+INQUIRY_QUESTION_BOOST = 0.25
 MENU_ITEM_CUSTOMIZATION_BOOST = 0.25
-MENU_ITEM_QUALITY_BOOST = 0.30
 RECOMMENDATION_INQUIRY_BOOST = 0.25
-PRICE_INQUIRY_BOOST = 0.15
 HOURS_INQUIRY_BOOST = 0.25
+MENU_ITEM_QUALITY_BOOST = 0.30
+SARCASM_COMPLAINT_BOOST = 0.30
+ESCALATION_BOOST = 0.30
+NEGATIVE_SENTIMENT_BOOST = 0.35
 
 # ============================================================================
 # PENALTY VALUES - Negative adjustments to intent scores
 
 ORDER_DELIVERY_PENALTY = 0.15
 ORDER_ESCALATION_PENALTY = 0.15
-DELIVERY_COMPLAINT_PENALTY = 0.25
 MENU_INQUIRY_PENALTY = 0.15
 ORDER_INQUIRY_PENALTY = 0.15
 HOURS_MENU_PENALTY = 0.15
 GENERAL_INQUIRY_PENALTY = 0.15
 DELIVERY_RECOMMENDATION_PENALTY = 0.15
+DELIVERY_COMPLAINT_PENALTY = 0.25
 
 
 
@@ -146,7 +146,7 @@ class BoostRuleEngine:
         if intent_name in intent_scores:
             original = intent_scores[intent_name]['similarity']
             intent_scores[intent_name]['similarity'] = min(1.0, original + boost)
-            if self.enable_logging and label:
+            if label:
                 self.logger.debug(f"{label} [{intent_name}]: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
 
     def _penalty_intent(self, intent_name: str, intent_scores: Dict, penalty: float, label: str = ""):
@@ -154,7 +154,7 @@ class BoostRuleEngine:
         if intent_name in intent_scores:
             original = intent_scores[intent_name]['similarity']
             intent_scores[intent_name]['similarity'] = max(0.0, original - penalty)
-            if self.enable_logging and label:
+            if label:
                 self.logger.debug(f"{label} [{intent_name}]: {original:.3f} -> {intent_scores[intent_name]['similarity']:.3f}")
 
 

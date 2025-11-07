@@ -11,7 +11,7 @@ A **hybrid intent recognition system** combining classical NLP pattern matching,
 ### Key Features
 
 - **Multi-Layer Intent Recognition Pipeline**
-  - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, TF-IDF weighted indexing, and synonym expansion
+  - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, Jaccard similarity, TF-IDF weighted indexing, and synonym expansion
   - Layer 2 - Neural Embeddings: Semantic similarity using Sentence Transformer embeddings (SBERT) for context-aware matching
   - Layer 3 - Generative AI: LLM-based classification with conversation history awareness (OpenAI API or local Ollama)
   - Boost Engine: Domain-specific contextual rules applying negative sentiment detection, entity keyword matching, and co-occurrence patterns
@@ -364,16 +364,28 @@ The benchmark results above are validated against dataset with:
 
 ### Algorithmic Layer
 
-- **Information Retrieval**: Inverted index with TF-IDF weighting for efficient candidate selection
-- **String Similarity Metrics**: Levenshtein edit distance with length-based prefiltering
+**Core Pattern Matching Algorithms:**
+
+1. **Levenshtein Distance** (50% weight)
+   - **Purpose**: Character-level string similarity
+   - **Function**: Measures minimum edit operations (insertions, deletions, substitutions)
+
+2. **Jaccard Similarity** (50% weight)
+   - **Purpose**: Word-level set similarity
+   - **Function**: Compares word overlap between query and pattern using set intersection/union
+   - **Sub-components**:
+     - Exact word overlap: 70% weight
+     - Synonym-expanded overlap: 30% weight
+
+**Additional Features:**
+
+- **Faster Processing**: Inverted index with TF-IDF weighting for efficient candidate selection and ranking
 - **Synonym Expansion**: Domain-specific synonym dictionaries for lexical variation handling
 - **NLP Preprocessing**: Contraction expansion, filler word removal, and tokenization
 - **N-gram Matching**: Multi-word phrase detection with contextual bonuses
 - **Contextual Boost Engine**:
   - Negative sentiment keyword detection for complaint classification
-  - Dictionary-based entity keyword matching for domain entities
   - Keyword co-occurrence patterns and contextual heuristics
-  - Domain-specific rule-based disambiguation
 
 ### Semantic Layer
 

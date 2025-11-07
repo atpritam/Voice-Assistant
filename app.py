@@ -32,22 +32,22 @@ CORS(app)
 logger = logging.getLogger(__name__)
 
 session_conversations = defaultdict(list)
-MAX_CONVERSATION_HISTORY = 50
+MAX_CONVERSATION_HISTORY = 50                       # Max conversation turns to keep per session
 
 # PIPELINE CONFIGURATION
 ENABLE_ALGORITHMIC = True
 ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
-MIN_CONFIDENCE = 0.5
-ALGORITHMIC_THRESHOLD = 0.65
-SEMANTIC_THRESHOLD = 0.5
+MIN_CONFIDENCE = 0.5                                # Minimum confidence to accept intent
+ALGORITHMIC_THRESHOLD = 0.65                        # Min confidence for algorithmic layer to skip next layers
+SEMANTIC_THRESHOLD = 0.5                            # Min confidence for semantic layer to skip LLM layer
 
-SEMANTIC_MODEL = "all-mpnet-base-v2" # "all-MiniLM-L6-v2"
+SEMANTIC_MODEL = "all-mpnet-base-v2"                # Options: "all-MiniLM-L6-v2"
 
-USE_LOCAL_LLM = True
-LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # "mistral:7b"
-CLOUD_LLM_MODEL = "gpt-5-nano" # "gpt-4-mini"
+USE_LOCAL_LLM = True                                # True: use Ollama local LLM, False: use OpenAI API
+LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"     # Options: "mistral:7b"
+CLOUD_LLM_MODEL = "gpt-5-nano"                      # Options: "gpt-4-mini"
 
 ENABLE_LOGGING = True
 TEST_MODE = False
@@ -58,7 +58,7 @@ TTS_OUTPUT_DIR = "./static/audio"
 
 # ASR Configuration
 ASR_MODEL = "tiny.en"
-ENABLE_AUDIO_PREPROCESSING = True
+ENABLE_AUDIO_PREPROCESSING = True                   # Noise reduction, Normalization, Silence trimming
 
 def initialize_intent_recognizer():
     """Initialize intent recognizer with error handling"""

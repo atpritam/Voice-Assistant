@@ -162,11 +162,15 @@ class ResultPrinter:
         if llm is not None:
             print(f"  LLM: {llm}")
 
+        if ((semantic or semantic is None) or (llm or llm is None)) and (algo or algo is None):
+            print(f"  Algorithmic Threshold: {CONFIG.thresh_algo}")
+        if (llm or llm is None) and (semantic or semantic is None):
+            print(f"  Semantic Threshold: {CONFIG.thresh_semantic}")
+        if semantic or semantic is None:
+            print(f"  Semantic Model: {CONFIG.semantic_model}")
         if llm or llm is None:
             print(f"  LLM Backend: {'Ollama' if CONFIG.use_local_llm else 'OpenAI'}")
             print(f"  LLM Model: {CONFIG.llm_model_name}")
-        if semantic or semantic is None:
-            print(f"  Semantic Model: {CONFIG.semantic_model}")
 
         print(f"  Boost Engine: {CONFIG.use_boost_engine}")
         print(f"  Edge Cases: {CONFIG.include_edge_cases}")

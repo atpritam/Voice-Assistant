@@ -4,46 +4,48 @@ COMPREHENSIVE TEST
 ================================================================================
 
 
-Pipeline: Algorithmic -> Semantic -> LLM (Ollama)
-Semantic Model: all-mpnet-base-v2
-LLM Model: llama3.2:3b-instruct-q4_K_M
-Mode: TEST MODE (intent recognition only)
-
-Boost Engine: True
-Edge Cases Included: False
+Configuration:
+  Algorithmic: True
+  Semantic: True
+  LLM: True
+  Algorithmic Threshold: 0.65
+  Semantic Threshold: 0.5
+  Semantic Model: all-mpnet-base-v2
+  LLM Backend: Ollama
+  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Boost Engine: True
+  Edge Cases: False
 
 Test Dataset Size: 295 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 98.98%
-Correct: 292 / 295
-Avg Query Time: 15.7ms
-Queries/s: 63.5
+Accuracy: 99.32%
+Correct: 293 / 295
+Avg Query Time: 16.7ms
+Queries/s: 60.0
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 261 ( 88.5%)  Acc: 99.23%
+Algorithmic : 260 ( 88.1%)  Acc: 99.62%
 Semantic    :  22 (  7.5%)  Acc: 95.45%
-LLM         :  12 (  4.1%)  Acc: 100.00%
+LLM         :  13 (  4.4%)  Acc: 100.00%
 
 LLM TOKEN USAGE
 --------------------------------------------------------------------------------
-Total Tokens: 187
-Avg Tokens/Query: 0.6
+Total Tokens: 203
+Avg Tokens/Query: 0.7
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 237 ( 80.3%)
-Medium (0.6-0.8)      :  55 ( 18.6%)
+High (≥0.8)           : 234 ( 79.3%)
+Medium (0.6-0.8)      :  58 ( 19.7%)
 Low (<0.6)            :   3 (  1.0%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'I need to talk to someone about my order' -> order (exp: complaint, conf: 0.90, layer: algorithmic)
+1. 'Driver still hasn't shown up' -> delivery (exp: complaint, conf: 0.62, layer: semantic)
 
-2. 'Driver still hasn't shown up' -> delivery (exp: complaint, conf: 0.62, layer: semantic)
-
-3. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.75, layer: algorithmic)
+2. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.75, layer: algorithmic)
