@@ -406,7 +406,7 @@ class BoostRuleEngine:
 
             price_related_words = {'menu'} | self.synonyms.get('price', set())
             if query_words & price_related_words and not has_negative:
-                yield IntentAdjustment('menu_inquiry', PRICE_INQUIRY_BOOST, "Price inquiry boost")
+                yield IntentAdjustment('menu_inquiry', PRICE_INQUIRY_BOOST, "Menu/Price inquiry boost")
                 yield IntentAdjustment('order',ORDER_INQUIRY_PENALTY,
                     "Order penalty for price inquiry",
                     is_penalty=True)

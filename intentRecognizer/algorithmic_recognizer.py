@@ -391,9 +391,9 @@ class AlgorithmicRecognizer:
         return [(i, p, norm) for i, (p, norm) in enumerate(zip(patterns, normalized_patterns))
                 if abs(query_len - len(p)) <= max_diff]
 
-    def _evaluate_single_intent_optimized(self, intent_name: str, intent_data: Dict,
+    def _evaluate_single_intent(self, intent_name: str, intent_data: Dict,
                                          query: str, query_words: Set[str]) -> Optional[IntentEvaluation]:
-        """Optimized intent evaluation with conservative filtering"""
+        """Intent evaluation with conservative filtering"""
         patterns = intent_data.get("patterns", [])
         normalized_patterns = self._normalized_patterns_cache.get(intent_name, [])
 
@@ -437,9 +437,9 @@ class AlgorithmicRecognizer:
 
         return IntentEvaluation(max_similarity, best_pattern, best_breakdown)
 
-    def _evaluate_all_intents_optimized(self, query: str, query_words: Set[str],
+    def _evaluate_all_intents(self, query: str, query_words: Set[str],
                                         early_exit_threshold: Optional[float] = None) -> Dict:
-        """Optimized intent evaluation using inverted index (if enabled)"""
+        """Intent evaluation using inverted index"""
 
         candidate_intents = self.inverted_index.get_candidate_intents(query_words)
 
@@ -458,7 +458,7 @@ class AlgorithmicRecognizer:
             if not intent_data:
                 continue
 
-            evaluation = self._evaluate_single_intent_optimized(intent_name, intent_data, query, query_words)
+            evaluation = self._evaluate_single_intent(intent_name, intent_data, query, query_words)
             if evaluation and evaluation.similarity > 0:
                 intent_scores[intent_name] = {
                     'similarity': evaluation.similarity,
@@ -506,7 +506,7 @@ class AlgorithmicRecognizer:
 
         early_exit_threshold = INTENT_HIGH_SIMILARITY_EXIT
 
-        intent_scores = self._evaluate_all_intents_optimized(
+        intent_scores = self._evaluate_all_intents(
             processed_query,
             query_words,
             early_exit_threshold=early_exit_threshold
@@ -538,7 +538,7 @@ class AlgorithmicRecognizer:
         if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
 
             full_query_words = set(self.text_processor.extract_filtered_words(query))
-            full_intent_scores = self._evaluate_all_intents_optimized(
+            full_intent_scores = self._evaluate_all_intents(
                 query,
                 full_query_words,
                 early_exit_threshold=early_exit_threshold
