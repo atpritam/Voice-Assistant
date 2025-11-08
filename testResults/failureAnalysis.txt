@@ -258,41 +258,6 @@ FINAL RESULT:
     all_similarities: {'What are your delivery options?': 0.4929260015487671, 'How long does delivery take?': 0.6856116056442261, "What's the delivery time?": 0.6156465411186218, 'Can I track my order?': 0.24450793862342834, 'Where is my order?': 0.40903419256210327, "What's my order status?": 0.31081676483154297, 'Do you have free delivery?': 0.4250575602054596, 'How do I track my delivery?': 0.39889103174209595, "What's the minimum order for delivery?": 0.5202010869979858, 'Do you deliver to my area?': 0.3491578996181488, 'How much is delivery?': 0.5241513848304749, 'Is my order on the way?': 0.4284206032752991, 'When will my order arrive?': 0.49280881881713867, 'What is the status of my order delivery?': 0.5248071551322937, 'Track my pizza': 0.2185482680797577, 'Where is my pizza?': 0.343780517578125, "Where's the driver?": 0.18709218502044678, 'When can I expect it to arrive?': 0.5144110918045044, 'How long until my order arrives?': 0.5160351991653442, "What's the estimated delivery time?": 0.5977888107299805, 'Can you check on my delivery?': 0.5309069156646729, 'Where is the driver?': 0.18709218502044678, 'Do you do late night delivery?': 0.39375847578048706, 'i need it delivered to my house': 0.43518683314323425, 'How much longer for delivery?': 0.7055373787879944, 'I’m still waiting for my order': 0.5748180150985718, 'How long is delivery usually?': 0.6709815263748169, "What's the delivery fee?": 0.42305269837379456, 'Do you charge for delivery?': 0.41430026292800903, 'can I get that delivered?': 0.43893325328826904, 'Is delivery free over a certain amount?': 0.3607477843761444, "What's your delivery range?": 0.4241275191307068, 'Are you in my delivery zone?': 0.3989325165748596, 'Delivery time estimate': 0.6086029410362244, "What's the minimum order value?": 0.056360527873039246, 'Is there a delivery minimum?': 0.5124608278274536, 'Do you have real-time tracking?': 0.16887396574020386, 'Can I see where the driver is?': 0.02835387922823429, "What's the fastest delivery option?": 0.6158886551856995, 'Can I cancel my delivery?': 0.5179767608642578, 'When will I get it?': 0.3408765196800232, 'Is delivery available during holidays?': 0.4482463598251343, 'What payment methods for delivery?': 0.31571727991104126, 'I gave the wrong address': 0.30280232429504395, 'Update my delivery location': 0.36764857172966003, 'Can the driver call me?': 0.12402781844139099, 'How do I contact the driver?': 0.1877201795578003, "What if I'm not home?": 0.16335391998291016, 'What is the estimated time for delivery?': 0.595389723777771, 'What is the ETA?': 0.29027605056762695, 'Can you leave it at the door?': 0.15769919753074646, 'Do you offer contactless delivery?': 0.3433361351490021, 'Can I meet the driver outside?': 0.115137979388237}
 ================================================================================
 
-================================================================================
-Query: 'where's my food at'
-Expected Intent: delivery
---------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'where's my food at'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['delivery', 'hours_location', 'complaint', 'order', 'menu_inquiry', 'general']
-2025-11-07 15:39:54 [boostEngine] Time/location boost [hours_location]: 0.679 -> 0.929
-2025-11-07 15:39:54 [boostEngine] Order penalty for time query [order]: 0.117 -> 0.000
-2025-11-07 15:39:54 [Algorithmic] hours_location (0.929, high, keyword + levenshtein + boost [+0.25])
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: hours_location (0.929, high)
-
-FINAL RESULT:
-  Predicted: hours_location
-  Confidence: 0.929
-  Layer: algorithmic
-  Match: ✗ INCORRECT
-
-  Score Breakdown:
-    keyword_similarity: 0.431
-    exact_overlap: 0.250
-    synonym_similarity: 0.852
-    levenshtein_similarity: 0.667
-    phrase_bonus: 0.050
-    keyword_bonus: 0.080
-    base_score: 0.549
-    final_score: 0.679
-    pre_boost_winner: delivery
-    pre_boost_winner_score: 0.812
-    current_winner_pre_boost_score: 0.679
-    boost_delta: 0.250
-    winner_changed: True
-================================================================================
-
 
 ================================================================================
 SUMMARY
@@ -317,6 +282,4 @@ Incorrect Predictions:
     Expected: menu_inquiry, Got: order (semantic, conf=0.64)
   'The delivery took forever'
     Expected: complaint, Got: delivery (semantic, conf=0.69)
-  'where's my food at'
-    Expected: delivery, Got: hours_location (algorithmic, conf=0.93)
 

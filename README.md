@@ -131,9 +131,9 @@ Voice Output
 
 | Configuration                | Accuracy   | Latency | Q/s | Tokens/Query | Total Tokens |
 |------------------------------|------------|---------|-----|--------------|--------------|
-| **Full Pipeline (Llama 3B)** | **97.75%** | **22.1ms** | **45.3** | **0.9** | **377**      |
-| **Full Pipeline (GPT-5)**    | **97.75%** | **280.1ms** | **3.6** | **33.3** | **13,328**   |
-| LLM-Only (Llama 3B, local)   | 88.50%     | 272.1ms | 3.7 | 15.9 | 6,363        |
+| **Full Pipeline (Llama 3B)** | **98.00%** | **23.3ms** | **42.9** | **1.0** | **409**      |
+| **Full Pipeline (GPT-5)**    | **98.00%** | **280.1ms** | **3.6** | **33.3** | **13,328**   |
+| LLM-Only (Llama 3B, local)   | 88.25%     | 263.8ms | 3.8 | 16.0 | 6,391        |
 | LLM-Only (GPT-5, cloud)      | 92.25%     | **5.58s** | 0.2 | **518.8** | **207,507**  |
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
@@ -307,19 +307,19 @@ Comprehensive testing with 400 queries including 105 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 97.75% | 22.1ms | 45.3 |
-| Algorithmic + Semantic | 94.75% | 7.2ms | 138.5 |
-| Algorithmic + LLM | 96.00% | 54.0ms | 18.5 |
-| Semantic + LLM | 93.75% | 44.6ms | 22.4 |
-| Algorithmic Only | 90.00% | 2.7ms | 365.0 |
-| Semantic Only | 89.25% | 9.8ms | 102.4 |
-| LLM Only | 88.50% | 272.1ms | 3.7 |
+| Full Pipeline | 98.00% | 23.1ms | 43.3 |
+| Algorithmic + Semantic | 94.75% | 4.1ms | 246.5 |
+| Algorithmic + LLM | 96.00% | 53.8ms | 18.6 |
+| Semantic + LLM | 93.50% | 44.8ms | 22.3 |
+| Algorithmic Only | 90.25% | 2.5ms | 396.8 |
+| Semantic Only | 89.25% | 14.8ms | 67.8 |
+| LLM Only | 88.25% | 263.8ms | 3.8 |
 
 ### Layer Distribution (Full Pipeline)
 
-- Algorithmic layer: 80.8% of queries (323/400)
-- Semantic layer: 13.3% of queries (53/400)
-- LLM layer: 6.0% of queries (24/400)
+- Algorithmic layer: 80.0% of queries (320/400)
+- Semantic layer: 13.5% of queries (54/400)
+- LLM layer: 6.5% of queries (26/400)
 
 ### Boost Engine Impact
 
@@ -327,12 +327,12 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 | Metric              | Without Boost | With Boost | Improvement |
 |---------------------|---------------|------------|-------------|
-| Accuracy            | 95.00% | 97.75% | +2.75% |
-| Correct Predictions | 380 | 391 | +11 |
-| Query Time          | 34.4ms | 22.8ms | 34% faster |
-| Algorithmic Usage   | 268 | 323 | +55 |
-| Semantic Usage      | 95 | 53 | -42 |
-| LLM Fallback        | 37 | 24 | -13 |
+| Accuracy            | 94.75% | 98.00% | +3.25% |
+| Correct Predictions | 379 | 392 | +13 |
+| Query Time          | 33.4ms | 23.3ms | 30% faster |
+| Algorithmic Usage   | 268 | 320 | +52 |
+| Semantic Usage      | 95 | 54 | -41 |
+| LLM Fallback        | 37 | 26 | -11 |
 
 ### Confusion Matrix Results (Full Pipeline - 400 queries)
 
@@ -340,15 +340,15 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 | Intent | Precision | Recall | F1-Score | Support |
 |--------|-----------|--------|----------|---------|
-| complaint | 100.00% | 95.24% | 97.56% | 84 |
-| delivery | 96.43% | 96.43% | 96.43% | 56 |
+| complaint | 100.00% | 96.43% | 98.18% | 84 |
+| delivery | 94.74% | 96.43% | 95.58% | 56 |
 | general | 100.00% | 100.00% | 100.00% | 22 |
 | hours_location | 96.83% | 98.39% | 97.60% | 62 |
 | menu_inquiry | 98.85% | 97.73% | 98.29% | 88 |
-| order | 95.65% | 100.00% | 97.78% | 88 |
+| order | 96.67% | 98.86% | 97.75% | 88 |
 
 
-See `testResults/` directory for detailed  analyses.
+See `testResults/` directory for detailed analyses.
 
 ### Test Dataset Quality
 

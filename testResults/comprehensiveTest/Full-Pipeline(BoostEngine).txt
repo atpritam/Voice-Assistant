@@ -21,14 +21,14 @@ Test Dataset Size: 400 queries
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 97.75%
-Correct: 391 / 400
-Avg Query Time: 24.1ms
-Queries/s: 41.6
+Accuracy: 98.00%
+Correct: 392 / 400
+Avg Query Time: 23.8ms
+Queries/s: 42.0
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 320 ( 80.0%)  Acc: 98.44%
+Algorithmic : 320 ( 80.0%)  Acc: 98.75%
 Semantic    :  54 ( 13.5%)  Acc: 92.59%
 LLM         :  26 (  6.5%)  Acc: 100.00%
 
@@ -61,5 +61,3 @@ INCORRECT PREDICTIONS
 7. 'I don't like thick crust do you have thin' -> order (exp: menu_inquiry, conf: 0.64, layer: semantic)
 
 8. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.69, layer: semantic)
-
-9. 'where's my food at' -> hours_location (exp: delivery, conf: 0.93, layer: algorithmic)

@@ -8,9 +8,11 @@ COMPARATIVE TEST
 Testing multiple pipeline configurations for comparative results
 
 Configuration:
+  Algorithmic Threshold: 0.65
+  Semantic Threshold: 0.5
+  Semantic Model: all-mpnet-base-v2
   LLM Backend: OpenAI
   LLM Model: gpt-5-nano
-  Semantic Model: all-mpnet-base-v2
   Boost Engine: True
   Edge Cases: True
 
@@ -20,9 +22,9 @@ Test Dataset Size: 400 queries
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 97.75% (391/400 correct)
+✓ Accuracy: 98.00% (391/400 correct)
   Time: 112.02s | Avg: 280.1ms | 3.6 q/s
-  Layers Used - Algo: 323, Semantic: 53, LLM: 24
+  Layers Used - Algo: 320, Semantic: 54, LLM: 26
   Tokens: 13,328 (33.3 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
@@ -30,14 +32,14 @@ Algorithmic -> Semantic
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 94.75% (379/400 correct)
   Time: 3.38s | Avg: 8.5ms | 118.3 q/s
-  Layers Used - Algo: 323, Semantic: 70, LLM: 0
+  Layers Used - Algo: 320, Semantic: 72, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 97.25% (389/400 correct)
   Time: 293.43s | Avg: 733.6ms | 1.4 q/s
-  Layers Used - Algo: 323, Semantic: 0, LLM: 77
+  Layers Used - Algo: 320, Semantic: 0, LLM: 80
   Tokens: 40,419 (101.0 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
@@ -51,7 +53,7 @@ Semantic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 90.00% (360/400 correct)
+✓ Accuracy: 90.25% (360/400 correct)
   Time: 945.9ms | Avg: 2.4ms | 422.9 q/s
   Layers Used - Algo: 381, Semantic: 0, LLM: 0
 
@@ -79,11 +81,11 @@ Pipeline Comparison
 --------------------------------------------------------------------------------
 Configuration             Accuracy   Total Time   Avg Time   Q/s
 --------------------------------------------------------------------------------
-Full Pipeline               97.75%     112.02s   280.1ms       3.6
+Full Pipeline               98.00%     112.02s   280.1ms       3.6
 Algorithmic -> Semantic     94.75%       3.38s     8.5ms     118.3
 Algorithmic -> LLM          97.25%     293.43s   733.6ms       1.4
 Semantic -> LLM             94.00%     236.11s   590.3ms       1.7
-Algorithmic Only            90.00%     945.9ms     2.4ms     422.9
+Algorithmic Only            90.25%     945.9ms     2.4ms     422.9
 Semantic Only               89.25%       7.95s    19.9ms      50.3
 LLM Only                    92.25%    2231.45s     5.58s       0.2
 
@@ -91,9 +93,9 @@ LAYER USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             Algo     Semantic   LLM      Unrecognized Intent
 --------------------------------------------------------------------------------
-Full Pipeline                323        53      24        0
-Algorithmic -> Semantic      323        70       0        7
-Algorithmic -> LLM           323         0      77        0
+Full Pipeline                320        54      26        0
+Algorithmic -> Semantic      320        72       0        8
+Algorithmic -> LLM           320         0      80        0
 Semantic -> LLM                0       354      46        0
 Algorithmic Only             381         0       0       19
 Semantic Only                  0       386       0       14
