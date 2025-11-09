@@ -11,15 +11,15 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Any
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from intentRecognizer.intent_recognizer import IntentRecognizer
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from intentRecognizer import IntentRecognizer
 
 
 # === CONFIGURATION ===
 @dataclass
 class Config:
     """Test configuration"""
-    utils_dir: str = os.path.join(os.path.dirname(__file__), '..', 'utils')
+    utils_dir: str = os.path.join(os.path.dirname(__file__), '../..', 'utils')
     pattern_file: str = os.path.join(utils_dir, 'intent_patterns.json')
     min_confidence: float = 0.5
     semantic_model: str = "all-mpnet-base-v2"  # all-MiniLM-L6-v2
@@ -306,7 +306,7 @@ class BaseTestRunner:
             custom_data: Optional custom test dataset
             log_level: Logging level (default: INFO)
         """
-        from test.data import get_test_dataset
+        from .data import get_test_dataset
         from utils.logger import setup_logging
 
         if not logging.getLogger().handlers:

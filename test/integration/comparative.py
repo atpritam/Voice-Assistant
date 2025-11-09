@@ -6,10 +6,10 @@ Runs multiple pipeline configurations and compares results
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from typing import Dict, List
-from test.common import (
+from .common import (
     CONFIG,
     BaseTestRunner,
     ResultPrinter,

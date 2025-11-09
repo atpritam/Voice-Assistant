@@ -7,9 +7,9 @@ import sys
 import os
 import numpy as np
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from test.common import (
+from .common import (
     CONFIG,
     RecognizerFactory,
     ResultPrinter,
@@ -140,7 +140,7 @@ class ConfusionMatrixTestRunner:
     def __init__(self, test_data=None):
         """Initialize test runner"""
         import logging
-        from test.data import get_test_dataset
+        from .data import get_test_dataset
         from utils.logger import setup_logging
 
         setup_logging(level=logging.WARNING)

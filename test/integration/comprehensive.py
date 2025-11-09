@@ -7,10 +7,10 @@ import sys
 import os
 import traceback
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from typing import Dict, Optional, Tuple
-from test.common import (
+from .common import (
     CONFIG,
     BaseTestRunner,
     ResultPrinter,

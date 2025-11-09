@@ -297,6 +297,14 @@ python -m test.runtest --openai
 python -m test.runtest "where is my pizza?" --exp delivery
 ```
 
+### Unit Tests
+
+Runs pytest-based checks for the algorithmic recognizer Similarity scoring and text processing. (77 tests)
+
+```bash
+python -m test.runtest -unit 
+```
+
 ## Performance Benchmarks
 
 All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-instruct-q4_K_M`.

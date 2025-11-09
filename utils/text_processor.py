@@ -45,7 +45,7 @@ class TextProcessor:
     @staticmethod
     def expand_contractions(text: str) -> str:
         """Expand English contractions using both special cases and suffix-based rules."""
-        text = text.replace("’", "'").replace("‘", "'")
+        text = text.replace("'", "'").replace("'", "'").replace("ʼ", "'")
 
         text = re.sub(r"([!?.,;:])", r" \1 ", text)
         words = text.split()
