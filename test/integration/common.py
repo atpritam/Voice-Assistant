@@ -25,8 +25,8 @@ class Config:
     semantic_model: str = "all-mpnet-base-v2"  # all-MiniLM-L6-v2
 
     # LLM Configuration
-    use_local_llm: bool = False
-    llm_model: str = "gpt-oss:120b-cloud"
+    use_local_llm: bool = True
+    llm_model: str = "llama3.2:3b-instruct-q4_K_M"
     ollama_base_url: str = "http://localhost:11434"
 
     # Pipeline defaults
