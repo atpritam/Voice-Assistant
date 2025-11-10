@@ -61,9 +61,9 @@ ollama serve &
 
 ```bash
 ollama pull gpt-oss:120b-cloud
-ollama ollama signin
+ollama signin
 ```
-Sign in to Ollama with the prompted link.
+Sign in to Ollama with the link provided in the terminal.
 
 Edit `app.py` and set `USE_LOCAL_LLM = False`
 
@@ -136,6 +136,8 @@ Voice Output
 | **Full Pipeline (GPT-OSS 120B)** | **98.00%** | **91.2ms** | **11.0** | +44%          |
 | LLM-Only (Llama3.2 3B, local)    | 86.00% | 262.2ms | 3.8 | +1,450%       |
 | LLM-Only (GPT-OSS 120B, cloud)   | 92.75% | **1.42s** | 0.7 | +2,078%       |
+
+\*GPT-OSS 120B is the latest Open Source GPT model released by OpenAI on August 5, 2025.
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 
@@ -408,7 +410,7 @@ The benchmark results above are validated against dataset with:
 3. Modify linguistics in `utils/linguistic_resources.json`
 4. Adjust boost rules in `intentRecognizer/boostEngine.py` if using algorithmic layer
 5. Update llm prompt templates in `intentRecognizer/llm_recognizer.py`
-6. Update test dataset in `test/data.py`
+6. Update test dataset in `test/integration/data.py`
 
 ## License
 
