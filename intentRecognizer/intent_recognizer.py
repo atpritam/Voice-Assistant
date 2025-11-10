@@ -21,7 +21,7 @@ MEDIUM_CONFIDENCE_THRESHOLD = 0.6             # "medium" confidence level classi
 DEFAULT_MIN_CONFIDENCE = 0.5                  # Minimum confidence to accept intent (else "unknown")
 DEFAULT_ALGORITHMIC_THRESHOLD = 0.65          # Min confidence for algorithmic layer to skip next layers
 DEFAULT_SEMANTIC_THRESHOLD = 0.5              # Min confidence for semantic layer to skip LLM layer
-DEFAULT_LLM_MODEL = "gpt-5-nano"
+DEFAULT_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"
 DEFAULT_SEMANTIC_MODEL = "all-mpnet-base-v2"
 
 

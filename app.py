@@ -45,9 +45,8 @@ SEMANTIC_THRESHOLD = 0.5                            # Min confidence for semanti
 
 SEMANTIC_MODEL = "all-mpnet-base-v2"                # Options: "all-MiniLM-L6-v2"
 
-USE_LOCAL_LLM = True                                # True: use Ollama local LLM, False: use OpenAI API
-LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"     # Options: "mistral:7b"
-CLOUD_LLM_MODEL = "gpt-5-nano"                      # Options: "gpt-4-mini"
+USE_LOCAL_LLM = True                                # True: use Ollama local LLM, False: use Ollama Cloud API
+LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"           # Options: "gpt-oss:120b-cloud", "gemma3:4b-it-qat"
 
 ENABLE_LOGGING = True
 TEST_MODE = False
@@ -62,7 +61,6 @@ ENABLE_AUDIO_PREPROCESSING = True                   # Noise reduction, Normaliza
 
 def initialize_intent_recognizer():
     """Initialize intent recognizer with error handling"""
-    llm_model = LOCAL_LLM_MODEL if USE_LOCAL_LLM else CLOUD_LLM_MODEL
     try:
         recognizer = IntentRecognizer(
             enable_logging=ENABLE_LOGGING,
@@ -72,7 +70,7 @@ def initialize_intent_recognizer():
             algorithmic_threshold=ALGORITHMIC_THRESHOLD,
             semantic_threshold=SEMANTIC_THRESHOLD,
             semantic_model=SEMANTIC_MODEL,
-            llm_model=llm_model,
+            llm_model=LLM_MODEL,
             device="auto", # "cuda" , "cpu" , "auto" (for semantic model)
             min_confidence=MIN_CONFIDENCE,
             test_mode=TEST_MODE,
@@ -82,10 +80,10 @@ def initialize_intent_recognizer():
         return recognizer
 
     except ValueError as e:
-        logger.error(f"\nIntent Recognizer Configuration Error: {e}\n")
+        logger.error(f"Intent Recognizer Configuration Error: {e}\n")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"\nIntent Recognizer Initialization Error: {e}\n")
+        logger.error(f"Intent Recognizer Initialization Error: {e}\n")
         sys.exit(1)
 
 def initialize_tts_service():

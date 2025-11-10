@@ -25,8 +25,8 @@ class Config:
     semantic_model: str = "all-mpnet-base-v2"  # all-MiniLM-L6-v2
 
     # LLM Configuration
-    use_local_llm: bool = True
-    llm_model: str = "llama3.2:3b-instruct-q4_K_M"
+    use_local_llm: bool = False
+    llm_model: str = "gpt-oss:120b-cloud"
     ollama_base_url: str = "http://localhost:11434"
 
     # Pipeline defaults
@@ -43,8 +43,8 @@ class Config:
 
     @property
     def llm_model_name(self) -> str:
-        """Return LLM model name based on backend"""
-        return self.llm_model if self.use_local_llm else "gpt-5-nano"
+        """Return LLM model name"""
+        return self.llm_model
 
 
 # Global config instance
@@ -59,7 +59,7 @@ def format_time(seconds: float) -> str:
 
 def describe_pipeline(algo: bool, semantic: bool, llm: bool) -> str:
     """Generate pipeline description"""
-    llm_label = "LLM (Ollama)" if CONFIG.use_local_llm else "LLM (OpenAI)"
+    llm_label = "LLM (Ollama)"
     layers = [
         name for enabled, name in [
             (algo, "Algorithmic"),
@@ -169,7 +169,7 @@ class ResultPrinter:
         if semantic or semantic is None:
             print(f"  Semantic Model: {CONFIG.semantic_model}")
         if llm or llm is None:
-            print(f"  LLM Backend: {'Ollama' if CONFIG.use_local_llm else 'OpenAI'}")
+            print(f"  LLM Backend: Ollama")
             print(f"  LLM Model: {CONFIG.llm_model_name}")
 
         print(f"  Boost Engine: {CONFIG.use_boost_engine}")

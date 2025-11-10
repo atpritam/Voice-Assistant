@@ -22,54 +22,54 @@ Test Dataset Size: 295 queries
 Full Pipeline
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 99.32% (293/295 correct)
-  Time: 4.99s | Avg: 16.9ms | 59.1 q/s
+  Time: 4.88s | Avg: 16.5ms | 60.5 q/s
   Layers Used - Algo: 260, Semantic: 22, LLM: 13
-  Tokens: 203 (0.7 avg/query)
+  Tokens: 3,201 (10.9 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> Semantic
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 96.95% (286/295 correct)
-  Time: 1.49s | Avg: 5.0ms | 198.6 q/s
+  Time: 1.76s | Avg: 6.0ms | 168.0 q/s
   Layers Used - Algo: 260, Semantic: 30, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 98.64% (291/295 correct)
-  Time: 9.63s | Avg: 32.6ms | 30.6 q/s
+✓ Accuracy: 98.31% (290/295 correct)
+  Time: 9.75s | Avg: 33.0ms | 30.3 q/s
   Layers Used - Algo: 260, Semantic: 0, LLM: 35
-  Tokens: 557 (1.9 avg/query)
+  Tokens: 8,633 (29.3 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 95.59% (282/295 correct)
-  Time: 10.20s | Avg: 34.6ms | 28.9 q/s
+  Time: 9.44s | Avg: 32.0ms | 31.3 q/s
   Layers Used - Algo: 0, Semantic: 273, LLM: 22
-  Tokens: 347 (1.2 avg/query)
+  Tokens: 5,421 (18.4 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 94.92% (280/295 correct)
-  Time: 575.2ms | Avg: 1.9ms | 512.9 q/s
+  Time: 834.0ms | Avg: 2.8ms | 353.7 q/s
   Layers Used - Algo: 287, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic Only
 ────────────────────────────────────────────────────────────────────────────────
 ✓ Accuracy: 92.88% (274/295 correct)
-  Time: 3.18s | Avg: 10.8ms | 92.6 q/s
+  Time: 3.07s | Avg: 10.4ms | 95.9 q/s
   Layers Used - Algo: 0, Semantic: 289, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 LLM Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 88.47% (261/295 correct)
-  Time: 77.94s | Avg: 264.2ms | 3.8 q/s
+✓ Accuracy: 86.44% (255/295 correct)
+  Time: 76.67s | Avg: 259.9ms | 3.8 q/s
   Layers Used - Algo: 0, Semantic: 0, LLM: 295
-  Tokens: 4,698 (15.9 avg/query)
+  Tokens: 73,055 (247.6 avg/query)
 
 ================================================================================
 COMPARATIVE ANALYSIS
@@ -80,13 +80,13 @@ Pipeline Comparison
 --------------------------------------------------------------------------------
 Configuration             Accuracy   Total Time   Avg Time   Q/s
 --------------------------------------------------------------------------------
-Full Pipeline               99.32%       4.99s    16.9ms      59.1
-Algorithmic -> Semantic     96.95%       1.49s     5.0ms     198.6
-Algorithmic -> LLM          98.64%       9.63s    32.6ms      30.6
-Semantic -> LLM             95.59%      10.20s    34.6ms      28.9
-Algorithmic Only            94.92%     575.2ms     1.9ms     512.9
-Semantic Only               92.88%       3.18s    10.8ms      92.6
-LLM Only                    88.47%      77.94s   264.2ms       3.8
+Full Pipeline               99.32%       4.88s    16.5ms      60.5
+Algorithmic -> Semantic     96.95%       1.76s     6.0ms     168.0
+Algorithmic -> LLM          98.31%       9.75s    33.0ms      30.3
+Semantic -> LLM             95.59%       9.44s    32.0ms      31.3
+Algorithmic Only            94.92%     834.0ms     2.8ms     353.7
+Semantic Only               92.88%       3.07s    10.4ms      95.9
+LLM Only                    86.44%      76.67s   259.9ms       3.8
 
 LAYER USAGE COMPARISON
 --------------------------------------------------------------------------------
@@ -98,13 +98,13 @@ Algorithmic -> LLM           260         0      35        0
 Semantic -> LLM                0       273      22        0
 Algorithmic Only             287         0       0        8
 Semantic Only                  0       289       0        6
-LLM Only                       0         0     295        2
+LLM Only                       0         0     295        0
 
 TOKEN USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             LLM Calls    Total Tokens    Avg/Query    vs Full Pipeline
 --------------------------------------------------------------------------------
-Full Pipeline                     13            203         0.7       baseline
-Algorithmic -> LLM                35            557         1.9       + 174.4%
-Semantic -> LLM                   22            347         1.2       +  70.9%
-LLM Only                         295          4,698        15.9       +2214.3%
+Full Pipeline                     13          3,201        10.9       baseline
+Algorithmic -> LLM                35          8,633        29.3       + 169.7%
+Semantic -> LLM                   22          5,421        18.4       +  69.4%
+LLM Only                         295         73,055       247.6       +2182.3%

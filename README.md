@@ -13,7 +13,7 @@ A **hybrid intent recognition system** combining classical NLP pattern matching,
 - **Multi-Layer Intent Recognition Pipeline**
   - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, Jaccard similarity, TF-IDF weighted indexing, and synonym expansion
   - Layer 2 - Neural Embeddings: Semantic similarity using Sentence Transformer embeddings (SBERT) for context-aware matching
-  - Layer 3 - Generative AI: LLM-based classification with conversation history awareness (OpenAI API or local Ollama)
+  - Layer 3 - Generative AI: LLM-based classification with conversation history awareness (Ollama local/cloud models)
   - Boost Engine: Domain-specific contextual rules applying negative sentiment detection, entity keyword matching, and co-occurrence patterns
 
 - **End-to-End Voice Interaction**
@@ -42,35 +42,36 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Choose Your LLM Backend
-
-**Option A: Local LLM with Ollama (Recommended - Free & Private)**
+### 2. LLM Backend
 
 ```bash
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
+```
 
+**Option A: Local Ollama LLM (Recommended - Free & Private)**
+
+```bash
 # Pull model and start service
 ollama pull llama3.2:3b-instruct-q4_K_M
 ollama serve &
 ```
 
-**Option B: OpenAI API (Faster setup, requires API key)**
-
-Edit `app.py` and set `USE_LOCAL_LLM = False`
+**Option B: Cloud Ollama Models (Faster setup, requires Ollama Signin)**
 
 ```bash
-# Get API key from https://platform.openai.com/api-keys
+ollama pull gpt-oss:120b-cloud
+ollama ollama signin
 ```
+Sign in to Ollama with the prompted link.
+
+Edit `app.py` and set `USE_LOCAL_LLM = False`
 
 ### 3. Run the Application
 
 ```bash
 # Create .env file with generated SECRET_KEY
 echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" > .env
-
-# If using OpenAI (Option B above), also add:
-echo "OPENAI_API_KEY=your-openai-api-key-here" >> .env
 
 # Start the application
 python app.py
@@ -115,7 +116,7 @@ Text Query
 │    └─ Neural embeddings │
 │         ↓               │
 │ 3. LLM (fallback)       │ ← 6% of queries
-│    └─ Ollama/OpenAI    │
+│    └─ Ollama/Cloud     │
 └─────────────────────────┘
      ↓
 Response Generation
@@ -129,12 +130,12 @@ Voice Output
 
 **Intent Recognition Performance Comparison (400 queries, test mode):**
 
-| Configuration                | Accuracy   | Latency | Q/s | Tokens/Query | Total Tokens |
-|------------------------------|------------|---------|-----|--------------|--------------|
-| **Full Pipeline (Llama 3B)** | **98.00%** | **23.3ms** | **42.9** | **1.0** | **409**      |
-| **Full Pipeline (GPT-5)**    | **98.00%** | **280.1ms** | **3.6** | **33.3** | **13,328**   |
-| LLM-Only (Llama 3B, local)   | 88.25%     | 263.8ms | 3.8 | 16.0 | 6,391        |
-| LLM-Only (GPT-5, cloud)      | 92.25%     | **5.58s** | 0.2 | **518.8** | **207,507**  |
+| Configuration                    | Accuracy | Latency | Q/s | Token Usage Δ |
+|----------------------------------|----------|---------|-----|---------------|
+| **Full Pipeline (Llama3.2 3B)**  | **98.00%** | **24.9ms** | **40.2** | baseline      |
+| **Full Pipeline (GPT-OSS 120B)** | **98.00%** | **91.2ms** | **11.0** | +44%          |
+| LLM-Only (Llama3.2 3B, local)    | 86.00% | 262.2ms | 3.8 | +1,450%       |
+| LLM-Only (GPT-OSS 120B, cloud)   | 92.75% | **1.42s** | 0.7 | +2,078%       |
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 
@@ -163,9 +164,6 @@ Create a `.env` file in the project root:
 ```env
 # Required
 SECRET_KEY=your_generated_secret_key_here
-
-# Optional - only if using OpenAI instead of local Ollama
-OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 Generate a secure `SECRET_KEY`:
@@ -189,9 +187,8 @@ SEMANTIC_THRESHOLD = 0.5
 
 # Model selection
 SEMANTIC_MODEL = "all-MiniLM-L6-v2" # Options: all-mpnet-base-v2
-USE_LOCAL_LLM = True  # True for Ollama, False for OpenAI
-LOCAL_LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # Options: "mistral:7b"
-CLOUD_LLM_MODEL = "gpt-5-nano" # Options: "gpt-4-mini"
+USE_LOCAL_LLM = True  # True: use Ollama local LLM, False: use Ollama Cloud API
+LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # Options: "gpt-oss:120b-cloud", "gemma3:4b-it-qat"
 ```
 
 ### TTS Configuration
@@ -290,9 +287,6 @@ python -m test.runtest -c --no-boost
 # Test without edge cases (standard dataset only)
 python -m test.runtest --no-edge
 
-# Use OpenAI instead of Ollama
-python -m test.runtest --openai
-
 # Single query test
 python -m test.runtest "where is my pizza?" --exp delivery
 ```
@@ -315,13 +309,13 @@ Comprehensive testing with 400 queries including 105 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 98.00% | 23.1ms | 43.3 |
-| Algorithmic + Semantic | 94.75% | 4.1ms | 246.5 |
-| Algorithmic + LLM | 96.00% | 53.8ms | 18.6 |
-| Semantic + LLM | 93.50% | 44.8ms | 22.3 |
-| Algorithmic Only | 90.25% | 2.5ms | 396.8 |
-| Semantic Only | 89.25% | 14.8ms | 67.8 |
-| LLM Only | 88.25% | 263.8ms | 3.8 |
+| Full Pipeline | 98.00% | 24.9ms | 40.2 |
+| Algorithmic + Semantic | 94.75% | 5.9ms | 170.6 |
+| Algorithmic + LLM | 96.50% | 55.4ms | 18.0 |
+| Semantic + LLM | 93.50% | 44.4ms | 22.5 |
+| Algorithmic Only | 90.25% | 3.4ms | 292.6 |
+| Semantic Only | 89.25% | 18.3ms | 54.8 |
+| LLM Only | 86.00% | 262.2ms | 3.8 |
 
 ### Layer Distribution (Full Pipeline)
 
@@ -330,7 +324,6 @@ Comprehensive testing with 400 queries including 105 edge cases:
 - LLM layer: 6.5% of queries (26/400)
 
 ### Boost Engine Impact
-
 Comparison with and without contextual boost rules on full pipeline (400 queries with edge cases):
 
 | Metric              | Without Boost | With Boost | Improvement |
@@ -404,7 +397,7 @@ The benchmark results above are validated against dataset with:
 ### LLM Layer
 
 - **Conversation Context**: Conversation history tracking for context-aware classification and response generation
-- Support for both cloud (OpenAI) and local (Ollama) models
+- Support for both cloud and local Ollama models
 
 ## Development
 
@@ -426,4 +419,4 @@ This project is part of a Bachelor's Thesis. All rights reserved.
 - OpenAI Whisper for speech recognition
 - Coqui TTS for speech synthesis
 - Sentence Transformers for semantic embeddings
-- Ollama for local LLM inference
+- Ollama for LLM inference

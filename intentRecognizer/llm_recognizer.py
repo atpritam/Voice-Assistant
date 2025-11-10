@@ -1,6 +1,6 @@
 """
 LLM Intent Recognizer with Response Generation
-Supports both OpenAI API and Local Ollama models
+Supports both Local and Cloud Ollama models
 """
 
 import os
@@ -17,7 +17,7 @@ from utils.statistics import StatisticsHelper
 
 from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
-DEFAULT_MODEL = "gpt-5-nano"
+DEFAULT_MODEL = "llama3.2:3b-instruct-q4_K_M"
 RESPONSE_MODE_THRESHOLD = 0.65
 
 # System Prompt Constants
@@ -45,7 +45,7 @@ class LLMResult:
 
 
 class LLMRecognizer:
-    """LLM-based intent recognition and response generation - supports OpenAI and Ollama"""
+    """LLM-based intent recognition and response generation - supports local and cloud Ollama models"""
 
     def __init__(
         self,
@@ -83,7 +83,7 @@ class LLMRecognizer:
             failed_queries=0,
             total_tokens_used=0,
             total_api_calls=0,
-            llm_provider="ollama" if use_local_llm else "openai",
+            llm_provider="ollama",
             response_generation_count=0,
             classification_count=0
         )
@@ -106,26 +106,36 @@ class LLMRecognizer:
 
     def _initialize_client(self):
         """Initialize appropriate LLM client"""
-        if self.use_local_llm:
-            try:
-                import requests
-                self.requests = requests
-                response = requests.get(f"{self.ollama_base_url}/api/tags")
-                if response.status_code != 200:
-                    raise ConnectionError(f"Cannot connect to Ollama at {self.ollama_base_url}")
-                self.logger.info(f"Connected to local Ollama at {self.ollama_base_url}")
-                self.logger.info(f"Using model: {self.model}")
-            except ImportError:
-                raise ImportError("requests library required for Ollama. Install: pip install requests")
-            except Exception as e:
-                raise ConnectionError(f"Failed to connect to Ollama: {e}")
-        else:
-            self.api_key = os.getenv("OPENAI_API_KEY")
-            if not self.api_key:
-                raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
-            from openai import OpenAI
-            self.client = OpenAI(api_key=self.api_key)
-            self.logger.info(f"Using OpenAI API with model: {self.model}")
+        try:
+            from ollama import Client
+            self.client = Client(host=self.ollama_base_url)
+            models_response = self.client.list()
+            available_models = [model.model for model in models_response.models]
+
+            if not available_models:
+                raise ConnectionError(f"No models found in Ollama at {self.ollama_base_url}")
+
+            if self.model not in available_models:
+                self.logger.warning(f"Model '{self.model}' not found in Ollama.")
+                self.logger.warning(f"Available models: {available_models}")
+                raise ValueError(f"Model '{self.model}' not available.")
+
+            is_cloud_model = self.model.endswith('-cloud')
+            if self.use_local_llm and is_cloud_model:
+                self.logger.warning("Set 'use_local_llm' to False to use Cloud models.")
+                raise ValueError(f"Model '{self.model}' is a Cloud model. Set 'use_local_llm' to False to use Cloud models.")
+
+            if not self.use_local_llm and not is_cloud_model:
+                self.logger.warning(f"Model '{self.model}' is not a Cloud model but use_local_llm=False.")
+
+            model_type = "Cloud Model" if is_cloud_model else f"local Ollama model at {self.ollama_base_url}"
+            self.logger.info(f"Connected to {model_type}.")
+            self.logger.info(f"Using model: {self.model}")
+
+        except ImportError:
+            raise ImportError("ollama library required for Ollama. Install: pip install ollama")
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to Ollama: {e}")
 
     def recognize(
         self,
@@ -185,7 +195,7 @@ class LLMRecognizer:
             self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
             self.stats["avg_confidence"].append(result.confidence)
 
-            provider = "Ollama" if self.use_local_llm else "OpenAI"
+            provider = "Ollama"
             mode_str = result.mode.upper()
 
             if not use_response_mode:
@@ -219,7 +229,7 @@ class LLMRecognizer:
         original_conf: Optional[float] = None,
         use_response_mode: bool = False
     ):
-        """Call LLM API (Ollama or OpenAI)"""
+        """Call LLM API"""
         system_prompt = self._get_system_prompt(
             valid_intents, recognized_intent, original_conf, use_response_mode
         )
@@ -230,23 +240,12 @@ class LLMRecognizer:
             {"role": "user", "content": user_prompt}
         ]
 
-        if self.use_local_llm:
-            payload = {
-                "model": self.model,
-                "messages": messages,
-                "stream": False,
-                "format": "json"
-            }
-            response = self.requests.post(f"{self.ollama_base_url}/api/chat", json=payload, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        else:
-            return self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,  # type: ignore
-                response_format={"type": "json_object"},  # type: ignore
-                verbosity="low"
-            )
+        response = self.client.chat(
+            model=self.model,
+            messages=messages,
+            format="json",
+        )
+        return response
 
     def _build_user_prompt(self, query: str, conversation_history: Optional[List[Dict]] = None) -> str:
         """Build user prompt with conversation context"""
@@ -382,14 +381,11 @@ Return ONLY valid JSON (no markdown):
         use_response_mode: bool = False
     ) -> LLMResult:
         """Parse and validate API response, creating LLMResult"""
-        if self.use_local_llm:
-            result_text = response.get("message", {}).get("content", "{}")
-            if "eval_count" in response:
-                self.stats["total_tokens_used"] += response.get("eval_count", 0)
-        else:
-            result_text = response.choices[0].message.content
-            if hasattr(response, "usage"):
-                self.stats["total_tokens_used"] += response.usage.total_tokens
+        result_text = response.get("message", {}).get("content", "{}")
+        if "eval_count" in response:
+            self.stats["total_tokens_used"] += response.get("eval_count", 0)
+        if "prompt_eval_count" in response:
+            self.stats["total_tokens_used"] += response.get("prompt_eval_count", 0)
 
         result_text = re.sub(r'^```(?:json)?\s*|\s*```$', '', result_text.strip(), flags=re.MULTILINE).strip()
         result = json.loads(result_text)

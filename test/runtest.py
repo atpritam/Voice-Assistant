@@ -80,8 +80,6 @@ Examples:
     llm_group = parser.add_mutually_exclusive_group()
     llm_group.add_argument("--ollama", action="store_true",
                            help="Use local Ollama LLM (default)")
-    llm_group.add_argument("--openai", action="store_true",
-                           help="Use OpenAI API")
 
     # Single query test
     parser.add_argument("query", nargs='?', default=None,
@@ -127,7 +125,6 @@ def configure_from_args(args: argparse.Namespace) -> None:
     Args:
         args: Parsed arguments
     """
-    CONFIG.use_local_llm = not args.openai
     CONFIG.include_edge_cases = not args.no_edge
 
     # Set configuration based on test mode
