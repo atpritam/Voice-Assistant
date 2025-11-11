@@ -60,7 +60,7 @@ class BoostEngineTestRunner(BaseTestRunner):
 
             try:
                 rec = self.factory.create(algo, semantic, llm, log=False, boost=boost)
-                self.factory.warmup(rec, semantic, llm, CONFIG.use_local_llm)
+                self.factory.warmup(rec, semantic, llm, CONFIG.llm_model)
                 ev, duration = self._run_evaluation(rec)
                 stats = rec.get_statistics()
 

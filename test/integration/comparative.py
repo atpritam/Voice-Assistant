@@ -60,7 +60,7 @@ class ComparativeTestRunner(BaseTestRunner):
             print(f"\n{'─' * 80}\n{name}\n{'─' * 80}")
             try:
                 rec = self.factory.create(algo, semantic, llm, log=False)
-                self.factory.warmup(rec, semantic, llm, CONFIG.use_local_llm)
+                self.factory.warmup(rec, semantic, llm, CONFIG.llm_model)
                 ev, duration = self._run_evaluation(rec)
                 stats = rec.get_statistics()
 

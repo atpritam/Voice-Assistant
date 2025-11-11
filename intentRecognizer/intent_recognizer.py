@@ -97,7 +97,6 @@ class IntentRecognizer:
             semantic_model: str = DEFAULT_SEMANTIC_MODEL,
             llm_model: str = DEFAULT_LLM_MODEL,
             test_mode: bool = False,
-            use_local_llm: bool = False,
             ollama_base_url: str = "http://localhost:11434",
     ):
         if not (enable_algorithmic or enable_semantic or enable_llm):
@@ -114,7 +113,6 @@ class IntentRecognizer:
         self.algorithmic_threshold = algorithmic_threshold if (enable_semantic or enable_llm) else 0
         self.semantic_threshold = semantic_threshold if enable_llm else 0
         self.enable_logging = enable_logging
-        self.use_local_llm = use_local_llm
         self.ollama_base_url = ollama_base_url
         self.logger = ConditionalLogger(__name__, enable_logging)
 
@@ -173,12 +171,11 @@ class IntentRecognizer:
                     model=llm_model,
                     enable_logging=self.enable_logging,
                     min_confidence=self.min_confidence,
-                    use_local_llm=self.use_local_llm,
                     ollama_base_url=self.ollama_base_url,
                     test_mode=self.test_mode,
                 )
-                provider_type = "Ollama" if self.use_local_llm else "OpenAI"
-                self.logger.info(f" LLM layer initialized ({provider_type}, model: {llm_model})")
+                model_type = "Cloud" if llm_model.endswith('-cloud') else "Local"
+                self.logger.info(f" LLM layer initialized (Ollama-{model_type}, model: {llm_model})")
             except Exception as e:
                 self.logger.error(f" LLM layer initialization failed: {e}")
                 raise

@@ -196,7 +196,6 @@ def main():
                 enable_llm=CONFIG.enable_llm,
                 use_boost_engine=CONFIG.use_boost_engine,
                 include_edge_cases=CONFIG.include_edge_cases,
-                use_local_llm=CONFIG.use_local_llm,
                 llm_model=CONFIG.llm_model_name,
                 test_data=test_data
             )

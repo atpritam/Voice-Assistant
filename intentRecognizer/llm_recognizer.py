@@ -55,13 +55,11 @@ class LLMRecognizer:
         res_info: Optional[Dict] = None,
         res_info_file: str = None,
         test_mode: bool = False,
-        use_local_llm: bool = False,
         ollama_base_url: str = "http://localhost:11434",
         response_generation_threshold: float = RESPONSE_MODE_THRESHOLD
     ):
         load_dotenv()
 
-        self.use_local_llm = use_local_llm
         self.model = model
         self.min_confidence = min_confidence
         self.enable_logging = enable_logging
@@ -121,13 +119,6 @@ class LLMRecognizer:
                 raise ValueError(f"Model '{self.model}' not available.")
 
             is_cloud_model = self.model.endswith('-cloud')
-            if self.use_local_llm and is_cloud_model:
-                self.logger.warning("Set 'use_local_llm' to False to use Cloud models.")
-                raise ValueError(f"Model '{self.model}' is a Cloud model. Set 'use_local_llm' to False to use Cloud models.")
-
-            if not self.use_local_llm and not is_cloud_model:
-                self.logger.warning(f"Model '{self.model}' is not a Cloud model but use_local_llm=False.")
-
             model_type = "Cloud Model" if is_cloud_model else f"local Ollama model at {self.ollama_base_url}"
             self.logger.info(f"Connected to {model_type}.")
             self.logger.info(f"Using model: {self.model}")

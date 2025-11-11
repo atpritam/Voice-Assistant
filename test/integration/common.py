@@ -25,7 +25,6 @@ class Config:
     semantic_model: str = "all-mpnet-base-v2"  # all-MiniLM-L6-v2
 
     # LLM Configuration
-    use_local_llm: bool = True
     llm_model: str = "llama3.2:3b-instruct-q4_K_M"
     ollama_base_url: str = "http://localhost:11434"
 
@@ -120,7 +119,6 @@ class RecognizerFactory:
                 min_confidence=CONFIG.min_confidence,
                 patterns_file=CONFIG.pattern_file,
                 test_mode=CONFIG.test_mode,
-                use_local_llm=CONFIG.use_local_llm,
                 ollama_base_url=CONFIG.ollama_base_url
             )
         except ValueError as e:
@@ -128,9 +126,9 @@ class RecognizerFactory:
             sys.exit(1)
 
     @staticmethod
-    def warmup(recognizer: IntentRecognizer, semantic: bool, llm: bool, local_llm: bool) -> None:
+    def warmup(recognizer: IntentRecognizer, semantic: bool, llm: bool, llm_model: str) -> None:
         """Warm up the recognizer pipeline by running a dummy query."""
-        if semantic or (llm and local_llm):
+        if semantic or (llm and not llm_model.endswith('-cloud')):
             logger = logging.getLogger()
             original_level = logger.level
             logger.setLevel(logging.CRITICAL)

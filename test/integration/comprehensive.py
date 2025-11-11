@@ -52,7 +52,7 @@ class ComprehensiveTestRunner(BaseTestRunner):
                 recognizer,
                 CONFIG.enable_semantic,
                 CONFIG.enable_llm,
-                CONFIG.use_local_llm
+                CONFIG.llm_model
             )
         except Exception as e:
             print(f"INIT ERROR: {e}")

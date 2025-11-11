@@ -169,7 +169,7 @@ class ConfusionMatrixTestRunner:
                 recognizer,
                 CONFIG.enable_semantic,
                 CONFIG.enable_llm,
-                CONFIG.use_local_llm
+                CONFIG.llm_model
             )
         except Exception as e:
             print(f"\n✗ Failed to initialize recognizer: {e}")
@@ -211,7 +211,6 @@ def run_confusion_matrix_test(
     enable_llm: bool = True,
     use_boost_engine: bool = True,
     include_edge_cases: bool = True,
-    use_local_llm: bool = True,
     llm_model: str = "llama3.2:3b-instruct-q4_K_M",
     test_data=None
 ):
@@ -224,7 +223,6 @@ def run_confusion_matrix_test(
         enable_llm: Enable LLM layer
         use_boost_engine: Enable boost engine
         include_edge_cases: Include edge cases in test
-        use_local_llm: Use local Ollama LLM instead of OpenAI API
         llm_model: LLM model to use
         test_data: Optional custom test dataset (list of tuples)
     """
@@ -233,7 +231,6 @@ def run_confusion_matrix_test(
     CONFIG.enable_llm = enable_llm
     CONFIG.use_boost_engine = use_boost_engine
     CONFIG.include_edge_cases = include_edge_cases
-    CONFIG.use_local_llm = use_local_llm
     if llm_model:
         CONFIG.llm_model = llm_model
 

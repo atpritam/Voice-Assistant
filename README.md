@@ -65,7 +65,7 @@ ollama signin
 ```
 Sign in to Ollama with the link provided in the terminal.
 
-Edit `app.py` and set `USE_LOCAL_LLM = False`
+Edit `app.py` and set `LLM_MODEL = "gpt-oss:120b-cloud"` (cloud models are auto-detected by the `-cloud` suffix)
 
 ### 3. Run the Application
 
@@ -189,7 +189,6 @@ SEMANTIC_THRESHOLD = 0.5
 
 # Model selection
 SEMANTIC_MODEL = "all-MiniLM-L6-v2" # Options: all-mpnet-base-v2
-USE_LOCAL_LLM = True  # True: use Ollama local LLM, False: use Ollama Cloud API
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M" # Options: "gpt-oss:120b-cloud", "gemma3:4b-it-qat"
 ```
 
@@ -233,10 +232,9 @@ Access the web interface at `http://localhost:5000`
    ollama serve &
     ```
    ```bash
-   # test local llm 
+   # test local llm
    ollama run llama3.2:3b-instruct-q4_K_M "Say hello in 5 words"
     ```
-4. Set `USE_LOCAL_LLM = True` in `app.py`
 
 ## Running Tests
 

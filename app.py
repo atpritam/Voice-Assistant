@@ -45,7 +45,6 @@ SEMANTIC_THRESHOLD = 0.5                            # Min confidence for semanti
 
 SEMANTIC_MODEL = "all-mpnet-base-v2"                # Options: "all-MiniLM-L6-v2"
 
-USE_LOCAL_LLM = True                                # True: use Ollama local LLM, False: use Ollama Cloud API
 LLM_MODEL = "llama3.2:3b-instruct-q4_K_M"           # Options: "gpt-oss:120b-cloud", "gemma3:4b-it-qat"
 
 ENABLE_LOGGING = True
@@ -73,8 +72,7 @@ def initialize_intent_recognizer():
             llm_model=LLM_MODEL,
             device="auto", # "cuda" , "cpu" , "auto" (for semantic model)
             min_confidence=MIN_CONFIDENCE,
-            test_mode=TEST_MODE,
-            use_local_llm=USE_LOCAL_LLM
+            test_mode=TEST_MODE
         )
 
         return recognizer
@@ -99,10 +97,12 @@ def initialize_tts_service():
         return tts
 
     except ImportError as e:
-        print(f"\nTTS Import Error: {e}")
-        print("Install with: pip install -r requirements.txt\n")
+        logger.error(f"\nTTS Import Error: {e}")
+        logger.error("Install with: pip install -r requirements.txt\n")
+        sys.exit(1)
     except Exception as e:
         logger.error(f"\nTTS Initialization Error: {e}\n")
+        sys.exit(1)
 
 
 def initialize_asr_service():
@@ -118,12 +118,14 @@ def initialize_asr_service():
         return asr
 
     except ImportError as e:
-        print("\nASR Error: Dependencies not installed")
-        print("Install with: pip install openai-whisper")
+        logger.error("\nASR Error: Dependencies not installed")
+        logger.error("Install with: pip install openai-whisper")
         if ENABLE_AUDIO_PREPROCESSING:
-            print("For preprocessing: pip install librosa soundfile noisereduce\n")
+            logger.info("For preprocessing: pip install librosa soundfile noisereduce\n")
+        sys.exit(1)
     except Exception as e:
         logger.error(f"\nASR Initialization Error: {e}\n")
+        sys.exit(1)
 
 
 def perform_system_warmup():
@@ -132,9 +134,10 @@ def perform_system_warmup():
     logger.info("Performing system warmup")
     warmup_start = time.time()
 
-    if USE_LOCAL_LLM and intent_recognizer:
+    if intent_recognizer:
         try:
-            intent_recognizer.recognize_intent("sample text", [])
+            if ENABLE_LLM and not LLM_MODEL.endswith('-cloud'):
+                intent_recognizer.recognize_intent("sample text", [])
         except Exception as e:
             logger.warning(f"Warning: Intent recognizer warmup query failed: {e}")
 
@@ -348,7 +351,8 @@ if ENABLE_ALGORITHMIC:
 if ENABLE_SEMANTIC:
     layers.append("Semantic")
 if ENABLE_LLM:
-    layers.append("LLM (Ollama)" if USE_LOCAL_LLM else "LLM (OpenAI)")
+    model_type = "Cloud" if LLM_MODEL.endswith('-cloud') else "Local"
+    layers.append(f"LLM (Ollama-{model_type})")
 pipeline = "Pipeline: " + " -> ".join(layers)
 logger.info(pipeline)
 
