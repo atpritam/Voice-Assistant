@@ -382,7 +382,6 @@ The benchmark results above are validated against dataset with:
 
 - **Faster Processing**: Inverted index with TF-IDF weighting for efficient candidate selection and ranking
 - **Synonym Expansion**: Domain-specific synonym dictionaries for lexical variation handling
-- **NLP Preprocessing**: Contraction expansion, filler word removal, and tokenization
 - **N-gram Matching**: Multi-word phrase detection with contextual bonuses
 - **Contextual Boost Engine**:
   - Negative sentiment keyword detection for complaint classification
@@ -406,8 +405,8 @@ The benchmark results above are validated against dataset with:
 1. Update `utils/res_info.json` with your domain information
 2. Update intent patterns in `utils/intent_patterns.json`
 3. Modify linguistics in `utils/linguistic_resources.json`
-4. Adjust boost rules in `intentRecognizer/boostEngine.py` if using algorithmic layer
-5. Update llm prompt templates in `intentRecognizer/llm_recognizer.py`
+4. Adjust boost rules in `intentRecognizer/algorithmic/boostEngine.py` if using algorithmic layer
+5. Update llm prompt templates in `intentRecognizer/llm/templates.py`
 6. Update test dataset in `test/integration/data.py`
 
 ## License

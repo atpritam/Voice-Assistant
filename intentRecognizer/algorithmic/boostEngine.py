@@ -117,7 +117,7 @@ class BoostRuleEngine:
     def _load_res_info(self, res_info_file: str = None) -> Dict:
         """Load restaurant information from JSON file"""
         if res_info_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+            utils_dir = os.path.join(os.path.dirname(__file__), '../..', 'utils')
             res_info_file = os.path.join(utils_dir, 'res_info.json')
 
         try:

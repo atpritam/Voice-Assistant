@@ -31,9 +31,9 @@ class CleanFormatter(logging.Formatter):
 
     MODULE_NAMES = {
         'intentRecognizer.intent_recognizer': ('IntentRecognizer', Colors.INTENT),
-        'intentRecognizer.algorithmic_recognizer': ('Algorithmic', Colors.ALGORITHMIC),
-        'intentRecognizer.semantic_recognizer': ('Semantic', Colors.SEMANTIC),
-        'intentRecognizer.llm_recognizer': ('LLM', Colors.LLM),
+        'intentRecognizer.algorithmic.recognizer': ('Algorithmic', Colors.ALGORITHMIC),
+        'intentRecognizer.semantic.recognizer': ('Semantic', Colors.SEMANTIC),
+        'intentRecognizer.llm.recognizer': ('LLM', Colors.LLM),
         'ttsModule.tts_service': ('TTS', Colors.TTS),
         'asrModule.asr_service': ('ASR', Colors.ASR),
         '__main__': ('App', Colors.APP),

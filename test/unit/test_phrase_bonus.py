@@ -15,7 +15,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from utils.text_processor import TextProcessor
-from intentRecognizer.algorithmic_recognizer import SimilarityCalculator
+from intentRecognizer.algorithmic import SimilarityCalculator
 
 
 class TestPhraseBonus:

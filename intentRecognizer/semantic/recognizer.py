@@ -12,12 +12,12 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
 from utils.text_processor import TextProcessor
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from ..intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 
 try:
     from sentence_transformers import SentenceTransformer

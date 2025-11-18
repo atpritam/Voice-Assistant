@@ -11,22 +11,51 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
 
-from .intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from ..intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from . import templates
 
 DEFAULT_MODEL = "llama3.2:3b-instruct-q4_K_M"
 RESPONSE_MODE_THRESHOLD = 0.65
 
-# System Prompt Constants
-INTENT_DESCRIPTIONS = """- general: Greetings, thanks, confirmations, chitchat, general business questions
-- order: Placing NEW orders, pickup, menu item customization, returning customers wanting order like last time
-- delivery: Order status checks, tracking, "where is my order", delivery related questions, "when will it arrive?"
-- menu_inquiry: Asking about prices, menu options, recommendations, deals, "what do you have", deciding items
-- hours_location: Store hours, location, address
-- complaint: Problems with order/food issues, wrong items/size, sarcastic complaints, service/delivery issues"""
+
+def sanitize_response(text: str) -> str:
+    """Remove TTS-unfriendly characters from response.
+
+    Converts currency symbols, percentages, and punctuation to speech-friendly formats.
+
+    Args:
+        text: Raw response text from LLM
+
+    Returns:
+        Sanitized text suitable for text-to-speech
+    """
+    def format_currency(match):
+        dollars = int(match.group(1))
+        cents = int(match.group(2))
+        dollar_word = 'dollar' if dollars == 1 else 'dollars'
+        cent_word = 'cent' if cents == 1 else 'cents'
+        return f"{dollars} {dollar_word}" if cents == 0 else f"{dollars} {dollar_word} and {cents} {cent_word}"
+
+    # Convert currency formats
+    text = re.sub(r'\$(\d+)\.(\d{2})', format_currency, text)
+    text = re.sub(r'(\d+)\.(\d{2})(?=\s|,|and|for|$)', format_currency, text)
+    text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} {'dollar' if int(m.group(1)) == 1 else 'dollars'}", text)
+    text = re.sub(r'\b(dollars?)\.(?=\d)', r'\1', text)
+
+    # Convert symbols to words
+    text = (text.replace('%', ' percent')
+            .replace(':', ',')
+            .replace(';', ','))
+
+    # Remove brackets and parentheses
+    text = re.sub(r'[\[\]()]', '', text)
+
+    return text.strip()
+
 
 @dataclass
 class LLMResult:
@@ -89,7 +118,7 @@ class LLMRecognizer:
     def _load_res_info(self, res_info_file: str = None) -> Dict:
         """Load restaurant information from JSON file"""
         if res_info_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+            utils_dir = os.path.join(os.path.dirname(__file__), '../..', 'utils')
             res_info_file = os.path.join(utils_dir, 'res_info.json')
 
         try:
@@ -224,7 +253,7 @@ class LLMRecognizer:
         system_prompt = self._get_system_prompt(
             valid_intents, recognized_intent, original_conf, use_response_mode
         )
-        user_prompt = self._build_user_prompt(query, conversation_history)
+        user_prompt = templates.build_user_prompt(query, conversation_history)
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -238,62 +267,6 @@ class LLMRecognizer:
         )
         return response
 
-    def _build_user_prompt(self, query: str, conversation_history: Optional[List[Dict]] = None) -> str:
-        """Build user prompt with conversation context"""
-        if not conversation_history:
-            return f'CURRENT CUSTOMER QUERY: "{query}"'
-
-        prompt_parts = ["CONVERSATION HISTORY:"]
-        recent_history = conversation_history[-8:] if len(conversation_history) > 8 else conversation_history
-
-        for entry in recent_history:
-            role = "Customer" if entry['type'] == 'user' else "Assistant"
-            intent_str = f" [intent: {entry['intent']}]" if entry.get('intent') else ""
-            prompt_parts.append(f"{role}: {entry['message']}{intent_str}")
-
-        prompt_parts.extend([
-            "",
-            "- Do NOT repeat information already mentioned",
-            "- Track the order state and what has been collected",
-            "- Respond naturally based on what is still needed",
-            "- Do not ask multiple questions in one response",
-            "",
-            f'CURRENT QUERY: "{query}"'
-        ])
-
-        return "\n".join(prompt_parts)
-
-    def _get_selective_business_info(self, intent: str) -> str:
-        """Return only business info relevant to the intent to reduce token usage"""
-
-        if intent == "order" or intent == "delivery":
-            info = {
-                "menu_highlights": self.res_info.get("menu_highlights"),
-                "delivery": self.res_info.get("delivery"),
-            }
-        elif intent == "complaint":
-            info = {
-                "location": self.res_info.get("location"),
-                "delivery": self.res_info.get("delivery")
-            }
-        elif intent == "hours_location":
-            info = {
-                "hours": self.res_info.get("hours"),
-                "location": self.res_info.get("location")
-            }
-        elif intent == "menu_inquiry":
-            info = {
-                "menu_highlights": self.res_info.get("menu_highlights")
-            }
-        elif intent == "general":
-            info = {
-                "business_type": self.res_info.get("business_type"),
-            }
-        else:
-            info = {}
-
-        return json.dumps(info, indent=2)
-
     def _get_system_prompt(
         self,
         valid_intents: List[str],
@@ -305,63 +278,28 @@ class LLMRecognizer:
 
         # Test mode: Classification only, no response generation
         if self.test_mode:
-            prompt = f"""Intent classification for Pizza Restaurant. Classify into: {', '.join(valid_intents)}
-{INTENT_DESCRIPTIONS}
-
-Identify Primary intent in multi-intent query.
-Respond ONLY with valid JSON, no markdown formatting:
-{{"intent": "intent_name", "confidence": 0.85}}"""
-            return prompt
-
-        order_flow = """Order flow:
-        1. First let User picks a SPECIFIC pizza
-        2. (ask size if missing)
-        3. Offer sides/drinks
-        4. Ask pickup or delivery
-        5. Get name
-        6. If delivery, ask user's address
-        7. Confirm and close"""
+            return templates.get_test_mode_prompt(valid_intents)
 
         # Response Generation Mode: Intent already known
         if use_response_mode:
-            info = self._get_selective_business_info(recognized_intent)
-
-            prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}.
-Customer Query Intent Classified as: {recognized_intent} ({original_conf:.2f})
-
-Use INFO to reply in under 40 words.
-INFO: {info}
-
-{order_flow}
-
-Return ONLY valid JSON (no markdown):
-{{"response": "Short helpful reply"}}"""
-            return prompt
+            selective_info = templates.get_selective_business_info(self.res_info, recognized_intent)
+            return templates.get_response_generation_prompt(
+                self.res_info.get("name", "Business"),
+                recognized_intent,
+                original_conf,
+                selective_info
+            )
 
         # Classification Mode: Intent unknown or low confidence
-        info = json.dumps(self.res_info, indent=2)
-
-        prompt = f"""You are a helpful voice customer support assistant for {self.res_info.get("name", "Business")}, a {self.res_info.get("business_type", "Business")}.
-        
-        Classify INTENT into: {', '.join(valid_intents)}
-        {INTENT_DESCRIPTIONS}
-        
-        {"Previous layer Suggested (you can correct it if seems incorrect): " + f"{recognized_intent} ({original_conf:.2f})" if (recognized_intent in valid_intents and original_conf is not None) else ""}
-
-        Input could be a continuation of the previous query's intent. Previous Layer does not have Conversation History.
-
-        Use INFO to generate RESPONSE in under 40 words.
-        INFO: {info}
-
-        {order_flow}
-
-        Return ONLY valid JSON (no markdown):
-        {{"intent": "intent_name", "confidence": 0.83, "response": "Short helpful reply"}}
-
-        CONFIDENCE:
-        >=0.8 high | >=0.6 medium | <0.6 low"""
-
-        return prompt
+        business_info = json.dumps(self.res_info, indent=2)
+        return templates.get_classification_prompt(
+            self.res_info.get("name", "Business"),
+            self.res_info.get("business_type", "Business"),
+            valid_intents,
+            business_info,
+            recognized_intent,
+            original_conf
+        )
 
     def _process_api_response(
         self,
@@ -411,7 +349,7 @@ Return ONLY valid JSON (no markdown):
             if not generated_response.strip():
                 generated_response = "I apologize, but I'm having trouble processing your request right now."
                 self.logger.warning("[LLM] Generated empty response")
-            response_text = self._sanitize_response(generated_response)
+            response_text = sanitize_response(generated_response)
 
         return LLMResult(
             intent=intent,
@@ -426,28 +364,6 @@ Return ONLY valid JSON (no markdown):
             error=False,
             mode=mode
         )
-
-    def _sanitize_response(self, text: str) -> str:
-        """Remove TTS-unfriendly characters from response."""
-
-        def format_currency(match):
-            dollars = int(match.group(1))
-            cents = int(match.group(2))
-            dollar_word = 'dollar' if dollars == 1 else 'dollars'
-            cent_word = 'cent' if cents == 1 else 'cents'
-            return f"{dollars} {dollar_word}" if cents == 0 else f"{dollars} {dollar_word} and {cents} {cent_word}"
-
-        text = re.sub(r'\$(\d+)\.(\d{2})', format_currency, text)
-        text = re.sub(r'(\d+)\.(\d{2})(?=\s|,|and|for|$)', format_currency, text)
-        text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} {'dollar' if int(m.group(1)) == 1 else 'dollars'}", text)
-        text = re.sub(r'\b(dollars?)\.(?=\d)', r'\1', text)
-        text = (text.replace('%', ' percent')
-                .replace(':', ',')
-                .replace(';', ','))
-
-        text = re.sub(r'[\[\]()]', '', text)
-
-        return text.strip()
 
     def _get_fallback_result(
         self,

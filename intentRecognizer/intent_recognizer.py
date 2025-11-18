@@ -67,9 +67,9 @@ class IntentRecognizerUtils:
         utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
         return os.path.join(utils_dir, 'intent_patterns.json')
 
-from .algorithmic_recognizer import AlgorithmicRecognizer
-from .semantic_recognizer import SemanticRecognizer
-from .llm_recognizer import LLMRecognizer
+from .algorithmic import AlgorithmicRecognizer
+from .semantic import SemanticRecognizer
+from .llm import LLMRecognizer
 
 
 class IntentRecognizer:

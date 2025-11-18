@@ -1,52 +1,27 @@
 """
 Algorithmic Intent Recognizer
 Handles pattern matching, keyword analysis, and Levenshtein distance-based recognition
-TF-IDF weighted inverted index for fast intent candidate selection and ranking
 """
 
 import os
 import sys
-import json
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
-from collections import defaultdict
-import math
-import Levenshtein
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from utils.logger import ConditionalLogger
 from utils.statistics import StatisticsHelper
 from utils.text_processor import TextProcessor
 
-from .intent_recognizer import IntentRecognizerUtils
+from ..intent_recognizer import IntentRecognizerUtils
 from .boostEngine import BoostRuleEngine
-
-# SIMILARITY CALCULATION WEIGHTS
-KEYWORD_WEIGHT = 0.50                       # Jaccard keyword similarity
-LEVENSHTEIN_WEIGHT = 0.50                   # Levenshtein String edit distance
-
-# JACCARD KEYWORD SIMILARITY COMPOSITION
-EXACT_OVERLAP_WEIGHT = 0.7                  # Exact word overlap
-SYNONYM_WEIGHT = 0.3                        # synonym-expanded overlap
+from .resources import LinguisticResourceLoader
+from .tfidf import InvertedIndex
+from .similarity import SimilarityCalculator
 
 # EARLY EXIT THRESHOLDS
 INTENT_HIGH_SIMILARITY_EXIT = 0.85          # Stops checking other intents
 HIGH_SIMILARITY_IN_INTENT_EXIT = 0.85       # Stops checking other patterns within intent
-
-@dataclass
-class SimilarityMetrics:
-    """Container for all similarity calculation metrics"""
-    keyword_similarity: float
-    exact_overlap: float
-    synonym_similarity: float
-    levenshtein_similarity: float
-    phrase_bonus: float
-    keyword_bonus: float
-    base_score: float
-    final_score: float
-
-    def to_dict(self) -> Dict:
-        return {k: v for k, v in self.__dict__.items()}
 
 
 @dataclass
@@ -66,224 +41,6 @@ class IntentEvaluation:
     similarity: float
     pattern: str
     breakdown: Dict
-
-
-class LinguisticResourceLoader:
-    """Loads linguistic resources from external JSON file"""
-
-    @staticmethod
-    def load_resources(resource_file: str = None) -> Dict:
-        """Load linguistic resources from JSON file"""
-        if resource_file is None:
-            utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
-            resource_file = os.path.join(utils_dir, 'linguistic_resources.json')
-
-        try:
-            with open(resource_file, 'r', encoding='utf-8') as f:
-                resources = json.load(f)
-
-            return {
-                'synonyms': {k: set(v) for k, v in resources.get('synonyms', {}).items()},
-                'filler_words': set(resources.get('filler_words', [])),
-                'intent_critical_keywords': {k: set(v) for k, v in resources.get('intent_critical_keywords', {}).items()}
-            }
-        except FileNotFoundError:
-            logger = ConditionalLogger(__name__, True)
-            logger.info(f"Linguistic resources file not found: {resource_file}. Expected at utils/linguistic_resources.json")
-            logger.info("Using blank linguistic resources.")
-            return {
-                'synonyms': {},
-                'filler_words': set(),
-                'intent_critical_keywords': {}
-            }
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in linguistic resources file: {e}")
-
-    @staticmethod
-    def build_synonym_lookup(synonyms: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
-        """Build reverse lookup for efficient synonym matching"""
-        lookup = {}
-        for syn_group in synonyms.values():
-            for word in syn_group:
-                lookup[word] = syn_group
-        return lookup
-
-
-class InvertedIndex:
-    """Inverted index with TF-IDF weighting for fast intent candidate selection"""
-
-    def __init__(self, patterns: Dict, text_processor):
-        self.text_processor = text_processor
-        self.index = defaultdict(set)
-        self.intent_keyword_scores = {}
-        self.term_document_freq = defaultdict(int)
-        self.idf_weights = {}
-        self.total_intents = 0
-
-        self._build_index(patterns)
-        self._calculate_idf_weights()
-
-    def _build_index(self, patterns: Dict):
-        """Build inverted index with term frequency tracking"""
-        intents_with_patterns = [name for name in patterns.keys()
-                                if name != "unknown" and patterns[name].get("patterns")]
-        self.total_intents = len(intents_with_patterns)
-
-        for intent_name in intents_with_patterns:
-            word_freq = defaultdict(int)
-            total_words = 0
-            unique_words = set()
-
-            for pattern in patterns[intent_name].get("patterns", []):
-                words = self.text_processor.extract_filtered_words(pattern)
-                for word in words:
-                    self.index[word].add(intent_name)
-                    word_freq[word] += 1
-                    total_words += 1
-                    unique_words.add(word)
-
-            for word in unique_words:
-                self.term_document_freq[word] += 1
-
-            if total_words > 0:
-                self.intent_keyword_scores[intent_name] = {
-                    word: count / total_words for word, count in word_freq.items()
-                }
-
-    def _calculate_idf_weights(self):
-        """Calculate IDF (Inverse Document Frequency) weights for terms"""
-        for term, doc_freq in self.term_document_freq.items():
-            self.idf_weights[term] = math.log((self.total_intents + 1) / (doc_freq + 1))
-
-    def get_candidate_intents(self, query_words: Set[str]) -> List[Tuple[str, float]]:
-        """Get candidate intents ranked by TF-IDF weighted relevance"""
-        if not query_words:
-            return [(intent, 0.0) for intent in self.intent_keyword_scores.keys()]
-
-        intent_scores = defaultdict(float)
-        for word in query_words:
-            if word in self.index:
-                idf = self.idf_weights.get(word, 1.0)
-                for intent_name in self.index[word]:
-                    tf = self.intent_keyword_scores.get(intent_name, {}).get(word, 0.1)
-                    intent_scores[intent_name] += tf * idf
-
-        if not intent_scores:
-            return [(intent, 0.0) for intent in self.intent_keyword_scores.keys()]
-
-        return sorted(intent_scores.items(), key=lambda x: x[1], reverse=True)
-
-
-class SimilarityCalculator:
-    """Handles all similarity metric calculations - OPTIMIZED"""
-
-    def __init__(self, text_processor: TextProcessor, synonym_lookup: Dict):
-        self.text_processor = text_processor
-        self.synonym_lookup = synonym_lookup
-
-    def passes_length_prefilter(self, query_norm: str, pattern_norm: str) -> bool:
-        """Quick length-based filter to skip expensive calculations"""
-        len_query = len(query_norm)
-        len_pattern = len(pattern_norm)
-
-        if len_query <= 15 or len_pattern <= 15:
-            return True
-
-        if len_query >= 80 or len_pattern >= 80:
-            return True
-
-        len_diff = abs(len_query - len_pattern)
-        len_ratio = len_query / len_pattern if len_pattern > 0 else 0
-
-        return len_diff <= 30 and 0.4 <= len_ratio <= 2.5
-
-    def calculate_keyword_similarity(self, query_set: Set[str], pattern_set: Set[str]) -> Tuple[float, float, float]:
-        """Calculate keyword-based similarity metrics"""
-        exact_overlap = len(query_set & pattern_set)
-        union_size = len(query_set | pattern_set)
-        exact_similarity = exact_overlap / union_size if union_size > 0 else 0.0
-
-        query_expanded = self._expand_with_synonyms(query_set)
-        pattern_expanded = self._expand_with_synonyms(pattern_set)
-        synonym_overlap = len(query_expanded & pattern_expanded)
-        expanded_union_size = len(query_expanded | pattern_expanded)
-        synonym_similarity = synonym_overlap / expanded_union_size if expanded_union_size > 0 else 0.0
-
-        keyword_similarity = EXACT_OVERLAP_WEIGHT * exact_similarity + SYNONYM_WEIGHT * synonym_similarity
-        return keyword_similarity, exact_similarity, synonym_similarity
-
-    def _expand_with_synonyms(self, words: Set[str]) -> Set[str]:
-        """Expand word set with known synonyms"""
-        expanded = set(words)
-        for word in words:
-            if word in self.synonym_lookup:
-                expanded.update(self.synonym_lookup[word])
-        return expanded
-
-    def calculate_phrase_bonus(self, query_words: List[str], pattern_words: List[str]) -> float:
-        """Calculate bonus for matching consecutive word phrases"""
-        if len(pattern_words) < 2:
-            return 0.0
-
-        query_text = ' '.join(query_words)
-        for n in [3, 2]:
-            if len(pattern_words) >= n:
-                for i in range(len(pattern_words) - n + 1):
-                    if ' '.join(pattern_words[i:i + n]) in query_text:
-                        return 0.10 if n == 3 else 0.05
-        return 0.0
-
-    def calculate_keyword_bonus(self, query_set: Set[str], intent_name: Optional[str],
-                               intent_critical_keywords: Dict) -> float:
-        """Calculate bonus for matching critical intent keywords"""
-        if intent_name and intent_name in intent_critical_keywords:
-            critical_keywords = intent_critical_keywords[intent_name]
-            num_matches = len(query_set & critical_keywords)
-            if num_matches:
-                return min(0.16, 0.08 + (num_matches - 1) * 0.04)
-
-        max_bonus = 0.0
-        for critical_keywords in intent_critical_keywords.values():
-            num_matches = len(query_set & critical_keywords)
-            if num_matches:
-                bonus = min(0.16, 0.08 + (num_matches - 1) * 0.04)
-                max_bonus = max(max_bonus, bonus)
-        return max_bonus
-
-    def calculate_similarity(self, query: str, pattern: str, intent_name: Optional[str],
-                           pattern_norm: Optional[str], intent_critical_keywords: Dict) -> Tuple[float, SimilarityMetrics]:
-        """Main similarity calculation coordinator - OPTIMIZED"""
-        query_norm = self.text_processor.normalize(query)
-        pattern_norm = pattern_norm or self.text_processor.normalize(pattern)
-
-        if not query_norm or not pattern_norm or not self.passes_length_prefilter(query_norm, pattern_norm):
-            return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
-
-        query_words = self.text_processor.extract_filtered_words(query)
-        pattern_words = self.text_processor.extract_filtered_words(pattern)
-
-        if not query_words or not pattern_words:
-            return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
-
-        query_set = set(query_words)
-        pattern_set = set(pattern_words)
-
-        keyword_sim, exact_sim, synonym_sim = self.calculate_keyword_similarity(query_set, pattern_set)
-
-        if keyword_sim < 0.2:
-            metrics = SimilarityMetrics(keyword_sim, exact_sim, synonym_sim, 0.0, 0.0, 0.0, keyword_sim, keyword_sim)
-            return keyword_sim, metrics
-
-        levenshtein_sim = Levenshtein.ratio(query_norm, pattern_norm)
-        phrase_bonus = self.calculate_phrase_bonus(query_words, pattern_words)
-        keyword_bonus = self.calculate_keyword_bonus(query_set, intent_name, intent_critical_keywords)
-
-        base_score = KEYWORD_WEIGHT * keyword_sim + LEVENSHTEIN_WEIGHT * levenshtein_sim
-        final_score = min(1.0, base_score + phrase_bonus + keyword_bonus)
-
-        metrics = SimilarityMetrics(keyword_sim, exact_sim, synonym_sim, levenshtein_sim,
-                                   phrase_bonus, keyword_bonus, base_score, final_score)
-        return final_score, metrics
 
 
 class AlgorithmicRecognizer:
@@ -378,7 +135,16 @@ class AlgorithmicRecognizer:
 
     def _filter_patterns_by_length(self, query: str, patterns: List[str],
                                    normalized_patterns: List[str]) -> List[Tuple[int, str, str]]:
-        """Filter patterns by length difference"""
+        """Filter patterns by length difference
+
+        Args:
+            query: User query
+            patterns: List of pattern strings
+            normalized_patterns: List of normalized pattern strings
+
+        Returns:
+            List of (index, pattern, normalized_pattern) tuples that pass the filter
+        """
         query_len = len(query)
 
         if query_len < 20:
@@ -393,7 +159,17 @@ class AlgorithmicRecognizer:
 
     def _evaluate_single_intent(self, intent_name: str, intent_data: Dict,
                                          query: str, query_words: Set[str]) -> Optional[IntentEvaluation]:
-        """Intent evaluation with conservative filtering"""
+        """Intent evaluation with conservative filtering
+
+        Args:
+            intent_name: Name of the intent to evaluate
+            intent_data: Intent configuration data
+            query: User query
+            query_words: Set of words from the query
+
+        Returns:
+            IntentEvaluation with best match or None if no patterns
+        """
         patterns = intent_data.get("patterns", [])
         normalized_patterns = self._normalized_patterns_cache.get(intent_name, [])
 
@@ -439,7 +215,16 @@ class AlgorithmicRecognizer:
 
     def _evaluate_all_intents(self, query: str, query_words: Set[str],
                                         early_exit_threshold: Optional[float] = None) -> Dict:
-        """Intent evaluation using inverted index"""
+        """Intent evaluation using inverted index
+
+        Args:
+            query: User query
+            query_words: Set of words from the query
+            early_exit_threshold: Stop evaluation if this similarity is reached
+
+        Returns:
+            Dictionary mapping intent names to their evaluation results
+        """
 
         candidate_intents = self.inverted_index.get_candidate_intents(query_words)
 
@@ -474,7 +259,14 @@ class AlgorithmicRecognizer:
         return intent_scores
 
     def _select_best_intent(self, intent_scores: Dict) -> Tuple[str, float, str, Dict]:
-        """Select best intent from scores and apply threshold"""
+        """Select best intent from scores and apply threshold
+
+        Args:
+            intent_scores: Dictionary of intent scores
+
+        Returns:
+            Tuple of (intent_name, similarity, pattern, breakdown)
+        """
         if not intent_scores:
             return "unknown", 0.0, "", {}
 
@@ -492,7 +284,14 @@ class AlgorithmicRecognizer:
         return best_intent_name, best_similarity, best_pattern, best_breakdown
 
     def find_best_match(self, query: str) -> Tuple[str, float, str, Dict]:
-        """Find the best matching intent for a given query"""
+        """Find the best matching intent for a given query
+
+        Args:
+            query: User query
+
+        Returns:
+            Tuple of (intent_name, similarity, pattern, breakdown)
+        """
         if not query or not self.patterns:
             return "unknown", 0.0, "", {}
 
@@ -554,7 +353,14 @@ class AlgorithmicRecognizer:
         return intent_name, similarity, pattern, breakdown
 
     def recognize(self, query: str) -> AlgorithmicResult:
-        """Main recognition method"""
+        """Main recognition method
+
+        Args:
+            query: User query
+
+        Returns:
+            AlgorithmicResult with intent classification
+        """
         self.stats['total_queries'] += 1
 
         intent_name, similarity, matched_pattern, breakdown = self.find_best_match(query)
@@ -602,7 +408,11 @@ class AlgorithmicRecognizer:
         )
 
     def get_statistics(self) -> Dict:
-        """Get recognizer statistics"""
+        """Get recognizer statistics
+
+        Returns:
+            Dictionary with statistics including averages and distributions
+        """
         return StatisticsHelper.build_stats_response(
             self.stats,
             average_confidence=StatisticsHelper.calculate_average(self.stats['avg_confidence']),
