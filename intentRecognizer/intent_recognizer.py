@@ -79,7 +79,7 @@ class IntentRecognizer:
     Each layer can be independently enabled/disabled:
     - Layer 1: Algorithmic (Keyword pattern Matching + Levenshtein)
     - Layer 2: Semantic (Sentence Transformers)
-    - Layer 3: LLM (OpenAI API/ Llama - Fallback)
+    - Layer 3: LLM (Ollama Cloud/Local)
     """
 
     def __init__(

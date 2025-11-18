@@ -5,11 +5,8 @@ Handles semantic similarity-based intent recognition using local Sentence Transf
 
 import os
 import sys
-import hashlib
-import pickle
 from typing import Dict, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
-from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
@@ -18,6 +15,7 @@ from utils.statistics import StatisticsHelper
 from utils.text_processor import TextProcessor
 
 from ..intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
+from .cache_manager import EmbeddingCache
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -31,7 +29,6 @@ except ImportError:
         import torch
 
 DEFAULT_MODEL = "all-mpnet-base-v2"
-CACHE_DIR = Path.home() / ".cache" / "voice-assistant" / "embeddings"
 
 
 @dataclass
@@ -49,7 +46,7 @@ class SemanticRecognizer:
     """
     Semantic Intent Recognizer using Sentence Transformers
     Uses pre-trained models to calculate semantic similarity between
-    user queries and predefined intent patterns. Caches embeddings for fast initialization.
+    Caches embeddings for fast initialization.
     """
 
     def __init__(
@@ -73,11 +70,26 @@ class SemanticRecognizer:
         self.logger = ConditionalLogger(__name__, enable_logging)
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, enable_logging)
-        self.model = self._load_model()
-        self.intent_embeddings = {}
 
+        # Initialize cache manager
+        self.cache_manager = EmbeddingCache(
+            model_name=model_name,
+            patterns_file=self.patterns_file,
+            enable_logging=enable_logging
+        ) if use_cache else None
+
+        # Load model
+        self.model = self._load_model()
+
+        # Initialize embeddings
+        self.intent_embeddings = {}
         if use_cache:
-            self._load_or_compute_embeddings()
+            cached = self.cache_manager.load()
+            if cached is not None:
+                self.intent_embeddings = cached
+            else:
+                self._compute_embeddings()
+                self.cache_manager.save(self.intent_embeddings)
         else:
             self._compute_embeddings()
 
@@ -101,62 +113,6 @@ class SemanticRecognizer:
             self.logger.error(f"Error loading model: {e}")
             raise
 
-    def _get_cache_path(self) -> Path:
-        """Get path to cache file for current model and patterns"""
-        try:
-            with open(self.patterns_file, 'rb') as f:
-                patterns_hash = hashlib.md5(f.read()).hexdigest()
-        except Exception as e:
-            self.logger.error(f"Error hashing patterns file: {e}")
-            patterns_hash = ""
-        return CACHE_DIR / f"{self.model_name.replace('/', '_')}_{patterns_hash}.pkl"
-
-    def _load_embeddings_from_cache(self) -> bool:
-        """Load precomputed embeddings from cache"""
-        cache_path = self._get_cache_path()
-        if not cache_path.exists():
-            self.logger.info("No cache found, will compute embeddings")
-            return False
-
-        try:
-            with open(cache_path, 'rb') as f:
-                cached_data = pickle.load(f)
-
-            if not all(k in cached_data for k in ['embeddings', 'model_name']):
-                self.logger.warning("Invalid cache format, will recompute")
-                return False
-
-            if cached_data['model_name'] != self.model_name:
-                self.logger.warning("Cache model mismatch, will recompute")
-                return False
-
-            self.intent_embeddings = cached_data['embeddings']
-            total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
-            self.logger.info(f"Loaded embeddings from cache for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Error loading cache: {e}")
-            return False
-
-    def _save_embeddings_to_cache(self):
-        """Save precomputed embeddings to cache"""
-        cache_path = self._get_cache_path()
-        try:
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            self.logger.info(f"Saving embeddings to cache: {cache_path}")
-
-            cache_data = {
-                'embeddings': self.intent_embeddings,
-                'model_name': self.model_name,
-                'patterns_hash': cache_path.name.split('_')[-1].replace('.pkl', '')
-            }
-            with open(cache_path, 'wb') as f:
-                pickle.dump(cache_data, f)
-
-            self.logger.info("Embeddings cached successfully")
-        except Exception as e:
-            self.logger.error(f"Error saving cache: {e}")
 
     def _compute_embeddings(self):
         """Compute embeddings for all intent patterns"""
@@ -178,22 +134,13 @@ class SemanticRecognizer:
         total_patterns = sum(len(data['patterns']) for data in self.intent_embeddings.values())
         self.logger.info(f"Precomputed embeddings for {len(self.intent_embeddings)} intents, total patterns: {total_patterns}")
 
-    def _load_or_compute_embeddings(self):
-        """Load embeddings from cache or compute if not available"""
-        if not self._load_embeddings_from_cache():
-            self.logger.info("Computing embeddings (cache miss)")
-            self._compute_embeddings()
-            self._save_embeddings_to_cache()
-
     def clear_cache(self):
         """Clear all cached embeddings"""
-        try:
-            if CACHE_DIR.exists():
-                for cache_file in CACHE_DIR.glob("*.pkl"):
-                    cache_file.unlink()
-                self.logger.info("Cache cleared successfully")
-        except Exception as e:
-            self.logger.error(f"Error clearing cache: {e}")
+        if self.cache_manager:
+            self.cache_manager.clear_all()
+        else:
+            self.logger.warning("Cache manager not initialized, cannot clear cache")
+
 
     def _calculate_semantic_similarity(self, query_embedding: np.ndarray, intent_name: str, top_k: int = 3) -> Tuple[
         float, str, Dict]:

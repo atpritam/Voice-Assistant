@@ -15,7 +15,7 @@ from utils.text_processor import TextProcessor
 
 from ..intent_recognizer import IntentRecognizerUtils
 from .boostEngine import BoostRuleEngine
-from .resources import LinguisticResourceLoader
+from .resource_loader import LinguisticResourceLoader
 from .tfidf import InvertedIndex
 from .similarity import SimilarityCalculator
 
@@ -44,11 +44,11 @@ class IntentEvaluation:
 
 
 class AlgorithmicRecognizer:
-    """Optimized pattern-based intent recognition using keywords and string similarity"""
+    """Pattern-based intent recognition using keywords and string similarity"""
 
     def __init__(self, patterns_file: str = None, enable_logging: bool = False,
                  min_confidence: float = 0.5, linguistic_resources_file: str = None, use_boost_engine: bool = True):
-        """Initialize the optimized algorithmic recognizer
+        """Initialize the algorithmic recognizer
 
         Args:
             patterns_file: Path to intent patterns JSON
@@ -110,12 +110,6 @@ class AlgorithmicRecognizer:
 
         Strategy: In complex queries with 'but', the clause after 'but' typically
         contains the primary intent while the first part provides context.
-
-        Args:
-            query: Original user query
-
-        Returns:
-            Processed query (second part after 'but')
         """
         query_lower = query.lower()
         words = query.split()
@@ -134,17 +128,8 @@ class AlgorithmicRecognizer:
         return query
 
     def _filter_patterns_by_length(self, query: str, patterns: List[str],
-                                   normalized_patterns: List[str]) -> List[Tuple[int, str, str]]:
-        """Filter patterns by length difference
-
-        Args:
-            query: User query
-            patterns: List of pattern strings
-            normalized_patterns: List of normalized pattern strings
-
-        Returns:
-            List of (index, pattern, normalized_pattern) tuples that pass the filter
-        """
+                                            normalized_patterns: List[str]) -> List[Tuple[int, str, str]]:
+        """Filter patterns by length difference"""
         query_len = len(query)
 
         if query_len < 20:
@@ -408,11 +393,7 @@ class AlgorithmicRecognizer:
         )
 
     def get_statistics(self) -> Dict:
-        """Get recognizer statistics
-
-        Returns:
-            Dictionary with statistics including averages and distributions
-        """
+        """Get recognizer statistics"""
         return StatisticsHelper.build_stats_response(
             self.stats,
             average_confidence=StatisticsHelper.calculate_average(self.stats['avg_confidence']),

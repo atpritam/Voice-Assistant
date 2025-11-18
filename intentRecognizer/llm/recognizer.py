@@ -23,16 +23,7 @@ RESPONSE_MODE_THRESHOLD = 0.65
 
 
 def sanitize_response(text: str) -> str:
-    """Remove TTS-unfriendly characters from response.
-
-    Converts currency symbols, percentages, and punctuation to speech-friendly formats.
-
-    Args:
-        text: Raw response text from LLM
-
-    Returns:
-        Sanitized text suitable for text-to-speech
-    """
+    """Remove TTS-unfriendly characters from response."""
     def format_currency(match):
         dollars = int(match.group(1))
         cents = int(match.group(2))
@@ -46,7 +37,7 @@ def sanitize_response(text: str) -> str:
     text = re.sub(r'\$(\d+)', lambda m: f"{m.group(1)} {'dollar' if int(m.group(1)) == 1 else 'dollars'}", text)
     text = re.sub(r'\b(dollars?)\.(?=\d)', r'\1', text)
 
-    # Convert symbols to words
+    # Convert symbols
     text = (text.replace('%', ' percent')
             .replace(':', ',')
             .replace(';', ','))
@@ -285,6 +276,7 @@ class LLMRecognizer:
             selective_info = templates.get_selective_business_info(self.res_info, recognized_intent)
             return templates.get_response_generation_prompt(
                 self.res_info.get("name", "Business"),
+                self.res_info.get("business_type", "Business"),
                 recognized_intent,
                 original_conf,
                 selective_info

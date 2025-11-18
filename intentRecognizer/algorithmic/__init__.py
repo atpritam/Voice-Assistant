@@ -5,7 +5,7 @@ Provides pattern-based intent recognition using keywords, TF-IDF, and string sim
 from .boostEngine import BoostRuleEngine
 from .recognizer import AlgorithmicRecognizer
 from .similarity import SimilarityCalculator
-from .resources import LinguisticResourceLoader
+from .resource_loader import LinguisticResourceLoader
 
 __all__ = [
     'AlgorithmicRecognizer',

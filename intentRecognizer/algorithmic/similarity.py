@@ -49,15 +49,7 @@ class SimilarityCalculator:
         self.synonym_lookup = synonym_lookup
 
     def passes_length_prefilter(self, query_norm: str, pattern_norm: str) -> bool:
-        """Quick length-based filter to skip expensive calculations
-
-        Args:
-            query_norm: Normalized query string
-            pattern_norm: Normalized pattern string
-
-        Returns:
-            True if pattern should be evaluated, False to skip
-        """
+        """Quick length-based filter to skip expensive calculations"""
         len_query = len(query_norm)
         len_pattern = len(pattern_norm)
 
@@ -96,14 +88,7 @@ class SimilarityCalculator:
         return keyword_similarity, exact_similarity, synonym_similarity
 
     def _expand_with_synonyms(self, words: Set[str]) -> Set[str]:
-        """Expand word set with known synonyms
-
-        Args:
-            words: Set of words to expand
-
-        Returns:
-            Expanded set including synonyms
-        """
+        """Expand word set with known synonyms"""
         expanded = set(words)
         for word in words:
             if word in self.synonym_lookup:
@@ -111,15 +96,7 @@ class SimilarityCalculator:
         return expanded
 
     def calculate_phrase_bonus(self, query_words: List[str], pattern_words: List[str]) -> float:
-        """Calculate bonus for matching consecutive word phrases
-
-        Args:
-            query_words: List of words from query (in order)
-            pattern_words: List of words from pattern (in order)
-
-        Returns:
-            Bonus score for phrase matches (0.0-0.10)
-        """
+        """Calculate bonus for matching consecutive word phrases"""
         if len(pattern_words) < 2:
             return 0.0
 
@@ -133,16 +110,7 @@ class SimilarityCalculator:
 
     def calculate_keyword_bonus(self, query_set: Set[str], intent_name: Optional[str],
                                intent_critical_keywords: Dict) -> float:
-        """Calculate bonus for matching critical intent keywords
-
-        Args:
-            query_set: Set of words from query
-            intent_name: Name of the intent being evaluated
-            intent_critical_keywords: Dictionary of critical keywords per intent
-
-        Returns:
-            Bonus score for critical keyword matches (0.0-0.16)
-        """
+        """Calculate bonus for matching critical intent keywords"""
         if intent_name and intent_name in intent_critical_keywords:
             critical_keywords = intent_critical_keywords[intent_name]
             num_matches = len(query_set & critical_keywords)
@@ -159,7 +127,7 @@ class SimilarityCalculator:
 
     def calculate_similarity(self, query: str, pattern: str, intent_name: Optional[str],
                            pattern_norm: Optional[str], intent_critical_keywords: Dict) -> Tuple[float, SimilarityMetrics]:
-        """Main similarity calculation coordinator - OPTIMIZED
+        """Main similarity calculation coordinator
 
         Args:
             query: User query

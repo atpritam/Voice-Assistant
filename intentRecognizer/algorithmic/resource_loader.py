@@ -6,7 +6,6 @@ Handles loading and processing of linguistic resources (synonyms, filler words, 
 import os
 import json
 from typing import Dict, Set
-
 from utils.logger import ConditionalLogger
 
 
@@ -50,14 +49,7 @@ class LinguisticResourceLoader:
 
     @staticmethod
     def build_synonym_lookup(synonyms: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
-        """Build reverse lookup for efficient synonym matching
-
-        Args:
-            synonyms: Dictionary mapping synonym groups
-
-        Returns:
-            Reverse lookup dictionary where each word maps to its full synonym group
-        """
+        """Build reverse lookup for efficient synonym matching"""
         lookup = {}
         for syn_group in synonyms.values():
             for word in syn_group:

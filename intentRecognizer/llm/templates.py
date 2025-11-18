@@ -24,17 +24,19 @@ ORDER_FLOW = """Order flow:
         6. If delivery, ask user's address
         7. Confirm and close"""
 
+# Intent to business info field mapping for selective business info extraction
+INTENT_BUSINESS_INFO_MAPPING = {
+    "order": ["menu_highlights", "delivery"],
+    "delivery": ["menu_highlights", "delivery"],
+    "complaint": ["location", "delivery"],
+    "hours_location": ["hours", "location"],
+    "menu_inquiry": ["menu_highlights"],
+    "general": ["business_type"],
+}
+
 
 def build_user_prompt(query: str, conversation_history: Optional[List[Dict]] = None) -> str:
-    """Build user prompt with conversation context
-
-    Args:
-        query: Current user query
-        conversation_history: Previous conversation context (last 8 messages)
-
-    Returns:
-        Formatted user prompt string
-    """
+    """Build user prompt with conversation context"""
     if not conversation_history:
         return f'CURRENT CUSTOMER QUERY: "{query}"'
 
@@ -60,14 +62,7 @@ def build_user_prompt(query: str, conversation_history: Optional[List[Dict]] = N
 
 
 def get_test_mode_prompt(valid_intents: List[str]) -> str:
-    """Generate system prompt for test mode (classification only, no response)
-
-    Args:
-        valid_intents: List of valid intent names
-
-    Returns:
-        Test mode system prompt
-    """
+    """Generate system prompt for test mode (classification only, no response)"""
     prompt = f"""Intent classification for Pizza Restaurant. Classify into: {', '.join(valid_intents)}
 {INTENT_DESCRIPTIONS}
 
@@ -79,22 +74,13 @@ Respond ONLY with valid JSON, no markdown formatting:
 
 def get_response_generation_prompt(
     business_name: str,
+    business_type: str,
     recognized_intent: str,
     original_conf: float,
     selective_business_info: str
 ) -> str:
-    """Generate system prompt for response generation mode (intent already known)
-
-    Args:
-        business_name: Name of the business
-        recognized_intent: Intent recognized by previous layer
-        original_conf: Confidence score from previous layer
-        selective_business_info: Filtered business information relevant to the intent
-
-    Returns:
-        Response generation mode system prompt
-    """
-    prompt = f"""You are a helpful voice customer support assistant for {business_name}.
+    """Generate system prompt for response generation mode (intent already known)"""
+    prompt = f"""You are a helpful voice customer support assistant for {business_name}, a {business_type}.
 Customer Query Intent Classified as: {recognized_intent} ({original_conf:.2f})
 
 Use INFO to reply in under 40 words.
@@ -115,19 +101,7 @@ def get_classification_prompt(
     recognized_intent: Optional[str] = None,
     original_conf: Optional[float] = None
 ) -> str:
-    """Generate system prompt for classification mode (intent unknown or low confidence)
-
-    Args:
-        business_name: Name of the business
-        business_type: Type of business (e.g., "Pizza Restaurant")
-        valid_intents: List of valid intent names
-        business_info: Full business information JSON
-        recognized_intent: Intent suggested by previous layer (optional)
-        original_conf: Confidence from previous layer (optional)
-
-    Returns:
-        Classification mode system prompt
-    """
+    """Generate system prompt for classification mode (intent unknown or low confidence)"""
     valid_intents_list = ["general", "order", "delivery", "menu_inquiry", "hours_location", "complaint"]
 
     previous_layer_hint = ""
@@ -157,39 +131,11 @@ def get_classification_prompt(
     return prompt
 
 def get_selective_business_info(res_info: Dict, intent: str) -> str:
-    """Return only business info relevant to the intent to reduce token usage
-
-    Args:
-        res_info: Full restaurant/business information dictionary
-        intent: Recognized intent name
-
-    Returns:
-        JSON string with filtered business information
     """
-    if intent == "order" or intent == "delivery":
-        info = {
-            "menu_highlights": res_info.get("menu_highlights"),
-            "delivery": res_info.get("delivery"),
-        }
-    elif intent == "complaint":
-        info = {
-            "location": res_info.get("location"),
-            "delivery": res_info.get("delivery")
-        }
-    elif intent == "hours_location":
-        info = {
-            "hours": res_info.get("hours"),
-            "location": res_info.get("location")
-        }
-    elif intent == "menu_inquiry":
-        info = {
-            "menu_highlights": res_info.get("menu_highlights")
-        }
-    elif intent == "general":
-        info = {
-            "business_type": res_info.get("business_type"),
-        }
-    else:
-        info = {}
+    Return only business info relevant to the intent to reduce token usage
+    Mappings in INTENT_BUSINESS_INFO_MAPPING
+    """
+    fields = INTENT_BUSINESS_INFO_MAPPING.get(intent, [])
+    info = {field: res_info.get(field) for field in fields}
 
     return json.dumps(info, indent=2)
