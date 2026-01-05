@@ -22,8 +22,8 @@ Rows = Actual Intent, Columns = Predicted Intent
 
                      complaint        delivery         general  hours_location    menu_inquiry           order
 ----------------------------------------------------------------------------------------------------------------
-complaint                   74               3               0               1               0               0
-delivery                     1              54               0               0               0               1
+complaint                   73               3               0               1               0               0
+delivery                     1              55               0               0               0               1
 general                      1               0              14               0               1               0
 hours_location               0               0               0              61               0               1
 menu_inquiry                 0               2               0               3              77               2
@@ -37,8 +37,8 @@ Per-Intent Statistics:
 --------------------------------------------------------------------------------
 Intent               Precision    Recall       F1-Score     Support
 --------------------------------------------------------------------------------
-complaint            96.10%       94.87%       95.48%       78
-delivery             88.52%       96.43%       92.31%       56
+complaint            96.05%       94.81%       95.42%       77
+delivery             88.71%       96.49%       92.44%       57
 general              100.00%      87.50%       93.33%       16
 hours_location       92.42%       98.39%       95.31%       62
 menu_inquiry         98.72%       91.67%       95.06%       84
@@ -51,7 +51,7 @@ Top Misclassifications (Total: 13 types):
 
 Actual Intent        Predicted As         Count      % of Actual
 ----------------------------------------------------------------------
-complaint            delivery             3          3.8
+complaint            delivery             3          3.9
 menu_inquiry         hours_location       3          3.6
 menu_inquiry         delivery             2          2.4
 menu_inquiry         order                2          2.4

@@ -27,8 +27,8 @@ Rows = Actual Intent, Columns = Predicted Intent
 
                      complaint        delivery         general  hours_location    menu_inquiry           order
 ----------------------------------------------------------------------------------------------------------------
-complaint                   81               2               0               0               1               0
-delivery                     0              55               0               0               0               1
+complaint                   80               2               0               0               1               0
+delivery                     0              56               0               0               0               1
 general                      0               0              22               0               0               0
 hours_location               0               0               0              61               0               1
 menu_inquiry                 0               0               0               1              86               1
@@ -42,8 +42,8 @@ Per-Intent Statistics:
 --------------------------------------------------------------------------------
 Intent               Precision    Recall       F1-Score     Support
 --------------------------------------------------------------------------------
-complaint            100.00%      96.43%       98.18%       84
-delivery             94.83%       98.21%       96.49%       56
+complaint            100.00%      96.39%       98.16%       83
+delivery             94.92%       98.25%       96.55%       57
 general              100.00%      100.00%      100.00%      22
 hours_location       98.39%       98.39%       98.39%       62
 menu_inquiry         98.85%       97.73%       98.29%       88
