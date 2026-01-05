@@ -309,14 +309,15 @@ class BoostRuleEngine:
         Queries asking about order status should boost delivery
         """
         query_words = context.query_words
-        status_indicators = {'late', 'track', 'status', 'eta', 'arrive', 'long', 'estimated',
-                             'arrival', 'longer', 'expect', 'update', 'waiting'}
+        status_indicators = {'track', 'status', 'eta', 'arrive', 'long', 'estimated',
+                             'arrival', 'longer', 'expect', 'waiting'}
         order_context = {'order', 'pizza', 'food', 'delivery'}
 
         has_status = bool(query_words & status_indicators)
         has_order = bool(query_words & order_context)
+        has_where = bool(query_words & {'where'})
 
-        if has_status:
+        if has_status or (has_order and has_where):
             yield IntentAdjustment('delivery', DELIVERY_STATUS_BOOST, "Delivery status boost")
 
             if has_order:
@@ -333,7 +334,7 @@ class BoostRuleEngine:
         negative_context = {'wrong', 'late', 'cold', 'burnt', 'not', 'forever', 'still', 'yet', 'didnt', 'rude'}
 
         # Temporal disappointment words
-        expectation_words = {'waited', 'waiting', 'only', 'still', 'yet', 'finally'}
+        expectation_words = {'waited', 'waiting', 'only', 'still', 'yet', 'finally', 'forever'}
 
         has_sarcasm = bool(query_words & sarcasm_markers)
         has_negative = bool(query_words & negative_context)
