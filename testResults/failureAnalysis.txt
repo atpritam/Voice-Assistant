@@ -263,8 +263,6 @@ FINAL RESULT:
 SUMMARY
 ================================================================================
 
-Accuracy: 0/9 (0.0%)
-
 Incorrect Predictions:
   'Driver still hasn't shown up'
     Expected: complaint, Got: delivery (semantic, conf=0.62)
@@ -282,4 +280,3 @@ Incorrect Predictions:
     Expected: menu_inquiry, Got: order (semantic, conf=0.64)
   'The delivery took forever'
     Expected: complaint, Got: delivery (semantic, conf=0.69)
-

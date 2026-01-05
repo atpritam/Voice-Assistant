@@ -8,7 +8,20 @@ A **hybrid intent recognition system** combining classical NLP pattern matching,
 
 **Research Focus**: Hybrid NLP approach combining rule-based, embedding-based, and generative techniques
 
-### Key Features
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [System Architecture](#system-architecture)
+- [System Requirements](#system-requirements)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Running Tests](#running-tests)
+- [Performance Benchmarks](#performance-benchmarks)
+- [Key Technical Features](#key-technical-features)
+- [Development](#development)
+
+## Key Features
 
 - **Multi-Layer Intent Recognition Pipeline**
   - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, Jaccard similarity, TF-IDF weighted indexing, and synonym expansion
@@ -207,6 +220,34 @@ ASR_MODEL = "tiny.en"  # Options: tiny.en, base.en, small.en, medium.en, large
 ENABLE_AUDIO_PREPROCESSING = True
 ```
 
+### Intent Patterns
+
+The system's intent classification is driven by the `utils/intent_patterns.json` file, which contains **289 training patterns** across 6 intent categories:
+
+```json
+{
+  "intent_name": {
+    "patterns": ["example phrase 1", "example phrase 2", ...],
+    "similarity_threshold": 0.40,
+    "default_response": "Response text"
+  }
+}
+```
+
+**Pattern Distribution:**
+- `order`: 44 patterns - Purchase and ordering intents
+- `complaint`: 50 patterns - Issues, refunds, and service problems
+- `menu_inquiry`: 55 patterns - Menu questions and product information
+- `delivery`: 54 patterns - Delivery status, tracking, and options
+- `hours_location`: 45 patterns - Business hours and location queries
+- `general`: 41 patterns - Greetings, thanks, and general conversation
+- `unknown`: 0 patterns - Fallback for unrecognized intents
+
+Each intent has:
+- **patterns**: Training examples for pattern matching and embedding generation
+- **similarity_threshold**: Minimum confidence score required for algorithmic/semantic layer classification
+- **default_response**: Templated response when no LLM is available
+
 ## Usage
 
 ### Running the Application inside vENV
@@ -339,14 +380,14 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 
 #### Per-Intent Performance
 
-| Intent | Precision | Recall | F1-Score | Support |
-|--------|-----------|--------|----------|---------|
-| complaint | 100.00% | 96.43% | 98.18% | 84 |
-| delivery | 94.74% | 96.43% | 95.58% | 56 |
-| general | 100.00% | 100.00% | 100.00% | 22 |
-| hours_location | 96.83% | 98.39% | 97.60% | 62 |
-| menu_inquiry | 98.85% | 97.73% | 98.29% | 88 |
-| order | 96.67% | 98.86% | 97.75% | 88 |
+| Intent | Precision | Recall  | F1-Score | Support |
+|--------|-----------|---------|----------|---------|
+| complaint | 100.00%   | 96.39%  | 98.18%   | 83      |
+| delivery | 94.92%    | 98.25%  | 96.55%   | 57      |
+| general | 100.00%   | 100.00% | 100.00%  | 22      |
+| hours_location | 96.83%    | 98.39%  | 97.60%   | 62      |
+| menu_inquiry | 98.85%    | 97.73%  | 98.29%   | 88      |
+| order | 96.67%    | 98.86%  | 97.75%   | 88      |
 
 
 See `testResults/` directory for detailed analyses.
@@ -356,7 +397,7 @@ See `testResults/` directory for detailed analyses.
 The benchmark results above are validated against dataset with:
 
 - **400 total queries** (295 normal + 105 edge cases)
-- **6 intent categories**: order (88), complaint (84), menu_inquiry (88), hours_location (62), delivery (56), general (22)
+- **6 intent categories**: order (88), complaint (83), menu_inquiry (88), hours_location (62), delivery (57), general (22)
 - **Diversity score: 0.97/1.0** - High lexical variety, not repetitive memorization
 - **Edge cases include**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing
 - **Zero duplicates** - Unbiased evaluation
