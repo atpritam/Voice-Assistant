@@ -5,9 +5,10 @@ Default dataset in data.py
 Run examples:
   python -m test.runtest                                                    # Comprehensive test
   python -m test.runtest "where is my pizza?" --exp delivery                # Single query test
-  python -m test.runtest -c                                                 # Comparative analysis
+  python -m test.runtest -c                                                 # Comparative pipeline analysis
   python -m test.runtest -b                                                 # Boost engine analysis
   python -m test.runtest -mx                                                # Confusion matrix
+  python -m test.runtest -f                                                 # Detailed failure analysis
   python -m test.runtest -c --no-boost                                      # Comparative without boost
   python -m test.runtest -b --no-edge                                       # Boost analysis without edge cases
   python -m test.runtest --no-semantic --no-llm                             # Comprehensive with only algorithmic layer
@@ -25,6 +26,7 @@ from .integration.comprehensive import ComprehensiveTestRunner
 from .integration.comparative import ComparativeTestRunner
 from .integration.boost_analysis import BoostEngineTestRunner
 from .integration.confusion_matrix import run_confusion_matrix_test
+from .integration.failure_analysis import FailureAnalysisRunner
 from .integration.common import CONFIG, create_single_query_dataset, get_available_intents
 from .integration.data import get_test_dataset
 from utils.logger import setup_logging
@@ -47,6 +49,7 @@ Examples:
   python -m test.runtest -c                                                 # Compare all pipeline configurations
   python -m test.runtest -b                                                 # Analyze boost engine impact
   python -m test.runtest -mx                                                # Generate confusion matrix
+  python -m test.runtest -f                                                 # Detailed failure analysis with logging
   python -m test.runtest --no-semantic                                      # Test without semantic layer
   python -m test.runtest -c --no-boost                                      # Comparative test without boost engine
   python -m test.runtest -unit                                              # Run all unit tests
@@ -61,6 +64,8 @@ Examples:
                       help="Run boost engine comparative analysis")
     mode.add_argument("-mx", "--matrix", action="store_true",
                       help="Generate confusion matrix and error analysis")
+    mode.add_argument("-f", "--failures", action="store_true",
+                      help="Run detailed failure analysis with complete logging")
     parser.add_argument("-unit", "--unit-tests", dest="unit", action="store_true",
                         help="Run unit test suite")
 
@@ -103,13 +108,10 @@ def validate_arguments(args: argparse.Namespace) -> None:
         print("The boost engine test compares performance WITH and WITHOUT boost engine.\n")
         sys.exit(1)
 
-    if args.boost and (args.no_algo or args.no_semantic or args.no_llm):
-        print("\nWARNING: Pipeline configuration flags (--no-algo, --no-semantic, --no-llm) "
-              "are ignored in boost engine test mode.\n")
-
-    if args.comparative and (args.no_algo or args.no_semantic or args.no_llm):
-        print("\nWARNING: Pipeline configuration flags (--no-algo, --no-semantic, --no-llm) "
-              "are ignored in comparative test mode.\n")
+    if (args.boost or args.comparative) and (args.no_algo or args.no_semantic or args.no_llm):
+        mode = "boost engine" if args.boost else "comparative"
+        print(f"\nWARNING: Pipeline configuration flags (--no-algo, --no-semantic, --no-llm) "
+              f"are ignored in {mode} test mode.\n")
 
     if args.query and not args.exp:
         available_intents = [i for i in get_available_intents() if i != "unknown"]
@@ -199,6 +201,8 @@ def main():
                 llm_model=CONFIG.llm_model_name,
                 test_data=test_data
             )
+        elif args.failures:
+            FailureAnalysisRunner(custom_data=test_data).run()
         elif args.boost:
             BoostEngineTestRunner(custom_data=test_data).run()
         elif args.comparative:

@@ -143,6 +143,7 @@ class IntentRecognizer:
                 enable_logging=self.enable_logging,
                 min_confidence=self.min_confidence,
                 use_boost_engine=self.use_boost_engine,
+                algorithmic_threshold=self.algorithmic_threshold,
             )
             self.logger.info(" Algorithmic layer initialized")
 
@@ -172,8 +173,7 @@ class IntentRecognizer:
                     enable_logging=self.enable_logging,
                     min_confidence=self.min_confidence,
                     ollama_base_url=self.ollama_base_url,
-                    test_mode=self.test_mode,
-                    semantic_threshold=self.semantic_threshold,
+                    test_mode=self.test_mode
                 )
                 model_type = "Cloud" if llm_model.endswith('-cloud') else "Local"
                 self.logger.info(f" LLM layer initialized (Ollama-{model_type}, model: {llm_model})")
@@ -254,7 +254,11 @@ class IntentRecognizer:
     def _try_llm_layer(self, query: str, conversation_history: Optional[List[Dict]] = None,
                       recognized_intent: Optional[str] = None, recognized_confidence: Optional[float] = None) -> RecognitionResult:
         """Try LLM fallback layer"""
-        llm_result = self.llm_recognizer.recognize(query, self.patterns, conversation_history, recognized_intent, recognized_confidence)
+        llm_result = self.llm_recognizer.recognize(
+            query, self.patterns, conversation_history, 
+            recognized_intent, recognized_confidence,
+            classifier=True  # LLM acts as classifier
+        )
         self._log_layer_acceptance('llm', llm_result)
         return self._create_result(query, llm_result, layer='llm', conversation_history=conversation_history)
 
@@ -272,7 +276,9 @@ class IntentRecognizer:
 
             try:
                 llm_result = self.llm_recognizer.recognize(
-                    query, self.patterns, conversation_history, result.intent, original_conf
+                    query, self.patterns, conversation_history, 
+                    result.intent, original_conf,
+                    classifier=False   # LLM only generates response
                 )
 
                 response = llm_result.response
@@ -340,7 +346,8 @@ class IntentRecognizer:
                 'predicted': result.intent,
                 'confidence': result.confidence,
                 'layer_used': result.layer_used,
-                'correct': is_correct
+                'correct': is_correct,
+                'score_breakdown': result.score_breakdown
             })
 
         total = len(test_data)

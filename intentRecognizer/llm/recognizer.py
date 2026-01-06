@@ -77,8 +77,6 @@ class LLMRecognizer:
         res_info_file: str = None,
         test_mode: bool = False,
         ollama_base_url: str = "http://localhost:11434",
-        semantic_threshold: Optional[float] = None,
-        response_generation_threshold: Optional[float] = None
     ):
         load_dotenv()
 
@@ -87,10 +85,6 @@ class LLMRecognizer:
         self.enable_logging = enable_logging
         self.test_mode = test_mode
         self.ollama_base_url = ollama_base_url
-        if response_generation_threshold is not None:
-            self.response_generation_threshold = response_generation_threshold
-        else:
-            self.response_generation_threshold = semantic_threshold
         self.logger = ConditionalLogger(__name__, enable_logging)
 
         if not test_mode:
@@ -159,12 +153,10 @@ class LLMRecognizer:
         intent_patterns: Dict,
         conversation_history: Optional[List[Dict]] = None,
         recognized_intent: Optional[str] = None,
-        original_conf: Optional[float] = None
+        original_conf: Optional[float] = None,
+        classifier: bool = False
     ) -> LLMResult:
         """Recognize intent and generate response using LLM
-
-        - If previous layer confidence >= threshold: Use LLM for response generation only
-        - If previous layer confidence < threshold: Use LLM for full classification and response generation
 
         Args:
             query: User query
@@ -172,6 +164,7 @@ class LLMRecognizer:
             conversation_history: Previous conversation context
             recognized_intent: Intent recognized by previous layer
             original_conf: Confidence score from previous layer
+            classifier: Whether LLM should act as Classifier
         """
 
         self.stats["total_queries"] += 1
@@ -179,12 +172,12 @@ class LLMRecognizer:
 
         valid_intents = [name for name in intent_patterns.keys() if name != "unknown"]
 
-        # Determine LLM mode based on previous layer confidence
+        # Determine LLM mode based on whether previous layer succeeded
         use_response_mode = (
+            not classifier and
+            not self.test_mode and
             recognized_intent is not None and
-            recognized_intent in valid_intents and
-            original_conf is not None and
-            original_conf >= self.response_generation_threshold
+            original_conf is not None
         )
 
         if use_response_mode:
@@ -197,7 +190,7 @@ class LLMRecognizer:
         for attempt in range(MAX_RETRIES + 1):
             try:
                 if attempt > 0:
-                    self.logger.warning(f"Retry attempt {attempt}/{MAX_RETRIES} for query: '{query[:50]}...'")
+                    self.logger.warning(f"Retry attempt {attempt}/{MAX_RETRIES}")
 
                 response = self._call_llm_api(
                     query, valid_intents, conversation_history,
@@ -208,9 +201,12 @@ class LLMRecognizer:
                     original_conf, use_response_mode
                 )
 
+                # Check for empty response
                 if not self.test_mode:
-                    if not result.response or result.response.strip() == "":
-                        self.logger.error(f" Empty response generated for query: '{query}'")
+                    if not result.generated_response or result.generated_response.strip() == "":
+                        if attempt < MAX_RETRIES:
+                            raise ValueError("Empty response from LLM")
+                        self.logger.error(f" Empty response after all retries")
                         result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
 
                 self.stats["successful_queries"] += 1
@@ -361,9 +357,8 @@ class LLMRecognizer:
         else:
             generated_response = result.get("response", "")
             if not generated_response.strip():
-                generated_response = "I apologize, but I'm having trouble processing your request right now."
-                self.logger.warning("[LLM] Generated empty response")
-            response_text = sanitize_response(generated_response)
+                self.logger.warning("Generated empty response")
+            response_text = sanitize_response(generated_response) if generated_response.strip() else ""
 
         return LLMResult(
             intent=intent,

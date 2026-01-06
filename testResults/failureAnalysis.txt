@@ -1,32 +1,44 @@
 
 ================================================================================
-TESTING SPECIFIC INCORRECT PREDICTIONS WITH DETAILED LOGGING
+INCORRECT PREDICTIONS WITH DETAILED LOGGING
 ================================================================================
 
-2025-11-07 15:39:51 [IntentRecognizer]  Algorithmic layer initialized
-2025-11-07 15:39:51 [Semantic] Loading Sentence Transformer model on device: GPU
-2025-11-07 15:39:54 [Semantic] Loaded embeddings from cache for 6 intents, total patterns: 289
+2026-01-06 14:46:01 [IntentRecognizer]  Algorithmic layer initialized
+2026-01-06 14:46:01 [Semantic] Loading Sentence Transformer model on device: GPU
+2026-01-06 14:46:03 [cache_manager] Loaded embeddings from cache for 6 intents, total patterns: 289
+2026-01-06 14:46:03 [IntentRecognizer]  Semantic layer initialized (model: all-mpnet-base-v2)
+2026-01-06 14:46:03 [LLM] Connected to local Ollama model at http://localhost:11434.
+2026-01-06 14:46:03 [LLM] Using model: llama3.2:3b-instruct-q4_K_M
+2026-01-06 14:46:03 [IntentRecognizer]  LLM layer initialized (Ollama-Local, model: llama3.2:3b-instruct-q4_K_M)
 
 Configuration:
-  Semantic Model: all-mpnet-base-v2
-  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Algorithmic: True
+  Semantic: True
+  LLM: True
   Algorithmic Threshold: 0.65
   Semantic Threshold: 0.5
-  Boost Engine logging: ENABLED
+  Semantic Model: all-mpnet-base-v2
+  LLM Backend: Ollama
+  LLM Model: llama3.2:3b-instruct-q4_K_M
+  Boost Engine: True
+  Edge Cases: True
+
+Test Dataset Size: 400 queries
 
 
-================================================================================
+--------------------------------------------------------------------------------
 Query: 'Driver still hasn't shown up'
 Expected Intent: complaint
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'Driver still hasn't shown up'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['complaint', 'delivery', 'hours_location']
-2025-11-07 15:39:54 [Algorithmic] unknown (0.100, low, keyword + levenshtein)
-2025-11-07 15:39:54 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-11-07 15:39:54 [Semantic] delivery (0.621, medium)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.621, medium)
+
+2026-01-06 14:46:08 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:08 [IntentRecognizer] Processing: 'Driver still hasn't shown up'
+2026-01-06 14:46:08 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:08 [Algorithmic] Candidate intents: ['complaint', 'delivery', 'hours_location']
+2026-01-06 14:46:08 [Algorithmic] unknown (0.100, low, keyword + levenshtein)
+2026-01-06 14:46:08 [IntentRecognizer]   - Proceeding to Semantic layer
+2026-01-06 14:46:08 [Semantic] delivery (0.621, medium)
+2026-01-06 14:46:08 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.621, medium)
 
 FINAL RESULT:
   Predicted: delivery
@@ -38,20 +50,22 @@ FINAL RESULT:
     semantic_similarity: 0.621
     matched_pattern: Where's the driver?
     top_k_patterns: ["Where's the driver?", 'Where is the driver?', 'Can I see where the driver is?']
-    top_k_scores: [0.6409610509872437, 0.6409610509872437, 0.5400911569595337]
-    all_similarities: {'What are your delivery options?': 0.0862179547548294, 'How long does delivery take?': 0.23214557766914368, "What's the delivery time?": 0.22446250915527344, 'Can I track my order?': 0.09529532492160797, 'Where is my order?': 0.24342259764671326, "What's my order status?": 0.24337328970432281, 'Do you have free delivery?': 0.09790953993797302, 'How do I track my delivery?': 0.151222825050354, "What's the minimum order for delivery?": 0.13511307537555695, 'Do you deliver to my area?': 0.08432798087596893, 'How much is delivery?': 0.11485640704631805, 'Is my order on the way?': 0.15907073020935059, 'When will my order arrive?': 0.24314028024673462, 'What is the status of my order delivery?': 0.2972373962402344, 'Track my pizza': 0.10288605093955994, 'Where is my pizza?': 0.24472564458847046, "Where's the driver?": 0.6409610509872437, 'When can I expect it to arrive?': 0.3027629852294922, 'How long until my order arrives?': 0.260956346988678, "What's the estimated delivery time?": 0.20099958777427673, 'Can you check on my delivery?': 0.2011529803276062, 'Where is the driver?': 0.6409610509872437, 'Do you do late night delivery?': 0.10266074538230896, 'i need it delivered to my house': 0.08293439447879791, 'How much longer for delivery?': 0.23623885214328766, 'I’m still waiting for my order': 0.28506705164909363, 'How long is delivery usually?': 0.2387603223323822, "What's the delivery fee?": 0.08268873393535614, 'Do you charge for delivery?': 0.10731324553489685, 'can I get that delivered?': 0.08642630279064178, 'Is delivery free over a certain amount?': 0.008763689547777176, "What's your delivery range?": 0.0986446887254715, 'Are you in my delivery zone?': 0.05992196127772331, 'Delivery time estimate': 0.18251296877861023, "What's the minimum order value?": 0.0116569260135293, 'Is there a delivery minimum?': 0.10670974850654602, 'Do you have real-time tracking?': 0.1853758692741394, 'Can I see where the driver is?': 0.5400911569595337, "What's the fastest delivery option?": 0.13823510706424713, 'Can I cancel my delivery?': 0.14189684391021729, 'When will I get it?': 0.22012794017791748, 'Is delivery available during holidays?': 0.0545574426651001, 'What payment methods for delivery?': 0.05340491235256195, 'I gave the wrong address': 0.17388352751731873, 'Update my delivery location': 0.1195886954665184, 'Can the driver call me?': 0.3142299950122833, 'How do I contact the driver?': 0.49115651845932007, "What if I'm not home?": 0.09989187121391296, 'What is the estimated time for delivery?': 0.20024576783180237, 'What is the ETA?': 0.18277893960475922, 'Can you leave it at the door?': 0.054951466619968414, 'Do you offer contactless delivery?': 0.05082731321454048, 'Can I meet the driver outside?': 0.30791234970092773}
+    top_k_scores: [0.641, 0.641, 0.540]
+    all_similarities: {'What are your delivery options?': 0.086, 'How long does delivery take?': 0.232, 'What's the delivery time?': 0.224, 'Can I track my order?': 0.095, 'Where is my order?': 0.243, 'What's my order status?': 0.243, 'Do you have free delivery?': 0.098, 'How do I track my delivery?': 0.151, 'What's the minimum order for delivery?': 0.135, 'Do you deliver to my area?': 0.084, 'How much is delivery?': 0.115, 'Is my order on the way?': 0.159, 'When will my order arrive?': 0.243, 'What is the status of my order delivery?': 0.297, 'Track my pizza': 0.103, 'Where is my pizza?': 0.245, 'Where's the driver?': 0.641, 'When can I expect it to arrive?': 0.303, 'How long until my order arrives?': 0.261, 'What's the estimated delivery time?': 0.201, 'Can you check on my delivery?': 0.201, 'Where is the driver?': 0.641, 'Do you do late night delivery?': 0.103, 'i need it delivered to my house': 0.083, 'How much longer for delivery?': 0.236, 'I’m still waiting for my order': 0.285, 'How long is delivery usually?': 0.239, 'What's the delivery fee?': 0.083, 'Do you charge for delivery?': 0.107, 'can I get that delivered?': 0.086, 'Is delivery free over a certain amount?': 0.009, 'What's your delivery range?': 0.099, 'Are you in my delivery zone?': 0.060, 'Delivery time estimate': 0.183, 'What's the minimum order value?': 0.012, 'Is there a delivery minimum?': 0.107, 'Do you have real-time tracking?': 0.185, 'Can I see where the driver is?': 0.540, 'What's the fastest delivery option?': 0.138, 'Can I cancel my delivery?': 0.142, 'When will I get it?': 0.220, 'Is delivery available during holidays?': 0.055, 'What payment methods for delivery?': 0.053, 'I gave the wrong address': 0.174, 'Update my delivery location': 0.120, 'Can the driver call me?': 0.314, 'How do I contact the driver?': 0.491, 'What if I'm not home?': 0.100, 'What is the estimated time for delivery?': 0.200, 'What is the ETA?': 0.183, 'Can you leave it at the door?': 0.055, 'Do you offer contactless delivery?': 0.051, 'Can I meet the driver outside?': 0.308}
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'What's your best seller?'
 Expected Intent: menu_inquiry
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'What's your best seller?'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['menu_inquiry', 'hours_location', 'delivery', 'order', 'general', 'complaint']
-2025-11-07 15:39:54 [Algorithmic] hours_location (0.747, medium, levenshtein)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: hours_location (0.747, medium)
+
+2026-01-06 14:46:09 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:09 [IntentRecognizer] Processing: 'What's your best seller?'
+2026-01-06 14:46:09 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:09 [Algorithmic] Candidate intents: ['delivery', 'menu_inquiry', 'hours_location', 'complaint', 'general', 'order']
+2026-01-06 14:46:09 [Algorithmic] hours_location (0.747, medium, levenshtein)
+2026-01-06 14:46:09 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: hours_location (0.747, medium)
 
 FINAL RESULT:
   Predicted: hours_location
@@ -75,20 +89,22 @@ FINAL RESULT:
     winner_changed: False
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'How much would it cost to get my cold pizza replaced?'
 Expected Intent: complaint
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'How much would it cost to get my cold pizza replaced?'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['order', 'complaint', 'delivery', 'menu_inquiry', 'hours_location', 'general']
-2025-11-07 15:39:54 [boostEngine] Negative sentiment boost (x2) [complaint]: 0.143 -> 0.493
-2025-11-07 15:39:54 [boostEngine] Menu inquiry penalty (negative+price) [menu_inquiry]: 0.554 -> 0.404
-2025-11-07 15:39:54 [Algorithmic] complaint (0.493, low, keyword + levenshtein + boost [+0.35])
-2025-11-07 15:39:54 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-11-07 15:39:54 [Semantic] menu_inquiry (0.652, medium)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: menu_inquiry (0.652, medium)
+
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [IntentRecognizer] Processing: 'How much would it cost to get my cold pizza replaced?'
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['order', 'complaint', 'delivery', 'menu_inquiry', 'hours_location', 'general']
+2026-01-06 14:46:12 [boostEngine] Negative sentiment boost (x2) [complaint]: 0.143 -> 0.493
+2026-01-06 14:46:12 [boostEngine] Menu inquiry penalty (negative+price) [menu_inquiry]: 0.554 -> 0.404
+2026-01-06 14:46:12 [Algorithmic] complaint (0.493, low, keyword + levenshtein + boost [+0.35])
+2026-01-06 14:46:12 [IntentRecognizer]   - Proceeding to Semantic layer
+2026-01-06 14:46:12 [Semantic] menu_inquiry (0.652, medium)
+2026-01-06 14:46:12 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: menu_inquiry (0.652, medium)
 
 FINAL RESULT:
   Predicted: menu_inquiry
@@ -100,23 +116,25 @@ FINAL RESULT:
     semantic_similarity: 0.652
     matched_pattern: How much does a pizza cost?
     top_k_patterns: ['How much does a pizza cost?', 'How much is a large pizza?', 'What’s your most ordered pizza?']
-    top_k_scores: [0.7147817015647888, 0.6404938697814941, 0.5132272839546204]
-    all_similarities: {"What's on the menu?": 0.22254705429077148, 'Can I see the pizza menu?': 0.39606305956840515, 'What pizzas do you have?': 0.5082182884216309, 'Do you have specialty pizzas?': 0.42876917123794556, 'Do you have vegan options?': 0.15273386240005493, 'What pizza sizes do you offer?': 0.48114722967147827, 'What toppings do you have?': 0.3400973081588745, 'Do you have any deals and specials?': 0.10003988444805145, 'What crust options are available?': 0.21558108925819397, 'Do you have gluten free options?': 0.11450410634279251, 'Are there vegan options?': 0.10187879204750061, 'What are your prices?': 0.20749805867671967, 'How much does a pizza cost?': 0.7147817015647888, 'Do you have any promotions?': 0.03853384777903557, 'How much is a large pizza?': 0.6404938697814941, 'What special offers do you have?': 0.12120947986841202, 'Do you have anything spicy?': 0.21414390206336975, 'Tell me your menu': 0.23284666240215302, 'What can I order?': 0.2422487437725067, 'What’s your most ordered pizza?': 0.5132272839546204, 'What do you sell?': 0.12188877165317535, 'what do you have?': 0.17068704962730408, 'Tell me your options': 0.1412149965763092, 'what drinks are available': 0.16325213015079498, 'Do you have kids meals?': 0.23434022068977356, 'What types of pizza do you make?': 0.4703376889228821, 'Do you have vegetarian pizzas?': 0.41227301955223083, 'What meat toppings are available?': 0.283317506313324, 'What sides go well with pizza?': 0.35305237770080566, 'Do you offer chicken as a topping?': 0.23177316784858704, 'What vegetables can I add?': 0.12948235869407654, 'Any special pizzas today?': 0.444120317697525, 'Can I see a list of toppings?': 0.25726616382598877, 'Do you serve garlic bread?': 0.26247256994247437, 'What are your signature pizzas?': 0.4209159016609192, "What's the biggest pizza you make?": 0.48963606357574463, 'Do you have a BBQ pizza?': 0.4685077369213104, "What's your most popular pizza?": 0.43154847621917725, 'Do you serve pasta?': 0.22263044118881226, 'What sides do you have?': 0.05274194851517677, 'Do you have appetizers?': 0.22350424528121948, 'what do you recommend?': 0.07946570962667465, 'What desserts are available?': 0.14606988430023193, "What's the price range?": 0.2407354712486267, 'Can I customize my pizza?': 0.5056905746459961, 'Do you have dairy-free cheese?': 0.20746035873889923, 'Is there a low-carb option?': 0.11239536851644516, 'What cheese varieties do you use?': 0.22914007306098938, 'Can I get different cheese?': 0.32012659311294556, 'Do you use mozzarella?': 0.2595120966434479, "What's your Hawaiian pizza made of?": 0.4077472686767578, 'Tell me about your supreme pizza': 0.4975883960723877, "What's in a margherita?": 0.12600675225257874, 'Describe your meat lovers pizza': 0.38316112756729126, 'What goes on a veggie pizza?': 0.42927470803260803}
+    top_k_scores: [0.715, 0.640, 0.513]
+    all_similarities: {'What's on the menu?': 0.223, 'Can I see the pizza menu?': 0.396, 'What pizzas do you have?': 0.508, 'Do you have specialty pizzas?': 0.429, 'Do you have vegan options?': 0.153, 'What pizza sizes do you offer?': 0.481, 'What toppings do you have?': 0.340, 'Do you have any deals and specials?': 0.100, 'What crust options are available?': 0.216, 'Do you have gluten free options?': 0.115, 'Are there vegan options?': 0.102, 'What are your prices?': 0.207, 'How much does a pizza cost?': 0.715, 'Do you have any promotions?': 0.039, 'How much is a large pizza?': 0.640, 'What special offers do you have?': 0.121, 'Do you have anything spicy?': 0.214, 'Tell me your menu': 0.233, 'What can I order?': 0.242, 'What’s your most ordered pizza?': 0.513, 'What do you sell?': 0.122, 'what do you have?': 0.171, 'Tell me your options': 0.141, 'what drinks are available': 0.163, 'Do you have kids meals?': 0.234, 'What types of pizza do you make?': 0.470, 'Do you have vegetarian pizzas?': 0.412, 'What meat toppings are available?': 0.283, 'What sides go well with pizza?': 0.353, 'Do you offer chicken as a topping?': 0.232, 'What vegetables can I add?': 0.129, 'Any special pizzas today?': 0.444, 'Can I see a list of toppings?': 0.257, 'Do you serve garlic bread?': 0.262, 'What are your signature pizzas?': 0.421, 'What's the biggest pizza you make?': 0.490, 'Do you have a BBQ pizza?': 0.469, 'What's your most popular pizza?': 0.432, 'Do you serve pasta?': 0.223, 'What sides do you have?': 0.053, 'Do you have appetizers?': 0.224, 'what do you recommend?': 0.079, 'What desserts are available?': 0.146, 'What's the price range?': 0.241, 'Can I customize my pizza?': 0.506, 'Do you have dairy-free cheese?': 0.207, 'Is there a low-carb option?': 0.112, 'What cheese varieties do you use?': 0.229, 'Can I get different cheese?': 0.320, 'Do you use mozzarella?': 0.260, 'What's your Hawaiian pizza made of?': 0.408, 'Tell me about your supreme pizza': 0.498, 'What's in a margherita?': 0.126, 'Describe your meat lovers pizza': 0.383, 'What goes on a veggie pizza?': 0.429}
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'Can I order a large pepperoni and how long will it take?'
 Expected Intent: order
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'Can I order a large pepperoni and how long will it take?'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['order', 'delivery', 'menu_inquiry', 'complaint', 'hours_location', 'general']
-2025-11-07 15:39:54 [boostEngine] Order action boost [order]: 0.621 -> 0.771
-2025-11-07 15:39:54 [boostEngine] Delivery status boost [delivery]: 0.457 -> 0.657
-2025-11-07 15:39:54 [boostEngine] Order penalty for status query [order]: 0.771 -> 0.621
-2025-11-07 15:39:54 [Algorithmic] delivery (0.657, medium, keyword + levenshtein + boost [+0.20])
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.657, medium)
+
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [IntentRecognizer] Processing: 'Can I order a large pepperoni and how long will it take?'
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['order', 'delivery', 'menu_inquiry', 'complaint', 'hours_location', 'general']
+2026-01-06 14:46:12 [boostEngine] Order action boost [order]: 0.621 -> 0.771
+2026-01-06 14:46:12 [boostEngine] Delivery status boost [delivery]: 0.457 -> 0.657
+2026-01-06 14:46:12 [boostEngine] Order penalty for status query [order]: 0.771 -> 0.621
+2026-01-06 14:46:12 [Algorithmic] delivery (0.657, medium, keyword + levenshtein + boost [+0.20])
+2026-01-06 14:46:12 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: delivery (0.657, medium)
 
 FINAL RESULT:
   Predicted: delivery
@@ -140,18 +158,20 @@ FINAL RESULT:
     winner_changed: True
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'I want to order but is delivery free?'
 Expected Intent: delivery
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'I want to order but is delivery free?'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['delivery', 'order', 'hours_location', 'menu_inquiry', 'complaint', 'general']
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['order', 'delivery', 'complaint', 'hours_location', 'menu_inquiry', 'general']
-2025-11-07 15:39:54 [boostEngine] Order action boost [order]: 0.934 -> 1.000
-2025-11-07 15:39:54 [Algorithmic] order (1.000, high, levenshtein)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (1.000, high)
+
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [IntentRecognizer] Processing: 'I want to order but is delivery free?'
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['delivery', 'hours_location', 'complaint', 'menu_inquiry', 'order', 'general']
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['order', 'delivery', 'complaint', 'hours_location', 'menu_inquiry', 'general']
+2026-01-06 14:46:12 [boostEngine] Order action boost [order]: 0.934 -> 1.000
+2026-01-06 14:46:12 [Algorithmic] order (1.000, high, levenshtein)
+2026-01-06 14:46:12 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (1.000, high)
 
 FINAL RESULT:
   Predicted: order
@@ -170,17 +190,19 @@ FINAL RESULT:
     final_score: 0.934
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'Can I order now or are you closed?'
 Expected Intent: hours_location
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'Can I order now or are you closed?'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['hours_location', 'order', 'complaint', 'delivery', 'menu_inquiry', 'general']
-2025-11-07 15:39:54 [boostEngine] Order action boost [order]: 0.673 -> 0.823
-2025-11-07 15:39:54 [Algorithmic] order (0.823, high, keyword + levenshtein + boost [+0.15])
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (0.823, high)
+
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [IntentRecognizer] Processing: 'Can I order now or are you closed?'
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['hours_location', 'order', 'complaint', 'delivery', 'menu_inquiry', 'general']
+2026-01-06 14:46:12 [boostEngine] Order action boost [order]: 0.673 -> 0.823
+2026-01-06 14:46:12 [Algorithmic] order (0.823, high, keyword + levenshtein + boost [+0.15])
+2026-01-06 14:46:12 [IntentRecognizer] ✓ ACCEPTED ALGORITHMIC Layer: order (0.823, high)
 
 FINAL RESULT:
   Predicted: order
@@ -204,18 +226,20 @@ FINAL RESULT:
     winner_changed: False
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'I don't like thick crust do you have thin'
 Expected Intent: menu_inquiry
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'I don't like thick crust do you have thin'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['menu_inquiry', 'order', 'complaint', 'general', 'delivery', 'hours_location']
-2025-11-07 15:39:54 [Algorithmic] menu_inquiry (0.648, medium, keyword + levenshtein)
-2025-11-07 15:39:54 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-11-07 15:39:54 [Semantic] order (0.640, medium)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: order (0.640, medium)
+
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [IntentRecognizer] Processing: 'I don't like thick crust do you have thin'
+2026-01-06 14:46:12 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:12 [Algorithmic] Candidate intents: ['menu_inquiry', 'order', 'complaint', 'general', 'delivery', 'hours_location']
+2026-01-06 14:46:12 [Algorithmic] menu_inquiry (0.648, medium, keyword + levenshtein)
+2026-01-06 14:46:12 [IntentRecognizer]   - Proceeding to Semantic layer
+2026-01-06 14:46:12 [Semantic] order (0.640, medium)
+2026-01-06 14:46:12 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: order (0.640, medium)
 
 FINAL RESULT:
   Predicted: order
@@ -227,22 +251,24 @@ FINAL RESULT:
     semantic_similarity: 0.640
     matched_pattern: I want a thick crust pepperoni
     top_k_patterns: ['I want a thick crust pepperoni', 'Can I get a thin crust pizza', 'Can I get a medium pizza?']
-    top_k_scores: [0.6882848739624023, 0.6710847020149231, 0.4749171733856201]
-    all_similarities: {'I want to order a pizza': 0.316866397857666, "I'd like to place an order": 0.16948720812797546, 'Can I order a pizza?': 0.351814329624176, "I'd like to order something": 0.16942456364631653, 'I want a pizza': 0.358147531747818, 'take my order': 0.14811468124389648, "I'll order the salami pizza": 0.3321044147014618, 'Add a drink to my order': 0.15174244344234467, "I'd like a large pepperoni pizza": 0.3613670766353607, 'Can I get a medium pizza?': 0.4749171733856201, 'Make that two mediums': 0.21847248077392578, 'I would like a small pizza': 0.42672502994537354, 'I want to buy a pizza': 0.31102168560028076, 'Can I purchase a pizza': 0.31408870220184326, "I'd like to make an order": 0.20445430278778076, 'Get me your best pizza': 0.33264222741127014, 'Place an order for me': 0.1392480880022049, 'Start a new order': 0.08307391405105591, 'I want to order for delivery': 0.10259661078453064, 'Can I order for pickup': 0.06207972392439842, 'I need to order a pizza': 0.28744909167289734, 'I’ll take one pepperoni pizza': 0.2715337574481964, 'Let me order a pizza': 0.3060224652290344, 'I want to get a pizza': 0.31986773014068604, 'Can I buy two pizzas': 0.30925503373146057, "I'm ready to order": 0.16589200496673584, "Let's order a pizza": 0.31885385513305664, 'Get me the combo deal': 0.07554082572460175, 'Can I start ordering': 0.1094730794429779, 'I want to add a pizza to my order': 0.36824899911880493, 'Get me a large supreme pizza': 0.28406745195388794, "I'll order a Hawaiian pizza": 0.31163471937179565, 'Make an order for pickup': 0.06777502596378326, "I'm looking to get some food": 0.1623142808675766, 'I will get my usual': 0.18518418073654175, "I'd like to buy some pizzas": 0.28896236419677734, 'Order a family size pizza': 0.3363628387451172, 'I need two medium pizzas with extra cheese': 0.4568755626678467, 'Can I get a thin crust pizza': 0.6710847020149231, 'I want a thick crust pepperoni': 0.6882848739624023, 'can you make it less spicy?': 0.27084624767303467, 'Order me a stuffed crust pizza': 0.46663331985473633, "I'd like a gluten free pizza": 0.38662296533584595, 'Can I order a vegan pizza': 0.2945234179496765}
+    top_k_scores: [0.688, 0.671, 0.475]
+    all_similarities: {'I want to order a pizza': 0.317, 'I'd like to place an order': 0.169, 'Can I order a pizza?': 0.352, 'I'd like to order something': 0.169, 'I want a pizza': 0.358, 'take my order': 0.148, 'I'll order the salami pizza': 0.332, 'Add a drink to my order': 0.152, 'I'd like a large pepperoni pizza': 0.361, 'Can I get a medium pizza?': 0.475, 'Make that two mediums': 0.218, 'I would like a small pizza': 0.427, 'I want to buy a pizza': 0.311, 'Can I purchase a pizza': 0.314, 'I'd like to make an order': 0.204, 'Get me your best pizza': 0.333, 'Place an order for me': 0.139, 'Start a new order': 0.083, 'I want to order for delivery': 0.103, 'Can I order for pickup': 0.062, 'I need to order a pizza': 0.287, 'I’ll take one pepperoni pizza': 0.272, 'Let me order a pizza': 0.306, 'I want to get a pizza': 0.320, 'Can I buy two pizzas': 0.309, 'I'm ready to order': 0.166, 'Let's order a pizza': 0.320, 'Get me the combo deal': 0.076, 'Can I start ordering': 0.109, 'I want to add a pizza to my order': 0.368, 'Get me a large supreme pizza': 0.284, 'I'll order a Hawaiian pizza': 0.312, 'Make an order for pickup': 0.068, 'I'm looking to get some food': 0.162, 'I will get my usual': 0.185, 'I'd like to buy some pizzas': 0.289, 'Order a family size pizza': 0.336, 'I need two medium pizzas with extra cheese': 0.457, 'Can I get a thin crust pizza': 0.671, 'I want a thick crust pepperoni': 0.688, 'can you make it less spicy?': 0.271, 'Order me a stuffed crust pizza': 0.467, 'I'd like a gluten free pizza': 0.387, 'Can I order a vegan pizza': 0.295}
 ================================================================================
 
-================================================================================
+
+--------------------------------------------------------------------------------
 Query: 'The delivery took forever'
 Expected Intent: complaint
 --------------------------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [IntentRecognizer] Processing: 'The delivery took forever'
-2025-11-07 15:39:54 [IntentRecognizer] ------------------------------------------------------------
-2025-11-07 15:39:54 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'order', 'menu_inquiry']
-2025-11-07 15:39:54 [Algorithmic] delivery (0.544, low, keyword + levenshtein)
-2025-11-07 15:39:54 [IntentRecognizer]   - Proceeding to Semantic layer
-2025-11-07 15:39:54 [Semantic] delivery (0.693, medium)
-2025-11-07 15:39:54 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.693, medium)
+
+2026-01-06 14:46:13 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:13 [IntentRecognizer] Processing: 'The delivery took forever'
+2026-01-06 14:46:13 [IntentRecognizer] ------------------------------------------------------------
+2026-01-06 14:46:13 [Algorithmic] Candidate intents: ['delivery', 'complaint', 'hours_location', 'order', 'menu_inquiry']
+2026-01-06 14:46:13 [Algorithmic] delivery (0.544, low, keyword + levenshtein)
+2026-01-06 14:46:13 [IntentRecognizer]   - Proceeding to Semantic layer
+2026-01-06 14:46:13 [Semantic] delivery (0.693, medium)
+2026-01-06 14:46:13 [IntentRecognizer] ✓ ACCEPTED SEMANTIC Layer: delivery (0.693, medium)
 
 FINAL RESULT:
   Predicted: delivery
@@ -254,8 +280,8 @@ FINAL RESULT:
     semantic_similarity: 0.693
     matched_pattern: How much longer for delivery?
     top_k_patterns: ['How much longer for delivery?', 'How long does delivery take?', 'How long is delivery usually?']
-    top_k_scores: [0.7055373787879944, 0.6856116056442261, 0.6709815263748169]
-    all_similarities: {'What are your delivery options?': 0.4929260015487671, 'How long does delivery take?': 0.6856116056442261, "What's the delivery time?": 0.6156465411186218, 'Can I track my order?': 0.24450793862342834, 'Where is my order?': 0.40903419256210327, "What's my order status?": 0.31081676483154297, 'Do you have free delivery?': 0.4250575602054596, 'How do I track my delivery?': 0.39889103174209595, "What's the minimum order for delivery?": 0.5202010869979858, 'Do you deliver to my area?': 0.3491578996181488, 'How much is delivery?': 0.5241513848304749, 'Is my order on the way?': 0.4284206032752991, 'When will my order arrive?': 0.49280881881713867, 'What is the status of my order delivery?': 0.5248071551322937, 'Track my pizza': 0.2185482680797577, 'Where is my pizza?': 0.343780517578125, "Where's the driver?": 0.18709218502044678, 'When can I expect it to arrive?': 0.5144110918045044, 'How long until my order arrives?': 0.5160351991653442, "What's the estimated delivery time?": 0.5977888107299805, 'Can you check on my delivery?': 0.5309069156646729, 'Where is the driver?': 0.18709218502044678, 'Do you do late night delivery?': 0.39375847578048706, 'i need it delivered to my house': 0.43518683314323425, 'How much longer for delivery?': 0.7055373787879944, 'I’m still waiting for my order': 0.5748180150985718, 'How long is delivery usually?': 0.6709815263748169, "What's the delivery fee?": 0.42305269837379456, 'Do you charge for delivery?': 0.41430026292800903, 'can I get that delivered?': 0.43893325328826904, 'Is delivery free over a certain amount?': 0.3607477843761444, "What's your delivery range?": 0.4241275191307068, 'Are you in my delivery zone?': 0.3989325165748596, 'Delivery time estimate': 0.6086029410362244, "What's the minimum order value?": 0.056360527873039246, 'Is there a delivery minimum?': 0.5124608278274536, 'Do you have real-time tracking?': 0.16887396574020386, 'Can I see where the driver is?': 0.02835387922823429, "What's the fastest delivery option?": 0.6158886551856995, 'Can I cancel my delivery?': 0.5179767608642578, 'When will I get it?': 0.3408765196800232, 'Is delivery available during holidays?': 0.4482463598251343, 'What payment methods for delivery?': 0.31571727991104126, 'I gave the wrong address': 0.30280232429504395, 'Update my delivery location': 0.36764857172966003, 'Can the driver call me?': 0.12402781844139099, 'How do I contact the driver?': 0.1877201795578003, "What if I'm not home?": 0.16335391998291016, 'What is the estimated time for delivery?': 0.595389723777771, 'What is the ETA?': 0.29027605056762695, 'Can you leave it at the door?': 0.15769919753074646, 'Do you offer contactless delivery?': 0.3433361351490021, 'Can I meet the driver outside?': 0.115137979388237}
+    top_k_scores: [0.706, 0.686, 0.671]
+    all_similarities: {'What are your delivery options?': 0.493, 'How long does delivery take?': 0.686, 'What's the delivery time?': 0.616, 'Can I track my order?': 0.245, 'Where is my order?': 0.409, 'What's my order status?': 0.311, 'Do you have free delivery?': 0.425, 'How do I track my delivery?': 0.399, 'What's the minimum order for delivery?': 0.520, 'Do you deliver to my area?': 0.349, 'How much is delivery?': 0.524, 'Is my order on the way?': 0.428, 'When will my order arrive?': 0.493, 'What is the status of my order delivery?': 0.525, 'Track my pizza': 0.219, 'Where is my pizza?': 0.344, 'Where's the driver?': 0.187, 'When can I expect it to arrive?': 0.514, 'How long until my order arrives?': 0.516, 'What's the estimated delivery time?': 0.598, 'Can you check on my delivery?': 0.531, 'Where is the driver?': 0.187, 'Do you do late night delivery?': 0.394, 'i need it delivered to my house': 0.435, 'How much longer for delivery?': 0.706, 'I’m still waiting for my order': 0.575, 'How long is delivery usually?': 0.671, 'What's the delivery fee?': 0.423, 'Do you charge for delivery?': 0.414, 'can I get that delivered?': 0.439, 'Is delivery free over a certain amount?': 0.361, 'What's your delivery range?': 0.424, 'Are you in my delivery zone?': 0.399, 'Delivery time estimate': 0.609, 'What's the minimum order value?': 0.056, 'Is there a delivery minimum?': 0.512, 'Do you have real-time tracking?': 0.169, 'Can I see where the driver is?': 0.028, 'What's the fastest delivery option?': 0.616, 'Can I cancel my delivery?': 0.518, 'When will I get it?': 0.341, 'Is delivery available during holidays?': 0.448, 'What payment methods for delivery?': 0.316, 'I gave the wrong address': 0.303, 'Update my delivery location': 0.368, 'Can the driver call me?': 0.124, 'How do I contact the driver?': 0.188, 'What if I'm not home?': 0.163, 'What is the estimated time for delivery?': 0.595, 'What is the ETA?': 0.290, 'Can you leave it at the door?': 0.158, 'Do you offer contactless delivery?': 0.343, 'Can I meet the driver outside?': 0.115}
 ================================================================================
 
 
@@ -263,7 +289,11 @@ FINAL RESULT:
 SUMMARY
 ================================================================================
 
-Incorrect Predictions:
+Test Dataset Size: 400 queries
+Accuracy: 98.00%
+Correct: 392 / 400
+
+Incorrect Predictions (8):
   'Driver still hasn't shown up'
     Expected: complaint, Got: delivery (semantic, conf=0.62)
   'What's your best seller?'

@@ -47,7 +47,8 @@ class AlgorithmicRecognizer:
     """Pattern-based intent recognition using keywords and string similarity"""
 
     def __init__(self, patterns_file: str = None, enable_logging: bool = False,
-                 min_confidence: float = 0.5, linguistic_resources_file: str = None, use_boost_engine: bool = True):
+                 min_confidence: float = 0.5, linguistic_resources_file: str = None, use_boost_engine: bool = True,
+                 algorithmic_threshold: float = 0.65):
         """Initialize the algorithmic recognizer
 
         Args:
@@ -56,9 +57,11 @@ class AlgorithmicRecognizer:
             min_confidence: Minimum confidence threshold
             linguistic_resources_file: Path to linguistic resources JSON
             use_boost_engine: Enable domain-specific contextual boost rules
+            algorithmic_threshold: System-level threshold for algorithmic layer
         """
         self.patterns_file = patterns_file or IntentRecognizerUtils.get_default_patterns_file()
         self.min_confidence = min_confidence
+        self.algorithmic_threshold = algorithmic_threshold
         self.enable_logging = enable_logging
         self.logger = ConditionalLogger(__name__, enable_logging)
 
@@ -319,7 +322,7 @@ class AlgorithmicRecognizer:
             breakdown['winner_changed'] = (pre_boost_winner != intent_name)
 
         # Fallback: If but-clause was used but resulted in general/unknown, retry with full query
-        if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < 0.75):
+        if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < self.algorithmic_threshold):
 
             full_query_words = set(self.text_processor.extract_filtered_words(query))
             full_intent_scores = self._evaluate_all_intents(
