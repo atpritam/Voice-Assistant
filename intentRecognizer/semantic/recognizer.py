@@ -8,6 +8,7 @@ import sys
 from typing import Dict, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
 import numpy as np
+import socket
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from utils.logger import ConditionalLogger
@@ -100,18 +101,19 @@ class SemanticRecognizer:
         if not DEPENDENCIES_AVAILABLE:
             raise ImportError("SentenceTransformer not available")
 
+        device = "cuda" if (self.device == "auto" and torch.cuda.is_available()) else (self.device if self.device != "auto" else "cpu")
+        self.logger.info(f"Loading Sentence Transformer model on device: {'GPU' if device == 'cuda' else 'CPU'}")
+
         try:
-            if self.device == "auto":
-                device = "cuda" if torch.cuda.is_available() else "cpu"
-            else:
-                device = self.device
-
-            self.logger.info(f"Loading Sentence Transformer model on device: {'GPU' if device == 'cuda' else 'CPU'}")
-
+            socket.setdefaulttimeout(1)
+            socket.gethostbyname('huggingface.co')
             return SentenceTransformer(self.model_name, device=device)
-        except Exception as e:
-            self.logger.error(f"Error loading model: {e}")
-            raise
+        except (socket.gaierror, socket.timeout, OSError):
+            os.environ['HF_HUB_OFFLINE'] = '1'
+            try:
+                return SentenceTransformer(self.model_name, device=device, local_files_only=True)
+            finally:
+                os.environ.pop('HF_HUB_OFFLINE', None)
 
 
     def _compute_embeddings(self):

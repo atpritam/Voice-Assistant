@@ -1,8 +1,12 @@
-from flask import Flask, request
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
-import sys
+"""
+Run with: uvicorn app:socket_app --host 0.0.0.0 --port 5000 --reload
+"""
 import os
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+import socketio
+import sys
 import time
 import base64
 import logging
@@ -21,13 +25,12 @@ from asrModule import ASRService
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY must be set in .env")
-app.config['SECRET_KEY'] = SECRET_KEY
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10 ** 7, manage_session=False)
-CORS(app)
+# Socket.IO server
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*', max_http_buffer_size=10 ** 7)
+
+app = FastAPI()
+socket_app = socketio.ASGIApp(sio, app)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 logger = logging.getLogger(__name__)
 
@@ -171,10 +174,6 @@ def generate_tts_audio(tts, response):
 
     return None
 
-def get_session_id() -> str:
-    """Get or create a unique session ID for client"""
-    return request.sid  # type: ignore
-
 def add_to_conversation_history(session_id, entry_type, message, intent_info=None, audio_url=None, is_audio=False):
     """Add entry to conversation history for a specific session"""
     entry = {
@@ -226,95 +225,89 @@ def process_user_input(session_id, user_text, is_audio=False):
         'audio_url': audio_url
     }
 
-@socketio.on('connect')
-def handle_connect():
-    session_id = get_session_id()
-    logger.info(f'Client connected : [{session_id}]')
+@sio.on('connect')
+async def handle_connect(sid, environ):
+    logger.info(f'Client connected : [{sid}]')
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    session_id = get_session_id()
-    logger.info(f'Client disconnected : [{session_id}]')
+@sio.on('disconnect')
+async def handle_disconnect(sid):
+    logger.info(f'Client disconnected : [{sid}]')
     # Clean up session data
-    if session_id in session_conversations:
-        del session_conversations[session_id]
+    if sid in session_conversations:
+        del session_conversations[sid]
 
-@socketio.on('voice_input')
-def handle_voice_input(data):
+@sio.on('voice_input')
+async def handle_voice_input(sid, data):
     """Handle incoming voice audio for transcription and processing"""
     if not asr_service:
-        emit('error', {'message': 'ASR service not available'})
+        await sio.emit('error', {'message': 'ASR service not available'}, room=sid)
         return
 
     try:
-        session_id = get_session_id()
         audio_data = data.get('audio')
         if not audio_data:
-            emit('error', {'message': 'No audio data received'})
+            await sio.emit('error', {'message': 'No audio data received'}, room=sid)
             return
 
         audio_bytes = base64.b64decode(audio_data.split(',')[1] if ',' in audio_data else audio_data)
 
-        emit('transcription_status', {'status': 'processing'})
+        await sio.emit('transcription_status', {'status': 'processing'}, room=sid)
 
         transcribed_text, confidence = asr_service.transcribe_audio_data(audio_bytes)
 
         if not transcribed_text:
-            emit('transcription_result', {
+            await sio.emit('transcription_result', {
                 'text': '',
                 'confidence': 0.0,
                 'error': 'No speech detected'
-            })
+            }, room=sid)
             return
 
-        emit('transcription_result', {
+        await sio.emit('transcription_result', {
             'text': transcribed_text,
             'confidence': confidence
-        })
+        }, room=sid)
 
-        result = process_user_input(session_id, transcribed_text, is_audio=True)
+        result = process_user_input(sid, transcribed_text, is_audio=True)
         result['transcribed_text'] = transcribed_text
 
-        emit('voice_response', result)
+        await sio.emit('voice_response', result, room=sid)
 
     except Exception as e:
         logger.error(f" Voice input error: {e}", exc_info=True)
-        emit('error', {'message': f'Processing error: {str(e)}'})
+        await sio.emit('error', {'message': f'Processing error: {str(e)}'}, room=sid)
 
-@socketio.on('text_input')
-def handle_text_input(data):
+@sio.on('text_input')
+async def handle_text_input(sid, data):
     """Handle incoming text messages directly without ASR"""
     try:
-        session_id = get_session_id()
         text = data.get('text')
         if not text:
-            emit('error', {'message': 'No text received'})
+            await sio.emit('error', {'message': 'No text received'}, room=sid)
             return
 
-        result = process_user_input(session_id, text, is_audio=False)
+        result = process_user_input(sid, text, is_audio=False)
 
-        emit('text_response', result)
+        await sio.emit('text_response', result, room=sid)
 
     except Exception as e:
         logger.error(f"Text input error: {e}", exc_info=True)
-        emit('error', {'message': f'Processing error: {str(e)}'})
+        await sio.emit('error', {'message': f'Processing error: {str(e)}'}, room=sid)
 
-@socketio.on('clear_history')
-def handle_clear_history():
-    session_id = get_session_id()
-    session_conversations[session_id].clear()
-    logger.info(f'Cleared History : [{session_id}]')
-    emit('history_cleared')
+@sio.on('clear_history')
+async def handle_clear_history(sid):
+    session_conversations[sid].clear()
+    logger.info(f'Cleared History : [{sid}]')
+    await sio.emit('history_cleared', room=sid)
 
-@app.route('/')
-def index():
-    """Static HTML page"""
-    return app.send_static_file('index.html')
+@app.get('/')
+async def index():
+    """Serve static HTML page"""
+    return FileResponse('static/index.html')
 
-@app.route('/statistics')
-def get_statistics():
+@app.get('/statistics')
+async def get_statistics():
     """Get system statistics including layer usage, TTS, and ASR"""
-    from flask import jsonify
     stats = intent_recognizer.get_statistics()
 
     stats.pop('intent_distribution', None)
@@ -338,7 +331,7 @@ def get_statistics():
 
     organized['layers'].get('algorithmic_layer', {}).pop('patterns_evaluated', None)
 
-    return jsonify(organized)
+    return JSONResponse(organized)
 
 # System Start
 intent_recognizer = initialize_intent_recognizer()
@@ -358,6 +351,3 @@ logger.info(pipeline)
 
 # System Warmup
 perform_system_warmup()
-
-if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)

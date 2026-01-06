@@ -88,7 +88,7 @@ Edit `app.py` and set `LLM_MODEL = "gpt-oss:120b-cloud"` (cloud models are auto-
 echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" > .env
 
 # Start the application
-python app.py
+uvicorn app:socket_app --host 0.0.0.0 --port 5000 --reload
 ```
 
 Access the web interface at `http://localhost:5000`
