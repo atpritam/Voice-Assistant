@@ -53,7 +53,7 @@ def build_user_prompt(query: str, conversation_history: Optional[List[Dict]] = N
         "INSTRUCTIONS:",
         "- This is a partial and most recent conversation history",
         "- Infer from context what information has already been collected",
-        "- Do NOT repeat information already mentioned",
+        "- Do NOT repeat information or questions already mentioned",
         "- Continue naturally from the current conversation state",
         "- Do not ask multiple questions in one response",
         "",
