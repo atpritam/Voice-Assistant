@@ -135,22 +135,18 @@ class BoostRuleEngine:
             return items
 
         menu = res_info.get('menu_highlights', {})
-        popular_pizzas = menu.get('popular_pizzas', {})
-        items.update(name.lower() for name in popular_pizzas.keys())
-        toppings = menu.get('toppings', {})
-        for category in toppings.values():
-            if isinstance(category, list):
-                for item in category:
-                    item_lower = item.lower()
-                    items.add(item_lower)
-                    words = item_lower.split()
-                    for word in words:
-                        if word not in {'extra', 'vegan'}:
-                            items.add(word)
-        drinks = menu.get('drinks', [])
-        items.update(drink.lower() for drink in drinks)
-        crusts = menu.get('crust_types', [])
-        for crust in crusts:
+        excluded_words = {'extra'}
+
+        split = ([name.lower() for name in menu.get('popular_pizzas', {}).keys()]
+                 + [item.lower() for category in menu.get('toppings', {}).values()
+                                 if isinstance(category, list) for item in category])
+        for s in split:
+            items.add(s)
+            items.update(word for word in s.split() if word not in excluded_words)
+
+        items.update(drink.lower() for drink in menu.get('drinks', []))
+
+        for crust in menu.get('crust_types', []):
             crust_lower = crust.lower()
             items.add(crust_lower.replace(' ', ''))
             items.update(crust_lower.split())
