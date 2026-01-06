@@ -15,6 +15,7 @@ A **hybrid intent recognition system** combining classical NLP pattern matching,
 - [System Architecture](#system-architecture)
 - [System Requirements](#system-requirements)
 - [Configuration](#configuration)
+- [Pattern File](#intent-patterns)
 - [Usage](#usage)
 - [Running Tests](#running-tests)
 - [Performance Benchmarks](#performance-benchmarks)
@@ -222,7 +223,7 @@ ENABLE_AUDIO_PREPROCESSING = True
 
 ### Intent Patterns
 
-The system's intent classification is driven by the `utils/intent_patterns.json` file, which contains **289 training patterns** across 6 intent categories:
+The system's intent classification is driven by the `utils/intent_patterns.json` file, which contains **290 training patterns** across 6 intent categories:
 
 ```json
 {
@@ -239,13 +240,13 @@ The system's intent classification is driven by the `utils/intent_patterns.json`
 - `complaint`: 50 patterns - Issues, refunds, and service problems
 - `menu_inquiry`: 55 patterns - Menu questions and product information
 - `delivery`: 54 patterns - Delivery status, tracking, and options
-- `hours_location`: 45 patterns - Business hours and location queries
+- `hours_location`: 46 patterns - Business hours and location queries
 - `general`: 41 patterns - Greetings, thanks, and general conversation
 - `unknown`: 0 patterns - Fallback for unrecognized intents
 
 Each intent has:
 - **patterns**: Training examples for pattern matching and embedding generation
-- **similarity_threshold**: Minimum confidence score required for algorithmic/semantic layer classification
+- **similarity_threshold**: Minimum confidence score required to accept the intent for algorithmic/semantic layer classification
 - **default_response**: Templated response when no LLM is available
 
 ## Usage
@@ -311,6 +312,14 @@ Generate confusion matrix with per-intent metrics:
 
 ```bash
 python -m test.runtest -mx
+```
+
+### Failure Analysis
+
+Generate detailed logs and score breakdown of misclassifications:
+
+```bash
+python -m test.runtest -f
 ```
 
 ### Custom Test Configurations
