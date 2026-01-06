@@ -74,7 +74,7 @@ NORMAL_TEST_DATASET = [
     ("Can I get a square cut pizza", "order"),
     ("I'd like to order for pickup tomorrow", "order"),
 
-    # Complaint intents (60 queries)
+    # Complaint intents (59 queries)
     ("My pizza was cold when it arrived", "complaint"),
     ("This is terrible, I want a refund", "complaint"),
     ("The order is wrong and I'm very disappointed", "complaint"),
@@ -246,7 +246,7 @@ NORMAL_TEST_DATASET = [
     ("What's included in the veggie pizza", "menu_inquiry"),
     ("How many toppings can I choose", "menu_inquiry"),
 
-    # Delivery intents (43 queries)
+    # Delivery intents (44 queries)
     ("Where is my order", "delivery"),
     ("Can you track my delivery", "delivery"),
     ("What's the status of my pizza", "delivery"),

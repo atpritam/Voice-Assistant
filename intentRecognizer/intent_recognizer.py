@@ -173,6 +173,7 @@ class IntentRecognizer:
                     min_confidence=self.min_confidence,
                     ollama_base_url=self.ollama_base_url,
                     test_mode=self.test_mode,
+                    semantic_threshold=self.semantic_threshold,
                 )
                 model_type = "Cloud" if llm_model.endswith('-cloud') else "Local"
                 self.logger.info(f" LLM layer initialized (Ollama-{model_type}, model: {llm_model})")

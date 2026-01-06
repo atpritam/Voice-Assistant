@@ -19,7 +19,7 @@ from ..intent_recognizer import DEFAULT_MIN_CONFIDENCE, IntentRecognizerUtils
 from . import templates
 
 DEFAULT_MODEL = "llama3.2:3b-instruct-q4_K_M"
-RESPONSE_MODE_THRESHOLD = 0.65
+MAX_RETRIES = 2                                         # Retries for transient LLM failures
 
 
 def sanitize_response(text: str) -> str:
@@ -40,7 +40,8 @@ def sanitize_response(text: str) -> str:
     # Convert symbols
     text = (text.replace('%', ' percent')
             .replace(':', ',')
-            .replace(';', ','))
+            .replace(';', ',')
+            .replace('cm', 'centimeters'))
 
     # Remove brackets and parentheses
     text = re.sub(r'[\[\]()]', '', text)
@@ -76,7 +77,8 @@ class LLMRecognizer:
         res_info_file: str = None,
         test_mode: bool = False,
         ollama_base_url: str = "http://localhost:11434",
-        response_generation_threshold: float = RESPONSE_MODE_THRESHOLD
+        semantic_threshold: Optional[float] = None,
+        response_generation_threshold: Optional[float] = None
     ):
         load_dotenv()
 
@@ -85,7 +87,10 @@ class LLMRecognizer:
         self.enable_logging = enable_logging
         self.test_mode = test_mode
         self.ollama_base_url = ollama_base_url
-        self.response_generation_threshold = response_generation_threshold
+        if response_generation_threshold is not None:
+            self.response_generation_threshold = response_generation_threshold
+        else:
+            self.response_generation_threshold = semantic_threshold
         self.logger = ConditionalLogger(__name__, enable_logging)
 
         if not test_mode:
@@ -187,49 +192,66 @@ class LLMRecognizer:
         else:
             self.stats["classification_count"] += 1
 
-        try:
-            response = self._call_llm_api(
-                query, valid_intents, conversation_history,
-                recognized_intent, original_conf, use_response_mode
-            )
-            result = self._process_api_response(
-                response, valid_intents, recognized_intent,
-                original_conf, use_response_mode
-            )
+        # Retry logic for transient LLM failures
+        last_error = None
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                if attempt > 0:
+                    self.logger.warning(f"Retry attempt {attempt}/{MAX_RETRIES} for query: '{query[:50]}...'")
 
-            if not self.test_mode:
-                if not result.response or result.response.strip() == "":
-                    self.logger.error(f" Empty response generated for query: '{query}'")
-                    result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
-
-            self.stats["successful_queries"] += 1
-            self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
-            self.stats["avg_confidence"].append(result.confidence)
-
-            provider = "Ollama"
-            mode_str = result.mode.upper()
-
-            if not use_response_mode:
-                self.logger.info(
-                    f"[{provider}] [{mode_str}] Classified as '{result.intent}' "
-                    f"({result.confidence:.3f}, {result.confidence_level})"
+                response = self._call_llm_api(
+                    query, valid_intents, conversation_history,
+                    recognized_intent, original_conf, use_response_mode
+                )
+                result = self._process_api_response(
+                    response, valid_intents, recognized_intent,
+                    original_conf, use_response_mode
                 )
 
-            if not self.test_mode and result.generated_response:
-                preview = result.generated_response[:50] + "..." if len(
-                    result.generated_response) > 50 else result.generated_response
-                self.logger.info(f"Response: '{preview}'")
+                if not self.test_mode:
+                    if not result.response or result.response.strip() == "":
+                        self.logger.error(f" Empty response generated for query: '{query}'")
+                        result.response = "I apologize, but I'm having trouble processing your request right now. Please try again or call us directly."
 
-            return result
+                self.stats["successful_queries"] += 1
+                self.stats["intent_distribution"][result.intent] = self.stats["intent_distribution"].get(result.intent, 0) + 1
+                self.stats["avg_confidence"].append(result.confidence)
 
-        except json.JSONDecodeError as e:
-            self.logger.error(f" JSON parsing error: {e}")
-            self.stats["failed_queries"] += 1
-            return self._get_fallback_result(f"JSON parsing failed: {str(e)}", recognized_intent, original_conf)
-        except Exception as e:
-            self.logger.error(f" API error: {e}")
-            self.stats["failed_queries"] += 1
-            return self._get_fallback_result(f"API error: {str(e)}", recognized_intent, original_conf)
+                provider = "Ollama"
+                mode_str = result.mode.upper()
+
+                if not use_response_mode:
+                    self.logger.info(
+                        f"[{provider}] [{mode_str}] Classified as '{result.intent}' "
+                        f"({result.confidence:.3f}, {result.confidence_level})"
+                    )
+
+                if not self.test_mode and result.generated_response:
+                    preview = result.generated_response[:60] + "..." if len(
+                        result.generated_response) > 60 else result.generated_response
+                    self.logger.info(f"Response: '{preview}'")
+
+                return result
+
+            except json.JSONDecodeError as e:
+                last_error = f"JSON parsing failed: {str(e)}"
+                self.logger.error(f" JSON parsing error: {e}")
+                if attempt < MAX_RETRIES:
+                    continue
+                
+                self.stats["failed_queries"] += 1
+                return self._get_fallback_result(last_error, recognized_intent, original_conf)
+            except Exception as e:
+                last_error = f"API error: {str(e)}"
+                self.logger.error(f" API error: {e}")
+                if attempt < MAX_RETRIES:
+                    continue
+
+                self.stats["failed_queries"] += 1
+                return self._get_fallback_result(last_error, recognized_intent, original_conf)
+
+        self.stats["failed_queries"] += 1
+        return self._get_fallback_result(last_error or "Unknown error", recognized_intent, original_conf)
 
     def _call_llm_api(
         self,

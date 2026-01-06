@@ -41,18 +41,20 @@ def build_user_prompt(query: str, conversation_history: Optional[List[Dict]] = N
         return f'CURRENT CUSTOMER QUERY: "{query}"'
 
     prompt_parts = ["CONVERSATION HISTORY:"]
-    recent_history = conversation_history[-8:] if len(conversation_history) > 8 else conversation_history
+    recent_history = conversation_history[-10:] if len(conversation_history) > 10 else conversation_history
 
     for entry in recent_history:
         role = "Customer" if entry['type'] == 'user' else "Assistant"
-        intent_str = f" [intent: {entry['intent']}]" if entry.get('intent') else ""
+        intent_str = f" [recognized intent: {entry['intent']}]" if entry.get('intent') and entry['type'] == 'user' else ""
         prompt_parts.append(f"{role}: {entry['message']}{intent_str}")
 
     prompt_parts.extend([
         "",
+        "INSTRUCTIONS:",
+        "- This is a partial and most recent conversation history",
+        "- Infer from context what information has already been collected",
         "- Do NOT repeat information already mentioned",
-        "- Track the order state and what has been collected",
-        "- Respond naturally based on what is still needed",
+        "- Continue naturally from the current conversation state",
         "- Do not ask multiple questions in one response",
         "",
         f'CURRENT QUERY: "{query}"'

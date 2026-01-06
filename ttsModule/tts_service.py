@@ -145,7 +145,7 @@ class TTSService:
 
             self.stats['successful_generations'] += 1
 
-            preview = text[:40] + "..." if len(text) > 40 else text
+            preview = text[:60] + "..." if len(text) > 60 else text
             self.logger.info(f"Generated: '{preview}' -> {output_path.name}")
 
             return str(output_path)
