@@ -44,7 +44,7 @@ class InvertedIndex:
             unique_words = set()
 
             for pattern in patterns[intent_name].get("patterns", []):
-                words = self.text_processor.extract_filtered_words(pattern)
+                words = (pattern).split()
                 for word in words:
                     self.index[word].add(intent_name)
                     word_freq[word] += 1

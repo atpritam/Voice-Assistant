@@ -1,13 +1,13 @@
 """
 Test Dataset for Intent Recognition
-400 queries for comprehensive evaluation
+600 queries for comprehensive evaluation
 
-Dataset diversity score: 0.970
+Dataset diversity score: 0.967
 """
 
 # === NORMAL TEST DATA ===
 NORMAL_TEST_DATASET = [
-    # Order intents (65 queries)
+    # Order intents (84 queries)
     ("I want to order a large pepperoni pizza", "order"),
     ("Can I get two medium pizzas with extra cheese", "order"),
     ("I'd like to purchase a pizza", "order"),
@@ -73,8 +73,27 @@ NORMAL_TEST_DATASET = [
     ("I'd like a medium pizza well done", "order"),
     ("Can I get a square cut pizza", "order"),
     ("I'd like to order for pickup tomorrow", "order"),
+    ("I want to order a deep dish pizza", "order"),
+    ("Can I get a pizza with ranch dressing", "order"),
+    ("I need to order three family sized pizzas", "order"),
+    ("Let me get a medium with anchovies", "order"),
+    ("I'd like a pizza with white sauce", "order"),
+    ("Can you make me a pizza with extra veggies", "order"),
+    ("I want to order a pan pizza", "order"),
+    ("Let me order a french special pizza!", "order"),
+    ("I'll get a large with artichokes", "order"),
+    ("Can I order a pizza with pesto sauce", "order"),
+    ("Supreme with extra olives and bell peppers for tonight", "order"),
+    ("I want a pizza with feta cheese", "order"),
+    ("I'd like to order a Chicago style pizza", "order"),
+    ("Can I get a pizza with buffalo sauce", "order"),
+    ("I want to order a pizza for brunch", "order"),
+    ("Make mine a veggie deluxe with no mushrooms", "order"),
+    ("Let me get a pizza with spinach and ricotta", "order"),
+    ("I'd like to order a Sicilian pizza", "order"),
+    ("Can I get a New York style pizza", "order"),
 
-    # Complaint intents (59 queries)
+    # Complaint intents (86 queries)
     ("My pizza was cold when it arrived", "complaint"),
     ("This is terrible, I want a refund", "complaint"),
     ("The order is wrong and I'm very disappointed", "complaint"),
@@ -134,8 +153,35 @@ NORMAL_TEST_DATASET = [
     ("The toppings are missing", "complaint"),
     ("This is ice cold", "complaint"),
     ("I need compensation for this", "complaint"),
+    ("Pizza arrived cold, wrong toppings, and the driver was incredibly rude", "complaint"),
+    ("Get me your manager", "complaint"),
+    ("The pizza has barely any toppings", "complaint"),
+    ("You gave me the wrong size", "complaint"),
+    ("The pizza is soggy", "complaint"),
+    ("The pizza fell apart when I opened the box", "complaint"),
+    ("There's something wrong with the dough", "complaint"),
+    ("This is completely wrong I asked for pepperoni", "complaint"),
+    ("The cheese is rubbery", "complaint"),
+    ("Wonderful, my order finally arrived ice cold", "complaint"),
+    ("Wow, your 'gourmet' pizza tastes like cardboard", "complaint"),
+    ("Connect me to whoever is in charge of refunds", "complaint"),
+    ("I'm never recommending you to anyone", "complaint"),
+    ("This is the second time you messed up my order", "complaint"),
+    ("The pizza is way too greasy", "complaint"),
+    ("You forgot to include napkins and plates", "complaint"),
+    ("The pizza is lukewarm at best", "complaint"),
+    ("This doesn't look anything like the menu photo", "complaint"),
+    ("The delivery person was unprofessional", "complaint"),
+    ("The pizza has no flavor whatsoever", "complaint"),
+    ("You charged me for toppings I didn't get", "complaint"),
+    ("This is completely unacceptable service", "complaint"),
+    ("The crust tastes stale", "complaint"),
+    ("I found something strange in my pizza", "complaint"),
+    ("The pizza was cut into uneven slices", "complaint"),
+    ("This is the worst customer service I've experienced", "complaint"),
+    ("The sauce is way too sweet", "complaint"),
 
-    # Hours/Location intents (49 queries)
+    # Hours/Location intents (79 queries)
     ("What time do you close", "hours_location"),
     ("When are you open", "hours_location"),
     ("What's your address", "hours_location"),
@@ -185,8 +231,38 @@ NORMAL_TEST_DATASET = [
     ("Where you guys located at?", "hours_location"),
     ("Are you closed on Mondays", "hours_location"),
     ("What time do you stop taking orders", "hours_location"),
+    ("Do you have parking available?", "hours_location"),
+    ("What city are you in", "hours_location"),
+    ("Are you open for breakfast", "hours_location"),
+    ("What's your zip code", "hours_location"),
+    ("When is your lunch special available", "hours_location"),
+    ("Are you near the mall", "hours_location"),
+    ("What's your cross street", "hours_location"),
+    ("Do you close for lunch break", "hours_location"),
+    ("Are you in downtown", "hours_location"),
+    ("What days are you closed", "hours_location"),
+    ("When is your happy hour", "hours_location"),
+    ("Are you on Main Street", "hours_location"),
+    ("What are your holiday hours", "hours_location"),
+    ("Are you open all days?", "hours_location"),
+    ("What time does your kitchen open", "hours_location"),
+    ("Are you located near the train station", "hours_location"),
+    ("this open today?", "hours_location"),
+    ("What's your address for GPS", "hours_location"),
+    ("Are you in a shopping center", "hours_location"),
+    ("What time do you start lunch service", "hours_location"),
+    ("Are you near the university campus", "hours_location"),
+    ("What are your hours on New Year's Eve", "hours_location"),
+    ("Are you accessible by public transit", "hours_location"),
+    ("What intersection are you at", "hours_location"),
+    ("Are you open during the afternoon", "hours_location"),
+    ("Do you close between lunch and dinner", "hours_location"),
+    ("How far is your place from the airport", "hours_location"),
+    ("What floor of the building are you on", "hours_location"),
+    ("Do you have any locations open past midnight", "hours_location"),
+    ("Which branch is closest to the stadium", "hours_location"),
 
-    # Menu inquiry intents (58 queries)
+    # Menu inquiry intents (92 queries)
     ("What toppings do you have", "menu_inquiry"),
     ("What's on your menu", "menu_inquiry"),
     ("How much does a large pizza cost", "menu_inquiry"),
@@ -236,7 +312,7 @@ NORMAL_TEST_DATASET = [
     ("What drinks do you have?", "menu_inquiry"),
     ("Do you sell salads", "menu_inquiry"),
     ("What's in the meat lovers pizza", "menu_inquiry"),
-    ("How much is extra cheese", "menu_inquiry"),
+    ("How much is this option?", "menu_inquiry"),
     ("Do you have dairy free options", "menu_inquiry"),
     ("What sauces do you offer", "menu_inquiry"),
     ("Can I see nutritional information", "menu_inquiry"),
@@ -245,8 +321,42 @@ NORMAL_TEST_DATASET = [
     ("Do you make calzones", "menu_inquiry"),
     ("What's included in the veggie pizza", "menu_inquiry"),
     ("How many toppings can I choose", "menu_inquiry"),
+    ("What's a pepperoni gonna cost me", "menu_inquiry"),
+    ("Do you have shrimp as a topping", "menu_inquiry"),
+    ("What's your lunch special", "menu_inquiry"),
+    ("Do you make personal pizzas", "menu_inquiry"),
+    ("What's included in the combo meal", "menu_inquiry"),
+    ("Do you have breadsticks", "menu_inquiry"),
+    ("What kind of sauces can I choose from", "menu_inquiry"),
+    ("Do you have a family meal deal", "menu_inquiry"),
+    ("What's your cheapest large pizza", "menu_inquiry"),
+    ("How much do your family size pizzas with extra toppings cost?", "menu_inquiry"),
+    ("What's on your supreme deluxe", "menu_inquiry"),
+    ("Do you have garlic knots", "menu_inquiry"),
+    ("How much for a family size cheese pizza?", "menu_inquiry"),
+    ("Do you have a student discount", "menu_inquiry"),
+    ("How much for 2 small pepperoni?", "menu_inquiry"),
+    ("Do you have stuffed crust options", "menu_inquiry"),
+    ("What's in your white pizza", "menu_inquiry"),
+    ("Do you offer catering", "menu_inquiry"),
+    ("What's your party size pizza", "menu_inquiry"),
+    ("Do you have a kids menu", "menu_inquiry"),
+    ("What are your premium toppings", "menu_inquiry"),
+    ("Do you sell gift cards", "menu_inquiry"),
+    ("What's your largest pizza size", "menu_inquiry"),
+    ("Do you have mac and cheese bites", "menu_inquiry"),
+    ("Is there any good cheese available?", "menu_inquiry"),
+    ("Do you have mozzarella sticks", "menu_inquiry"),
+    ("What dipping sauces do you offer", "menu_inquiry"),
+    ("Do you have any keto-friendly options", "menu_inquiry"),
+    ("Do you have jalapeno poppers", "menu_inquiry"),
+    ("What's your cheapest meal deal", "menu_inquiry"),
+    ("Do you have Italian subs or sandwiches", "menu_inquiry"),
+    ("What beverages do you have available", "menu_inquiry"),
+    ("Do you have brownies or cookies", "menu_inquiry"),
+    ("What's your signature sauce", "menu_inquiry"),
 
-    # Delivery intents (44 queries)
+    # Delivery intents (77 queries)
     ("Where is my order", "delivery"),
     ("Can you track my delivery", "delivery"),
     ("What's the status of my pizza", "delivery"),
@@ -291,8 +401,41 @@ NORMAL_TEST_DATASET = [
     ("Can I get contactless delivery", "delivery"),
     ("How much longer until my pizza gets here", "delivery"),
     ("What's the minimum order value", "delivery"),
+    ("Do you deliver to hotels", "delivery"),
+    ("What's the average delivery time", "delivery"),
+    ("Do you deliver to apartments", "delivery"),
+    ("What's your fastest delivery time", "delivery"),
+    ("Do you deliver on holidays", "delivery"),
+    ("What's the delivery fee to my area", "delivery"),
+    ("Can I meet the driver outside", "delivery"),
+    ("Do you have GPS tracking", "delivery"),
+    ("What's the latest delivery time", "delivery"),
+    ("Can I split the delivery cost", "delivery"),
+    ("food should have been here by now, what's going on", "delivery"),
+    ("Do you deliver to office buildings", "delivery"),
+    ("What if I'm not home when the driver arrives", "delivery"),
+    ("Can I change my delivery time", "delivery"),
+    ("my stomach is growling, how much longer you think", "delivery"),
+    ("Do you text when the driver is close", "delivery"),
+    ("What's your busiest delivery time", "delivery"),
+    ("Can the driver call when they arrive", "delivery"),
+    ("Do you deliver during bad weather", "delivery"),
+    ("How long until someone shows up with my food?", "delivery"),
+    ("Can I request a specific delivery window", "delivery"),
+    ("Do you have express delivery", "delivery"),
+    ("Can I track multiple orders at once", "delivery"),
+    ("Do you leave the order at the door", "delivery"),
+    ("What's the surcharge for distant deliveries", "delivery"),
+    ("Do you require a signature for delivery", "delivery"),
+    ("What's your policy on late deliveries", "delivery"),
+    ("Can I update my delivery instructions", "delivery"),
+    ("Do you deliver to business complexes", "delivery"),
+    ("When is the food gonna be here?", "delivery"),
+    ("What happens if the driver can't locate my building", "delivery"),
+    ("Are you delivering right now?", "delivery"),
+    ("I want the food delivered to my home address", "delivery"),
 
-    # General intents (20 queries)
+    # General intents (57 queries)
     ("Hello", "general"),
     ("Hi there", "general"),
     ("Thanks for your help", "general"),
@@ -313,6 +456,43 @@ NORMAL_TEST_DATASET = [
     ("Perfect", "general"),
     ("That works", "general"),
     ("what a good day it is today", "general"),
+    ("Good morning", "general"),
+    ("Thanks a lot", "general"),
+    ("Have a great day", "general"),
+    ("See you later", "general"),
+    ("Much appreciated", "general"),
+    ("Cheers", "general"),
+    ("Take care", "general"),
+    ("Nice talking to you", "general"),
+    ("Do you have dine-in service", "general"),
+    ("Can i contact about hiring?", "general"),
+    ("You're welcome", "general"),
+    ("No worries", "general"),
+    ("Excuse me", "general"),
+    ("Pardon me", "general"),
+    ("Can I pay by card?", "general"),
+    ("My pleasure", "general"),
+    ("Likewise", "general"),
+    ("Talk soon", "general"),
+    ("Best regards", "general"),
+    ("Catch you later", "general"),
+    ("Peace out", "general"),
+    ("Good night", "general"),
+    ("Hope you're doing well", "general"),
+    ("How's it going", "general"),
+    ("Good afternoon", "general"),
+    ("I appreciate your help", "general"),
+    ("Thanks so much", "general"),
+    ("Have a wonderful evening", "general"),
+    ("See you next time", "general"),
+    ("That's perfect", "general"),
+    ("Sounds great", "general"),
+    ("What is your website?", "general"),
+    ("No thank you", "general"),
+    ("Can you help me with a question?", "general"),
+    ("All good", "general"),
+    ("You too", "general"),
+    ("Appreciate it!", "general"),
 ]
 
 
@@ -366,7 +546,7 @@ EDGE_CASES_DATASET = [
     ("I don't like thick crust do you have thin", "menu_inquiry"),
     ("No mushrooms please what else is there", "menu_inquiry"),
 
-    # Sarcasm (10 queries)
+    # Sarcasm (12 queries)
     ("Oh great another wrong order", "complaint"),
     ("Just what I needed, cold pizza again", "complaint"),
     ("Wonderful, an hour late as usual", "complaint"),
@@ -377,6 +557,8 @@ EDGE_CASES_DATASET = [
     ("Great service, been waiting two hours", "complaint"),
     ("Love how my pizza never showed up", "complaint"),
     ("The delivery took forever", "complaint"),
+    ("Brilliant, my order still hasn't moved", "complaint"),
+    ("great, only took an hour and a half", "complaint"),
 
     # Context dependent (11 queries)
     ("What about the large one", "menu_inquiry"),
@@ -391,7 +573,7 @@ EDGE_CASES_DATASET = [
     ("Same as last time", "order"),
     ("I want my usual", "order"),
 
-    # Very Short Queries (13 queries)
+    # Very Short Queries (14 queries)
     ("hours", "hours_location"),
     ("price", "menu_inquiry"),
     ("order", "order"),
@@ -405,8 +587,9 @@ EDGE_CASES_DATASET = [
     ("pepperoni large", "order"),
     ("hawaiian pizza please", "order"),
     ("Pizza?", "order"),
+    ("ETA please", "delivery"),
 
-    # Unusual Phrasing (7 queries)
+    # Unusual Phrasing (8 queries)
     ("Inquiring about your operational schedule", "hours_location"),
     ("Seeking information regarding menu items", "menu_inquiry"),
     ("Expressing dissatisfaction with service", "complaint"),
@@ -414,6 +597,7 @@ EDGE_CASES_DATASET = [
     ("What is your geographical position", "hours_location"),
     ("I require nutritional options", "menu_inquiry"),
     ("Demanding monetary reimbursement", "complaint"),
+    ("been watching the clock, how much longer realistically", "delivery"),
 
     # Typos and misspellings (7 queries)
     ("I want to oder a pizza", "order"),
@@ -444,6 +628,24 @@ EDGE_CASES_DATASET = [
     ("I want to know about your hours", "hours_location"),
     ("Can I inquire about an order I placed for delivery?", "delivery"),
     ("I'd like to ask about your specials", "menu_inquiry"),
+
+    # Noise / Formatting / Mixed language (16 queries)
+    ("uhh... can you, like, take my order now?", "order"),
+    ("ORDER: 1x large pepperoni, 2x medium cheese. thx", "order"),
+    ("can you deliver to 221B Baker Street?", "delivery"),
+    ("where @location?", "hours_location"),
+    ("menu pls (prices too)", "menu_inquiry"),
+    ("do you have jalapeño toppings?", "menu_inquiry"),
+    ("I PAID but my pizza never arrived", "complaint"),
+    ("my order says 'delivered' but it's not here yet", "complaint"),
+    ("track my order #12345", "delivery"),
+    ("I want pickup, not delivery, for 7:30pm", "order"),
+    ("gluten-free? dairy-free? what can I eat", "menu_inquiry"),
+    ("hola, quiero una pizza grande de pepperoni", "order"),
+    ("can I get the pizza well-done, extra crispy", "order"),
+    ("i said NO ONIONS but got onions", "complaint"),
+    ("are you open rn??", "hours_location"),
+    ("order\npizza for delivery", "order"),
 ]
 
 
@@ -478,21 +680,50 @@ def check_duplicates():
     return len(duplicates) > 0, duplicates
 
 
-def calculate_diversity_score():
-    """Calculate dataset diversity score (0-1, higher is better)"""
+def _calculate_diversity(texts):
+    """
+    Function to calculate diversity score for a list of texts.
+    Returns diversity score (0-1, higher is better) or None if calculation fails.
+    """
     try:
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
         import numpy as np
 
-        queries = [q for q, _ in NORMAL_TEST_DATASET + EDGE_CASES_DATASET]
-        vectors = TfidfVectorizer(ngram_range=(1, 2), max_features=500).fit_transform(queries)
+        if len(texts) < 2:
+            return None
+            
+        vectors = TfidfVectorizer(ngram_range=(1, 2), max_features=500).fit_transform(texts)
         similarities = cosine_similarity(vectors)
-
+        
         return round(1 - np.mean(similarities[np.triu_indices_from(similarities, k=1)]), 4)
     except ImportError:
         return None
 
+
+def calculate_test_dataset_diversity_score():
+    """Calculate dataset diversity score"""
+    queries = [q for q, _ in NORMAL_TEST_DATASET + EDGE_CASES_DATASET]
+    return _calculate_diversity(queries)
+
+def calculate_pattern_file_diversity_score():
+    """Calculate pattern file diversity score"""
+    import json
+    import os
+    
+    try:
+        pattern_file_path = os.path.join(os.path.dirname(__file__), '../../utils/intent_patterns.json')
+        with open(pattern_file_path, 'r') as f:
+            patterns_data = json.load(f)
+
+        all_patterns = []
+        for intent, data in patterns_data.items():
+            if intent != "unknown" and "patterns" in data:
+                all_patterns.extend(data["patterns"])
+        
+        return _calculate_diversity(all_patterns)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
 
 def get_dataset_statistics():
     """Get comprehensive statistics about the dataset"""
@@ -539,5 +770,8 @@ if __name__ == '__main__':
             print(f"  - '{query}' ({intent})")
             print(f"    Duplicate of: '{original[0]}' ({original[1]})")
 
-    diversity_score = calculate_diversity_score()
-    print(f"\nDataset diversity score: {diversity_score}")
+    diversity_score = calculate_test_dataset_diversity_score()
+    print(f"\nDataset diversity score: {diversity_score:.4f}" if diversity_score else "\nDataset diversity score: N/A")
+    
+    pattern_diversity_score = calculate_pattern_file_diversity_score()
+    print(f"Pattern file diversity score: {pattern_diversity_score:.4f}" if pattern_diversity_score else "Pattern file diversity score: N/A")

@@ -121,15 +121,15 @@ Text Query
 ┌─────────────────────────┐
 │ Intent Recognition      │
 │                         │
-│ 1. Algorithmic (fast)   │ ← 80% of queries
+│ 1. Algorithmic (fast)   │ ← 72% of queries
 │    ├─ Pattern matching  │
 │    ├─ Levenshtein      │
 │    └─ Boost Engine      │
 │         ↓               │
-│ 2. Semantic (accurate)  │ ← 14% of queries
+│ 2. Semantic (accurate)  │ ← 18% of queries
 │    └─ Neural embeddings │
 │         ↓               │
-│ 3. LLM (fallback)       │ ← 6% of queries
+│ 3. LLM (fallback)       │ ← 10% of queries
 │    └─ Ollama/Cloud     │
 └─────────────────────────┘
      ↓
@@ -142,7 +142,7 @@ Voice Output
 
 ### Full Pipeline vs. LLM-Only
 
-**Intent Recognition Performance Comparison (400 queries, test mode):**
+**Intent Recognition Performance Comparison (600 queries, test mode):**
 
 | Configuration                    | Accuracy | Latency | Q/s | Token Usage Δ |
 |----------------------------------|----------|---------|-----|---------------|
@@ -160,7 +160,7 @@ See `testResults/comparativeTest/` for detailed comparative analysis.
 **Minimum:**
 - CPU: Modern multi-core processor
 - RAM: 8GB
-- Storage: 6GB free space
+- Storage: 8GB free space
 - Python: **3.11 (Required)** - Coqui TTS limitation
 
 **Recommended:**
@@ -244,6 +244,8 @@ The system's intent classification is driven by the `utils/intent_patterns.json`
 - `general`: 41 patterns - Greetings, thanks, and general conversation
 - `unknown`: 0 patterns - Fallback for unrecognized intents
 
+Diversity score: 0.970/1.000
+
 Each intent has:
 - **patterns**: Training examples for pattern matching and embedding generation
 - **similarity_threshold**: Minimum confidence score required to accept the intent for algorithmic/semantic layer classification
@@ -251,7 +253,7 @@ Each intent has:
 
 ## Usage
 
-### Running the Application inside vENV
+### Running the Application inside .venv
 
 ```bash
 python app.py
@@ -343,7 +345,7 @@ python -m test.runtest "where is my pizza?" --exp delivery
 
 ### Unit Tests
 
-Runs pytest-based checks for the algorithmic recognizer Similarity scoring and text processing. (77 tests)
+Runs pytest-based checks for the algorithmic recognizer Similarity scoring and text processing. (76 tests)
 
 ```bash
 python -m test.runtest -unit 
@@ -353,9 +355,9 @@ python -m test.runtest -unit
 
 All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-instruct-q4_K_M`.
 
-### Extended Test Dataset (400 queries - with edge cases)
+### Extended Test Dataset (600 queries - with edge cases)
 
-Comprehensive testing with 400 queries including 105 edge cases:
+Comprehensive testing with 600 queries including 105 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
@@ -374,7 +376,7 @@ Comprehensive testing with 400 queries including 105 edge cases:
 - LLM layer: 6.5% of queries (26/400)
 
 ### Boost Engine Impact
-Comparison with and without contextual boost rules on full pipeline (400 queries with edge cases):
+Comparison with and without contextual boost rules on full pipeline (600 queries with edge cases):
 
 | Metric              | Without Boost | With Boost | Improvement |
 |---------------------|---------------|------------|-------------|
@@ -385,7 +387,7 @@ Comparison with and without contextual boost rules on full pipeline (400 queries
 | Semantic Usage      | 95 | 54 | -41 |
 | LLM Fallback        | 37 | 26 | -11 |
 
-### Confusion Matrix Results (Full Pipeline - 400 queries)
+### Confusion Matrix Results (Full Pipeline - 600 queries)
 
 #### Per-Intent Performance
 
@@ -405,9 +407,9 @@ See `testResults/` directory for detailed analyses.
 
 The benchmark results above are validated against dataset with:
 
-- **400 total queries** (295 normal + 105 edge cases)
-- **6 intent categories**: order (88), complaint (83), menu_inquiry (88), hours_location (62), delivery (57), general (22)
-- **Diversity score: 0.97/1.0** - High lexical variety, not repetitive memorization
+- **600 total queries** (475 normal + 125 edge cases)
+- **6 intent categories**: order (113), complaint (115), menu_inquiry (125), hours_location (94), delivery (94), general (59)
+- **Diversity score: 0.968/1.000** - High lexical variety, not repetitive memorization
 - **Edge cases include**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing
 - **Zero duplicates** - Unbiased evaluation
 

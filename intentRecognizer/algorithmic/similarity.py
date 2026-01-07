@@ -117,13 +117,7 @@ class SimilarityCalculator:
             if num_matches:
                 return min(0.16, 0.08 + (num_matches - 1) * 0.04)
 
-        max_bonus = 0.0
-        for critical_keywords in intent_critical_keywords.values():
-            num_matches = len(query_set & critical_keywords)
-            if num_matches:
-                bonus = min(0.16, 0.08 + (num_matches - 1) * 0.04)
-                max_bonus = max(max_bonus, bonus)
-        return max_bonus
+        return 0.0
 
     def calculate_similarity(self, query: str, pattern: str, intent_name: Optional[str],
                            pattern_norm: Optional[str], intent_critical_keywords: Dict) -> Tuple[float, SimilarityMetrics]:
@@ -139,14 +133,13 @@ class SimilarityCalculator:
         Returns:
             Tuple of (final_similarity_score, detailed_metrics)
         """
-        query_norm = self.text_processor.normalize(query)
         pattern_norm = pattern_norm or self.text_processor.normalize(pattern)
 
-        if not query_norm or not pattern_norm or not self.passes_length_prefilter(query_norm, pattern_norm):
+        if not query or not pattern_norm or not self.passes_length_prefilter(query, pattern_norm):
             return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
 
-        query_words = self.text_processor.extract_filtered_words(query)
-        pattern_words = self.text_processor.extract_filtered_words(pattern)
+        query_words = query.split()
+        pattern_words = pattern_norm.split()
 
         if not query_words or not pattern_words:
             return 0.0, SimilarityMetrics(0, 0, 0, 0, 0, 0, 0, 0)
@@ -161,7 +154,7 @@ class SimilarityCalculator:
             metrics = SimilarityMetrics(keyword_sim, exact_sim, synonym_sim, 0.0, 0.0, 0.0, keyword_sim, keyword_sim)
             return keyword_sim, metrics
 
-        levenshtein_sim = Levenshtein.ratio(query_norm, pattern_norm)
+        levenshtein_sim = Levenshtein.ratio(query, pattern_norm)
         phrase_bonus = self.calculate_phrase_bonus(query_words, pattern_words)
         keyword_bonus = self.calculate_keyword_bonus(query_set, intent_name, intent_critical_keywords)
 

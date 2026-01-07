@@ -173,7 +173,7 @@ class AlgorithmicRecognizer:
         # Filter patterns with word overlap
         patterns_to_check = []
         for idx, pattern, pattern_norm in filtered:
-            pattern_words = set(self.text_processor.extract_filtered_words(pattern))
+            pattern_words = set(pattern.split())
             if query_words & pattern_words or len(pattern_words) <= 3:
                 patterns_to_check.append((idx, pattern, pattern_norm))
 
@@ -287,7 +287,7 @@ class AlgorithmicRecognizer:
         processed_query = self._preprocess_but_clause(query)
         but_clause_applied = processed_query != query
 
-        query_words = set(self.text_processor.extract_filtered_words(processed_query))
+        query_words = set(processed_query.split())
         if not query_words:
             return "unknown", 0.0, "", {}
 
@@ -324,7 +324,7 @@ class AlgorithmicRecognizer:
         # Fallback: If but-clause was used but resulted in general/unknown, retry with full query
         if but_clause_applied and (intent_name in ["general", "unknown"] or similarity < self.algorithmic_threshold):
 
-            full_query_words = set(self.text_processor.extract_filtered_words(query))
+            full_query_words = set(query.split())
             full_intent_scores = self._evaluate_all_intents(
                 query,
                 full_query_words,
@@ -350,7 +350,7 @@ class AlgorithmicRecognizer:
             AlgorithmicResult with intent classification
         """
         self.stats['total_queries'] += 1
-
+        query = self.text_processor.normalize(query)
         intent_name, similarity, matched_pattern, breakdown = self.find_best_match(query)
         confidence_level = IntentRecognizerUtils.determine_confidence_level(similarity)
 

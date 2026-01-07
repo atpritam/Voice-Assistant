@@ -35,11 +35,11 @@
       "fee", "prices", "pay", "payment", "total", "amount"
     ],
     "quality": [
-      "quality", "fresh", "stale", "old", "burnt", "cold",
+      "quality", "stale", "old", "burnt", "cold",
       "hot", "warm", "undercooked", "overcooked", "raw", "hard", "soggy"
     ],
     "recommendation": [
-      "recommendations", "recommend", "recommended", "recommendations",
+      "recommendation", "recommendations", "recommend", "recommended",
       "suggestion", "suggestions", "suggest", "popular", "options", "selection"
     ],
     "help": [

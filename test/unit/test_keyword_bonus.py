@@ -63,16 +63,6 @@ class TestKeywordBonus:
         )
         assert abs(bonus - expected_bonus) < 0.01, f"Expected {expected_bonus}, got {bonus}"
 
-    def test_keyword_bonus_without_intent(self):
-        """Test keyword bonus without specifying intent (searches all intents)"""
-        # Should find max bonus across all intents
-        query_set = {"order", "pizza"}
-
-        bonus = self.calculator.calculate_keyword_bonus(
-            query_set, None, self.intent_critical_keywords
-        )
-        assert abs(bonus - 0.12) < 0.01  # 2 keyword matches
-
     def test_keyword_bonus_scaling(self):
         """Test that keyword bonus scales correctly with number of matches"""
         # 1 match: 0.08

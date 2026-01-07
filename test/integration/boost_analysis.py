@@ -65,6 +65,7 @@ class BoostEngineTestRunner(BaseTestRunner):
                 stats = rec.get_statistics()
 
                 result = self._get_result_dict(ev, name, duration, stats, boost)
+                result['detailed'] = ev.get('detailed_results', [])
                 results.append(result)
 
                 self.printer.print_quick_summary(
@@ -156,5 +157,20 @@ class BoostEngineTestRunner(BaseTestRunner):
         print("-" * 80)
         for metric, impact, without, with_boost in rows:
             print(f"{metric:<22} {without:<15} {with_boost:<15} {impact:<35}")
+
+        # positive change rate
+        boost_det = {r['query']: r['predicted'] for r in boost.get('detailed', [])}
+        no_boost_det = {r['query']: (r['predicted'], r['expected']) for r in no_boost.get('detailed', [])}
+        pos, neg = 0, 0
+        for q, (nb_pred, exp) in no_boost_det.items():
+            b_pred = boost_det.get(q)
+            if b_pred and b_pred != nb_pred:
+                if b_pred == exp:
+                    pos += 1
+                elif nb_pred == exp:
+                    neg += 1
+        if pos + neg > 0:
+            rate = pos / (pos + neg) * 100
+            print(f"\nPositive Change Rate: {rate:.1f}% of changed predictions were improvements")
 
         print()

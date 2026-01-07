@@ -8,6 +8,7 @@ Tests the TextProcessor class functionality including
 - Special character handling
 - Filler word removal
 - Real-world query normalization
+- Number to Word conversion
 
 Run with: python -m pytest test/unit/test_text_processor.py -v
 """
@@ -78,9 +79,9 @@ class TestPreprocessText:
         ("order–delivery", "order delivery"),
         ("order—delivery", "order delivery"),
 
-        # Numbers preserved
-        ("Order 5 pizzas", "order 5 pizzas"),
-        ("Order 10 items", "order 10 items"),
+        # Numbers converted
+        ("Order 5 pizzas", "order five pizzas"),
+        ("Order 10 items", "order ten items"),
     ])
     def test_special_character_handling(self, input_text, expected_output):
         """Test handling of special characters"""
@@ -94,7 +95,7 @@ class TestPreprocessText:
     ])
     def test_filler_word_removal(self, text_with_fillers, words_to_keep, words_to_remove):
         """Test that filler words are removed during extraction"""
-        words = self.text_processor.extract_filtered_words(text_with_fillers)
+        words = self.text_processor.normalize(text_with_fillers).split()
 
         # Content words should remain
         for word in words_to_keep:
@@ -119,7 +120,7 @@ class TestPreprocessText:
     def test_real_world_query_normalization(self, query, expected_tokens):
         """Test normalization of realistic queries with token output"""
         # Normalize and tokenize
-        result = self.text_processor.extract_filtered_words(query)
+        result = self.text_processor.normalize(query).split()
         assert result == expected_tokens
 
     def test_apostrophe_variant_handling(self):

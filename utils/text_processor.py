@@ -43,6 +43,12 @@ class TextProcessor:
         self.filler_words = filler_words or set()
 
     @staticmethod
+    def number_to_words(num: int) -> str:
+        """Convert single digit numbers (0-10) to words."""
+        words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+        return words[num] if 0 <= num <= 10 else str(num)
+
+    @staticmethod
     def expand_contractions(text: str) -> str:
         """Expand English contractions using both special cases and suffix-based rules."""
         text = text.replace("'", "'").replace("'", "'").replace("ʼ", "'")
@@ -86,22 +92,16 @@ class TextProcessor:
         return ' '.join(expanded_words)
 
     def normalize(self, text: str) -> str:
-        """Normalize text: expand contractions, lowercase, strip punctuation, and collapse spaces."""
+        """Normalize text: expand contractions, convert single-digit numbers to words, lowercase, strip punctuation, filter filler words, and collapse spaces."""
         if not text:
             return ""
 
         text = text.strip()
         text = text.replace("–", " ").replace("—", " ").replace("\n", " ")
         text = self.expand_contractions(text)
+        text = re.sub(r'\b([0-9]|10)\b', lambda m: TextProcessor.number_to_words(int(m.group())), text)
         text = text.lower()
         text = text.translate(str.maketrans('', '', '!?.,;:\'"()[]{}/@'))
-        return ' '.join(text.split())
-
-    def extract_filtered_words(self, text: str) -> List[str]:
-        """Extract normalized words excluding filler words."""
-        words = self.normalize(text).split()
-        return [w for w in words if w not in self.filler_words]
-
-    def extract_words(self, text: str) -> List[str]:
-        """Extract normalized words without filtering."""
-        return self.normalize(text).split()
+        words = text.split()
+        filtered = [w for w in words if w not in self.filler_words]
+        return ' '.join(filtered)

@@ -198,7 +198,7 @@ class BoostRuleEngine:
         """
         query_words = context.query_words
         has_negative = bool(query_words & self.negative_words)
-        order_action = self.intent_critical_keywords.get('order', set())
+        order_action = set(self.intent_critical_keywords.get('order', set())) - {'order'}
         has_order_action = bool(query_words & order_action)
         has_order_keyword = 'order' in query_words
 
@@ -261,9 +261,9 @@ class BoostRuleEngine:
         query_words = context.query_words
         time_location_context = {
             'when', 'what time', 'until when', 'from when',
-            'where', 'which', 'what address', 'how far', 'late night', 'get to'
+            'where', 'which', 'what', 'how far', 'late night', 'get to'
         }
-        hl_keywords = {'open', 'close', 'hours', 'location', 'address', 'store', 'at', 'find', 'there'}
+        hl_keywords = {'open', 'close', 'hours', 'location', 'address', 'street', 'store', 'at', 'find', 'there'}
         other_keywords = {'food', 'pizza', 'delivery', 'order', 'driver'}
 
         has_question = any(phrase in query for phrase in time_location_context)
@@ -350,8 +350,7 @@ class BoostRuleEngine:
         question_words = {'what', 'which', 'how', 'do', 'does', 'can', 'is', 'are', 'tell', 'show', 'whats'}
         has_question = bool(query_words & question_words)
         has_order_action = bool(query_words & self.synonyms.get('order', set()))
-        has_sizer = bool(query_words & {'small', 'medium', 'large', 'one', 'two', 'three',
-                                        'four', 'five', '1', '2', '3', '4', '5'})
+        has_sizer = bool(query_words & {'small', 'medium', 'large', 'one', 'two', 'three', 'four', 'five'})
 
         if has_menu_item and not has_question:
             yield IntentAdjustment('order', MENU_ITEM_ORDERING_BOOST, "Menu item ordering boost")
@@ -370,10 +369,10 @@ class BoostRuleEngine:
         RULE 9: Question about X Inquiry Pattern / Recommendation Pattern
         """
         query_words = context.query_words
-        inquiry_words = {'question', 'asking', 'inquire', 'wondering', 'ask', 'tell', 'know'}
-        about_words = {'about', 'regarding', 'can', 'concerning'}
+        inquiry_words = {'question', 'asking', 'inquire', 'wondering', 'ask', 'tell', 'know', 'do'}
+        about_words = {'about', 'regarding', 'can', 'concerning', 'have'}
         recommendation_words = self.synonyms.get('recommendation', set())
-        menu_context_words = {'options', 'choices', 'selections', 'good', 'best', 'pizza'}
+        menu_context_words = {'options', 'choices', 'selections', 'good', 'best', 'pizza', 'meal', 'deal'}
 
         has_inquiry = bool(query_words & inquiry_words)
         has_about = bool(query_words & about_words)

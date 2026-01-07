@@ -88,8 +88,8 @@ class TestJaccardSimilarity:
     ])
     def test_real_world_query_similarity(self, query_text, pattern_text, min_similarity):
         """Test with realistic query/pattern pairs"""
-        query_words = self.text_processor.extract_filtered_words(query_text)
-        pattern_words = self.text_processor.extract_filtered_words(pattern_text)
+        query_words = self.text_processor.normalize(query_text).split()
+        pattern_words = self.text_processor.normalize(pattern_text).split()
 
         keyword_sim, _, _ = self.calculator.calculate_keyword_similarity(
             set(query_words), set(pattern_words)
