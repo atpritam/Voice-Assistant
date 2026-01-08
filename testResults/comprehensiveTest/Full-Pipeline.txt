@@ -16,48 +16,64 @@ Configuration:
   Boost Engine: True
   Edge Cases: True
 
-Test Dataset Size: 400 queries
+Test Dataset Size: 600 queries
 
 
 OVERALL RESULTS
 --------------------------------------------------------------------------------
-Accuracy: 98.00%
-Correct: 392 / 400
-Avg Query Time: 24.6ms
-Queries/s: 40.6
+Accuracy: 97.33%
+Correct: 584 / 600
+Avg Query Time: 31.7ms
+Queries/s: 31.6
 
 LAYER USAGE
 --------------------------------------------------------------------------------
-Algorithmic : 320 ( 80.0%)  Acc: 98.75%
-Semantic    :  54 ( 13.5%)  Acc: 92.59%
-LLM         :  26 (  6.5%)  Acc: 100.00%
+Algorithmic : 436 ( 72.7%)  Acc: 98.39%
+Semantic    : 108 ( 18.0%)  Acc: 93.52%
+LLM         :  56 (  9.3%)  Acc: 96.43%
 
 LLM TOKEN USAGE
 --------------------------------------------------------------------------------
-Total Tokens: 6,407
-Avg Tokens/Query: 16.0
+Total Tokens: 13,339
+Avg Tokens/Query: 22.2
 
 CONFIDENCE LEVELS
 --------------------------------------------------------------------------------
-High (≥0.8)           : 287 ( 71.8%)
-Medium (0.6-0.8)      :  96 ( 24.0%)
-Low (<0.6)            :  17 (  4.2%)
+High (≥0.8)           : 379 ( 63.2%)
+Medium (0.6-0.8)      : 181 ( 30.2%)
+Low (<0.6)            :  40 (  6.7%)
 
 INCORRECT PREDICTIONS
 --------------------------------------------------------------------------------
 
-1. 'Driver still hasn't shown up' -> delivery (exp: complaint, conf: 0.62, layer: semantic)
+1. 'Supreme with extra olives and bell peppers for tonight' -> menu_inquiry (exp: order, conf: 0.63, layer: semantic)
 
-2. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.75, layer: algorithmic)
+2. 'I need to talk to someone about my order' -> order (exp: complaint, conf: 0.85, layer: algorithmic)
 
-3. 'How much would it cost to get my cold pizza replaced?' -> menu_inquiry (exp: complaint, conf: 0.65, layer: semantic)
+3. 'Driver still hasn't shown up' -> delivery (exp: complaint, conf: 0.58, layer: semantic)
 
-4. 'Can I order a large pepperoni and how long will it take?' -> delivery (exp: order, conf: 0.66, layer: algorithmic)
+4. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
 
-5. 'I want to order but is delivery free?' -> order (exp: delivery, conf: 1.00, layer: algorithmic)
+5. 'Is there any good cheese available?' -> general (exp: menu_inquiry, conf: 0.68, layer: algorithmic)
 
-6. 'Can I order now or are you closed?' -> order (exp: hours_location, conf: 0.82, layer: algorithmic)
+6. 'I want the food delivered to my home address' -> order (exp: delivery, conf: 0.61, layer: semantic)
 
-7. 'I don't like thick crust do you have thin' -> order (exp: menu_inquiry, conf: 0.64, layer: semantic)
+7. 'What is your website?' -> hours_location (exp: general, conf: 0.71, layer: algorithmic)
 
-8. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.69, layer: semantic)
+8. 'How much would it cost to get my cold pizza replaced?' -> menu_inquiry (exp: complaint, conf: 0.65, layer: semantic)
+
+9. 'Can I order a large pepperoni and how long will it take?' -> delivery (exp: order, conf: 0.66, layer: algorithmic)
+
+10. 'I want to order but is delivery free?' -> order (exp: delivery, conf: 1.00, layer: algorithmic)
+
+11. 'Can I order now or are you closed?' -> order (exp: hours_location, conf: 0.67, layer: algorithmic)
+
+12. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.69, layer: semantic)
+
+13. 'Same order as before' -> complaint (exp: order, conf: 0.62, layer: semantic)
+
+14. 'where u guys at' -> general (exp: hours_location, conf: 0.92, layer: llm)
+
+15. 'hold the onions' -> menu_inquiry (exp: order, conf: 0.96, layer: llm)
+
+16. 'my order says 'delivered' but it's not here yet' -> delivery (exp: complaint, conf: 0.80, layer: semantic)

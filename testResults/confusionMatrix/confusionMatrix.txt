@@ -16,7 +16,7 @@ Configuration:
   Boost Engine: True
   Edge Cases: True
 
-Test Dataset Size: 400 queries
+Test Dataset Size: 600 queries
 
 
 ================================================================================
@@ -27,39 +27,44 @@ Rows = Actual Intent, Columns = Predicted Intent
 
                      complaint        delivery         general  hours_location    menu_inquiry           order
 ----------------------------------------------------------------------------------------------------------------
-complaint                   80               2               0               0               1               0
-delivery                     0              56               0               0               0               1
-general                      0               0              22               0               0               0
-hours_location               0               0               0              61               0               1
-menu_inquiry                 0               0               0               1              86               1
-order                        0               1               0               0               0              87
+complaint                  110               3               0               0               1               1
+delivery                     0              92               0               0               0               2
+general                      0               0              58               1               0               0
+hours_location               0               0               1              92               0               1
+menu_inquiry                 0               0               1               1             123               0
+order                        1               1               0               0               1             110
 
 ================================================================================
 
-Overall Accuracy: 98.00% (392/400)
+Overall Accuracy: 97.50% (585/600)
 
 Per-Intent Statistics:
 --------------------------------------------------------------------------------
 Intent               Precision    Recall       F1-Score     Support
 --------------------------------------------------------------------------------
-complaint            100.00%      96.39%       98.16%       83
-delivery             94.92%       98.25%       96.55%       57
-general              100.00%      100.00%      100.00%      22
-hours_location       98.39%       98.39%       98.39%       62
-menu_inquiry         98.85%       97.73%       98.29%       88
-order                96.67%       98.86%       97.75%       88
+complaint            99.10%       95.65%       97.35%       115
+delivery             95.83%       97.87%       96.84%       94
+general              96.67%       98.31%       97.48%       59
+hours_location       97.87%       97.87%       97.87%       94
+menu_inquiry         98.40%       98.40%       98.40%       125
+order                96.49%       97.35%       96.92%       113
 --------------------------------------------------------------------------------
 
 ================================================================================
 
-Top Misclassifications (Total: 7 types):
+Top Misclassifications (Total: 12 types):
 
 Actual Intent        Predicted As         Count      % of Actual
 ----------------------------------------------------------------------
-complaint            delivery             2          2.4
-complaint            menu_inquiry         1          1.2
-delivery             order                1          1.8
-hours_location       order                1          1.6
-menu_inquiry         hours_location       1          1.1
-menu_inquiry         order                1          1.1
-order                delivery             1          1.1
+complaint            delivery             3          2.6
+delivery             order                2          2.1
+complaint            menu_inquiry         1          0.9
+complaint            order                1          0.9
+general              hours_location       1          1.7
+hours_location       general              1          1.1
+hours_location       order                1          1.1
+menu_inquiry         general              1          0.8
+menu_inquiry         hours_location       1          0.8
+order                complaint            1          0.9
+order                delivery             1          0.9
+order                menu_inquiry         1          0.9

@@ -1,0 +1,199 @@
+OVERALL RESULTS
+--------------------------------------------------------------------------------
+Accuracy: 85.00%
+Correct: 510 / 600
+Avg Query Time: 0.5ms
+Queries/s: 1858.9
+
+LAYER USAGE
+--------------------------------------------------------------------------------
+Algorithmic : 551 ( 91.8%)  Acc: 92.56%
+
+CONFIDENCE LEVELS
+--------------------------------------------------------------------------------
+High (≥0.8)           : 318 ( 53.0%)
+Medium (0.6-0.8)      : 153 ( 25.5%)
+Low (<0.6)            : 129 ( 21.5%)
+
+INCORRECT PREDICTIONS
+--------------------------------------------------------------------------------
+
+1. 'The box was damaged when it arrived' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
+
+2. 'I need to talk to someone about my order' -> order (exp: complaint, conf: 0.85, layer: algorithmic)
+
+3. 'Driver still hasn't shown up' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+4. 'The driver was very rude' -> delivery (exp: complaint, conf: 0.53, layer: algorithmic)
+
+5. 'You charged me twice' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+6. 'I ordered large but got medium' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+7. 'The pizza fell apart when I opened the box' -> hours_location (exp: complaint, conf: 0.41, layer: algorithmic)
+
+8. 'Wow, your 'gourmet' pizza tastes like cardboard' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+9. 'I'm never recommending you to anyone' -> order (exp: complaint, conf: 0.46, layer: algorithmic)
+
+10. 'You forgot to include napkins and plates' -> menu_inquiry (exp: complaint, conf: 0.39, layer: algorithmic)
+
+11. 'You charged me for toppings I didn't get' -> order (exp: complaint, conf: 0.42, layer: algorithmic)
+
+12. 'The pizza was cut into uneven slices' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+13. 'The sauce is way too sweet' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+14. 'Are you in downtown' -> delivery (exp: hours_location, conf: 0.58, layer: algorithmic)
+
+15. 'Are you in a shopping center' -> delivery (exp: hours_location, conf: 0.53, layer: algorithmic)
+
+16. 'Which branch is closest to the stadium' -> unknown (exp: hours_location, conf: 0.00, layer: none)
+
+17. 'What's your best seller?' -> hours_location (exp: menu_inquiry, conf: 0.67, layer: algorithmic)
+
+18. 'Do you make calzones' -> order (exp: menu_inquiry, conf: 0.60, layer: algorithmic)
+
+19. 'How many toppings can I choose' -> hours_location (exp: menu_inquiry, conf: 0.51, layer: algorithmic)
+
+20. 'Is there any good cheese available?' -> general (exp: menu_inquiry, conf: 0.68, layer: algorithmic)
+
+21. 'food should have been here by now, what's going on' -> unknown (exp: delivery, conf: 0.00, layer: none)
+
+22. 'Do you text when the driver is close' -> hours_location (exp: delivery, conf: 0.65, layer: algorithmic)
+
+23. 'Do you deliver during bad weather' -> complaint (exp: delivery, conf: 0.54, layer: algorithmic)
+
+24. 'What's the surcharge for distant deliveries' -> menu_inquiry (exp: delivery, conf: 0.62, layer: algorithmic)
+
+25. 'What's your policy on late deliveries' -> menu_inquiry (exp: delivery, conf: 0.60, layer: algorithmic)
+
+26. 'When is the food gonna be here?' -> hours_location (exp: delivery, conf: 0.58, layer: algorithmic)
+
+27. 'Are you delivering right now?' -> hours_location (exp: delivery, conf: 0.64, layer: algorithmic)
+
+28. 'Hi there' -> unknown (exp: general, conf: 0.00, layer: none)
+
+29. 'Alright' -> unknown (exp: general, conf: 0.00, layer: none)
+
+30. 'Got it' -> unknown (exp: general, conf: 0.00, layer: none)
+
+31. 'I understand' -> unknown (exp: general, conf: 0.00, layer: none)
+
+32. 'Amazing service as always' -> complaint (exp: general, conf: 0.40, layer: algorithmic)
+
+33. 'Perfect' -> unknown (exp: general, conf: 0.00, layer: none)
+
+34. 'what a good day it is today' -> menu_inquiry (exp: general, conf: 0.49, layer: algorithmic)
+
+35. 'Thanks a lot' -> unknown (exp: general, conf: 0.00, layer: none)
+
+36. 'See you later' -> unknown (exp: general, conf: 0.00, layer: none)
+
+37. 'Much appreciated' -> menu_inquiry (exp: general, conf: 0.39, layer: algorithmic)
+
+38. 'Cheers' -> unknown (exp: general, conf: 0.00, layer: none)
+
+39. 'Take care' -> order (exp: general, conf: 0.53, layer: algorithmic)
+
+40. 'Nice talking to you' -> unknown (exp: general, conf: 0.00, layer: none)
+
+41. 'You're welcome' -> unknown (exp: general, conf: 0.00, layer: none)
+
+42. 'No worries' -> unknown (exp: general, conf: 0.00, layer: none)
+
+43. 'Excuse me' -> unknown (exp: general, conf: 0.00, layer: none)
+
+44. 'Pardon me' -> unknown (exp: general, conf: 0.00, layer: none)
+
+45. 'My pleasure' -> unknown (exp: general, conf: 0.00, layer: none)
+
+46. 'Likewise' -> unknown (exp: general, conf: 0.00, layer: none)
+
+47. 'Talk soon' -> unknown (exp: general, conf: 0.00, layer: none)
+
+48. 'Best regards' -> unknown (exp: general, conf: 0.00, layer: none)
+
+49. 'Catch you later' -> unknown (exp: general, conf: 0.00, layer: none)
+
+50. 'Peace out' -> unknown (exp: general, conf: 0.00, layer: none)
+
+51. 'Good night' -> unknown (exp: general, conf: 0.00, layer: none)
+
+52. 'Hope you're doing well' -> unknown (exp: general, conf: 0.00, layer: none)
+
+53. 'How's it going' -> delivery (exp: general, conf: 0.36, layer: algorithmic)
+
+54. 'Thanks so much' -> unknown (exp: general, conf: 0.00, layer: none)
+
+55. 'Have a wonderful evening' -> unknown (exp: general, conf: 0.00, layer: none)
+
+56. 'See you next time' -> hours_location (exp: general, conf: 0.50, layer: algorithmic)
+
+57. 'That's perfect' -> unknown (exp: general, conf: 0.00, layer: none)
+
+58. 'Sounds great' -> unknown (exp: general, conf: 0.00, layer: none)
+
+59. 'What is your website?' -> hours_location (exp: general, conf: 0.71, layer: algorithmic)
+
+60. 'You too' -> unknown (exp: general, conf: 0.00, layer: none)
+
+61. 'I'm hungry' -> unknown (exp: order, conf: 0.00, layer: none)
+
+62. 'Help me decide' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+63. 'I'm looking for something' -> order (exp: menu_inquiry, conf: 0.59, layer: algorithmic)
+
+64. 'Hi there I was wondering if you could help me because I ordered a large pepperoni pizza about two hours ago and it still hasn't arrived yet' -> hours_location (exp: complaint, conf: 0.44, layer: algorithmic)
+
+65. 'I'm having a party tonight and I need to order several large pizzas but I want to know what your best deals are and if you can deliver to my area' -> delivery (exp: menu_inquiry, conf: 0.64, layer: algorithmic)
+
+66. 'My friend ordered from you last week and said it was amazing so I want to try it but I need to know what you have that's vegetarian and how much it costs' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+67. 'I want to complain but also need to know your hours' -> hours_location (exp: complaint, conf: 0.58, layer: algorithmic)
+
+68. 'Can I order a large pepperoni and how long will it take?' -> delivery (exp: order, conf: 0.66, layer: algorithmic)
+
+69. 'Can I order now or are you closed?' -> order (exp: hours_location, conf: 0.67, layer: algorithmic)
+
+70. 'No mushrooms please what else is there' -> hours_location (exp: menu_inquiry, conf: 0.55, layer: algorithmic)
+
+71. 'The delivery took forever' -> delivery (exp: complaint, conf: 0.54, layer: algorithmic)
+
+72. 'The usual please' -> unknown (exp: order, conf: 0.00, layer: none)
+
+73. 'Change that to pickup' -> unknown (exp: order, conf: 0.00, layer: none)
+
+74. 'Same as last time' -> hours_location (exp: order, conf: 0.46, layer: algorithmic)
+
+75. 'delivery' -> complaint (exp: delivery, conf: 0.49, layer: algorithmic)
+
+76. 'specials' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+77. 'Pizza?' -> delivery (exp: order, conf: 0.39, layer: algorithmic)
+
+78. 'Expressing dissatisfaction with service' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+79. 'What is your geographical position' -> menu_inquiry (exp: hours_location, conf: 0.64, layer: algorithmic)
+
+80. 'Demanding monetary reimbursement' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+81. 'yo whats good' -> unknown (exp: general, conf: 0.00, layer: none)
+
+82. 'where u guys at' -> delivery (exp: hours_location, conf: 0.46, layer: algorithmic)
+
+83. 'my food aint here yet' -> unknown (exp: complaint, conf: 0.00, layer: none)
+
+84. 'whats the damage for a large' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+85. 'hold the onions' -> unknown (exp: order, conf: 0.00, layer: none)
+
+86. 'I'd like to ask about your specials' -> order (exp: menu_inquiry, conf: 0.56, layer: algorithmic)
+
+87. 'menu pls (prices too)' -> unknown (exp: menu_inquiry, conf: 0.00, layer: none)
+
+88. 'my order says 'delivered' but it's not here yet' -> delivery (exp: complaint, conf: 0.49, layer: algorithmic)
+
+89. 'hola, quiero una pizza grande de pepperoni' -> unknown (exp: order, conf: 0.00, layer: none)
+
+90. 'i said NO ONIONS but got onions' -> unknown (exp: complaint, conf: 0.00, layer: none)

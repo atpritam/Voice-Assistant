@@ -140,7 +140,7 @@ class ConfusionMatrixTestRunner:
     def __init__(self, test_data=None):
         """Initialize test runner"""
         import logging
-        from .data import get_test_dataset
+        from test.data import get_test_dataset
         from utils.logger import setup_logging
 
         setup_logging(level=logging.WARNING)

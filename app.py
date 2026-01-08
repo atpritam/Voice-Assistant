@@ -39,7 +39,7 @@ ENABLE_ALGORITHMIC = True
 ENABLE_SEMANTIC = True
 ENABLE_LLM = True
 
-MIN_CONFIDENCE = 0.5                                # Minimum confidence to accept intent
+MIN_CONFIDENCE = 0.5                                # Default Minimum confidence to accept intent
 ALGORITHMIC_THRESHOLD = 0.65                        # Min confidence for algorithmic layer to skip next layers
 SEMANTIC_THRESHOLD = 0.5                            # Min confidence for semantic layer to skip LLM layer
 

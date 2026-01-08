@@ -123,14 +123,14 @@ Text Query
 │                         │
 │ 1. Algorithmic (fast)   │ ← 72% of queries
 │    ├─ Pattern matching  │
-│    ├─ Levenshtein      │
+│    ├─ Levenshtein/Jaccard│
 │    └─ Boost Engine      │
 │         ↓               │
 │ 2. Semantic (accurate)  │ ← 18% of queries
 │    └─ Neural embeddings │
 │         ↓               │
 │ 3. LLM (fallback)       │ ← 10% of queries
-│    └─ Ollama/Cloud     │
+│    └─ Ollama/Cloud       │
 └─────────────────────────┘
      ↓
 Response Generation
@@ -146,10 +146,10 @@ Voice Output
 
 | Configuration                    | Accuracy | Latency | Q/s | Token Usage Δ |
 |----------------------------------|----------|---------|-----|---------------|
-| **Full Pipeline (Llama3.2 3B)**  | **98.00%** | **24.9ms** | **40.2** | baseline      |
-| **Full Pipeline (GPT-OSS 120B)** | **98.00%** | **91.2ms** | **11.0** | +44%          |
-| LLM-Only (Llama3.2 3B, local)    | 86.00% | 262.2ms | 3.8 | +1,450%       |
-| LLM-Only (GPT-OSS 120B, cloud)   | 92.75% | **1.42s** | 0.7 | +2,078%       |
+| **Full Pipeline (Llama3.2 3B)**  | **97.50%** | **31.4ms** | **31.8** | baseline      |
+| **Full Pipeline (GPT-OSS 120B)** | **97.50%** | **106.8ms** | **9.4** | +53%          |
+| LLM-Only (Llama3.2 3B, local)    | 87.17% | 278.9ms | 3.6 | +981%       |
+| LLM-Only (GPT-OSS 120B, cloud)   | 94.83% | **1.03s** | 1.0 | +1,524%       |
 
 \*GPT-OSS 120B is the latest Open Source GPT model released by OpenAI on August 5, 2025.
 
@@ -250,6 +250,8 @@ Each intent has:
 - **patterns**: Training examples for pattern matching and embedding generation
 - **similarity_threshold**: Minimum confidence score required to accept the intent for algorithmic/semantic layer classification
 - **default_response**: Templated response when no LLM is available
+
+Check Pattern File and Test Dataset distribution and diversity score with: `python test/data.py`
 
 ## Usage
 
@@ -357,35 +359,37 @@ All tests use semantic model `all-mpnet-base-v2` and LLM model `llama3.2:3b-inst
 
 ### Extended Test Dataset (600 queries - with edge cases)
 
-Comprehensive testing with 600 queries including 105 edge cases:
+Comprehensive testing with 600 queries including 125 edge cases:
 
 | Configuration | Accuracy | Avg Time | Queries/s |
 |--------------|----------|----------|-----------|
-| Full Pipeline | 98.00% | 24.9ms | 40.2 |
-| Algorithmic + Semantic | 94.75% | 5.9ms | 170.6 |
-| Algorithmic + LLM | 96.50% | 55.4ms | 18.0 |
-| Semantic + LLM | 93.50% | 44.4ms | 22.5 |
-| Algorithmic Only | 90.25% | 3.4ms | 292.6 |
-| Semantic Only | 89.25% | 18.3ms | 54.8 |
-| LLM Only | 86.00% | 262.2ms | 3.8 |
+| Full Pipeline | 97.33% | 31.4ms | 31.8 |
+| Algorithmic + Semantic | 91.67% | 4.1ms | 244.8 |
+| Algorithmic + LLM | 96.17% | 75.3ms | 13.3 |
+| Semantic + LLM | 93.00% | 56.1ms | 17.8 |
+| Algorithmic Only | 85.00% | 0.5ms | 1824.2 |
+| Semantic Only | 86.17% | 13.7ms | 72.8 |
+| LLM Only | 87.17% | 278.9ms | 3.6 |
+
+**Note**: Due to the inherent non-deterministic nature of large language models, full pipeline accuracy scores exhibit variance across repeated evaluations, ranging from 97.17% to 97.50% (±0.33 percentage points). This variability is attributable to the stochastic sampling mechanisms employed in the LLM inference layer and represents expected behavior in hybrid architectures incorporating generative components.
 
 ### Layer Distribution (Full Pipeline)
 
-- Algorithmic layer: 80.0% of queries (320/400)
-- Semantic layer: 13.5% of queries (54/400)
-- LLM layer: 6.5% of queries (26/400)
+- Algorithmic layer: 72.7% of queries (436/600)
+- Semantic layer: 18.0% of queries (108/600)
+- LLM layer: 9.3% of queries (56/600)
 
 ### Boost Engine Impact
 Comparison with and without contextual boost rules on full pipeline (600 queries with edge cases):
 
 | Metric              | Without Boost | With Boost | Improvement |
 |---------------------|---------------|------------|-------------|
-| Accuracy            | 94.75% | 98.00% | +3.25% |
-| Correct Predictions | 379 | 392 | +13 |
-| Query Time          | 33.4ms | 23.3ms | 30% faster |
-| Algorithmic Usage   | 268 | 320 | +52 |
-| Semantic Usage      | 95 | 54 | -41 |
-| LLM Fallback        | 37 | 26 | -11 |
+| Accuracy            | 94.00% | 97.50% | +3.50% |
+| Correct Predictions | 564 | 585 | +21 |
+| Query Time          | 41.0ms | 30.8ms | 25% faster |
+| Algorithmic Usage   | 366 | 436 | +70 |
+| Semantic Usage      | 164 | 108 | -56 |
+| LLM Fallback        | 70 | 56 | -14 |
 
 ### Confusion Matrix Results (Full Pipeline - 600 queries)
 
@@ -393,12 +397,12 @@ Comparison with and without contextual boost rules on full pipeline (600 queries
 
 | Intent | Precision | Recall  | F1-Score | Support |
 |--------|-----------|---------|----------|---------|
-| complaint | 100.00%   | 96.39%  | 98.18%   | 83      |
-| delivery | 94.92%    | 98.25%  | 96.55%   | 57      |
-| general | 100.00%   | 100.00% | 100.00%  | 22      |
-| hours_location | 96.83%    | 98.39%  | 97.60%   | 62      |
-| menu_inquiry | 98.85%    | 97.73%  | 98.29%   | 88      |
-| order | 96.67%    | 98.86%  | 97.75%   | 88      |
+| complaint | 99.10%   | 95.65%  | 97.35%   | 115      |
+| delivery | 95.83%    | 97.87%  | 96.84%   | 94      |
+| general | 96.67%   | 98.31% | 97.48%  | 59      |
+| hours_location | 97.87%    | 97.87%  | 97.87%   | 94      |
+| menu_inquiry | 98.40%    | 98.40%  | 98.40%   | 125      |
+| order | 96.49%    | 97.35%  | 96.92%   | 113      |
 
 
 See `testResults/` directory for detailed analyses.
@@ -410,7 +414,7 @@ The benchmark results above are validated against dataset with:
 - **600 total queries** (475 normal + 125 edge cases)
 - **6 intent categories**: order (113), complaint (115), menu_inquiry (125), hours_location (94), delivery (94), general (59)
 - **Diversity score: 0.968/1.000** - High lexical variety, not repetitive memorization
-- **Edge cases include**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing
+- **Edge cases**: Multi-intent queries, sarcasm, typos, slang, very short queries, ambiguous phrasing, Noise/Formatting
 - **Zero duplicates** - Unbiased evaluation
 
 ## Key Technical Features

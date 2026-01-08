@@ -28,7 +28,7 @@ from .integration.boost_analysis import BoostEngineTestRunner
 from .integration.confusion_matrix import run_confusion_matrix_test
 from .integration.failure_analysis import FailureAnalysisRunner
 from .integration.common import CONFIG, create_single_query_dataset, get_available_intents
-from .integration.data import get_test_dataset
+from test.data import get_test_dataset
 from utils.logger import setup_logging
 
 

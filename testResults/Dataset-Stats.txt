@@ -1,0 +1,35 @@
+Run: python test/data.py
+
+=== Test Dataset File Statistics ===
+{
+    "total_queries": 600,
+    "unique_intents": 6,
+    "intent_distribution": {
+        "order": 113,
+        "complaint": 115,
+        "hours_location": 94,
+        "menu_inquiry": 125,
+        "delivery": 94,
+        "general": 59
+    }
+}
+
+Duplicates found: False
+Dataset Diversity score: 0.9679
+
+=== Pattern File Statistics ===
+{
+    "total_patterns": 290,
+    "unique_intents": 6,
+    "intent_distribution": {
+        "order": 44,
+        "complaint": 50,
+        "hours_location": 46,
+        "menu_inquiry": 55,
+        "delivery": 54,
+        "general": 41
+    }
+}
+
+Duplicates found: False
+Pattern file Diversity score: 0.9700

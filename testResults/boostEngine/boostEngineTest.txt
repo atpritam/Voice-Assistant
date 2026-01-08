@@ -14,38 +14,38 @@ Configuration:
   Boost Engine: True
   Edge Cases: True
 
-Test Dataset Size: 400 queries
+Test Dataset Size: 600 queries
 
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 90.25% (361/400 correct)
-  Time: 866.5ms | Avg: 2.2ms | 461.6 q/s
-  Layers Used - Algo: 381, Semantic: 0, LLM: 0
+✓ Accuracy: 85.00% (510/600 correct)
+  Time: 277.7ms | Avg: 0.5ms | 2160.9 q/s
+  Layers Used - Algo: 551, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 85.00% (340/400 correct)
-  Time: 884.8ms | Avg: 2.2ms | 452.1 q/s
-  Layers Used - Algo: 375, Semantic: 0, LLM: 0
+✓ Accuracy: 80.17% (481/600 correct)
+  Time: 259.5ms | Avg: 0.4ms | 2312.3 q/s
+  Layers Used - Algo: 540, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (WITH Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 98.00% (392/400 correct)
-  Time: 9.32s | Avg: 23.3ms | 42.9 q/s
-  Layers Used - Algo: 320, Semantic: 54, LLM: 26
-  Tokens: 409 (1.0 avg/query)
+✓ Accuracy: 97.50% (585/600 correct)
+  Time: 18.50s | Avg: 30.8ms | 32.4 q/s
+  Layers Used - Algo: 436, Semantic: 108, LLM: 56
+  Tokens: 13,337 (22.2 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline (NO Boost)
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 94.75% (379/400 correct)
-  Time: 13.34s | Avg: 33.4ms | 30.0 q/s
-  Layers Used - Algo: 268, Semantic: 95, LLM: 37
-  Tokens: 583 (1.5 avg/query)
+✓ Accuracy: 94.00% (564/600 correct)
+  Time: 24.63s | Avg: 41.0ms | 24.4 q/s
+  Layers Used - Algo: 366, Semantic: 164, LLM: 70
+  Tokens: 16,698 (27.8 avg/query)
 
 ================================================================================
 BOOST ENGINE IMPACT ANALYSIS
@@ -55,18 +55,22 @@ Algorithmic Only Pipeline:
 --------------------------------------------------------------------------------
 Metric                 Without Boost   With Boost      Impact
 --------------------------------------------------------------------------------
-Accuracy               85.00%          90.25%          +5.25%
-Correct Predictions    340             361             +21
-Time                   884.8ms         866.5ms         -2%
-High Confidence        207             257             +50
+Accuracy               80.17%          85.00%          +4.83%
+Correct Predictions    481             510             +29
+Time                   259.5ms         277.7ms         +7%
+High Confidence        253             318             +65
+
+Positive Change Rate: 91.4% of changed predictions were improvements
 
 Full Pipeline Pipeline:
 --------------------------------------------------------------------------------
 Metric                 Without Boost   With Boost      Impact
 --------------------------------------------------------------------------------
-Accuracy               94.75%          98.00%          +3.25%
-Correct Predictions    379             392             +13
-Time                   13.34s          9.32s           -30%
-Algo Layer Usage       268             320             +52
-Semantic Usage         95              54              -41
-LLM Fallback           37              26              -11
+Accuracy               94.00%          97.50%          +3.50%
+Correct Predictions    564             585             +21
+Time                   24.63s          18.50s          -25%
+Algo Layer Usage       366             436             +70
+Semantic Usage         164             108             -56
+LLM Fallback           70              56              -14
+
+Positive Change Rate: 92.0% of changed predictions were improvements

@@ -656,28 +656,65 @@ def get_test_dataset(include_edge_cases=False):
     return NORMAL_TEST_DATASET
 
 
-def check_duplicates():
-    """
-    Check if dataset contains duplicate queries.
-    """
+def _get_text_processor():
+    """Initialize and return TextProcessor."""
     import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     from utils.text_processor import TextProcessor
+    return TextProcessor()
 
-    text_processor = TextProcessor()
-    dataset = NORMAL_TEST_DATASET + EDGE_CASES_DATASET
+
+def _load_pattern_file():
+    """Load and return pattern file data."""
+    import json
+    import os
+    
+    try:
+        pattern_file_path = os.path.join(os.path.dirname(__file__), '../utils/intent_patterns.json')
+        with open(pattern_file_path, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _check_duplicates_generic(items, text_processor):
+    """Generic duplicate checker for (text, intent) tuples."""
     seen = {}
     duplicates = []
 
-    for query, intent in dataset:
-        normalized = text_processor.normalize(query)
+    for text, intent in items:
+        normalized = text_processor.normalize(text)
 
         if normalized in seen:
-            duplicates.append((query, intent, seen[normalized]))
+            duplicates.append((text, intent, seen[normalized]))
         else:
-            seen[normalized] = (query, intent)
+            seen[normalized] = (text, intent)
 
     return len(duplicates) > 0, duplicates
+
+
+def check_duplicates():
+    """Check if dataset contains duplicate queries."""
+    text_processor = _get_text_processor()
+    dataset = NORMAL_TEST_DATASET + EDGE_CASES_DATASET
+    return _check_duplicates_generic(dataset, text_processor)
+
+
+def check_pattern_duplicates():
+    """Check if pattern file contains duplicate patterns."""
+    patterns_data = _load_pattern_file()
+    if patterns_data is None:
+        return None, []
+    
+    text_processor = _get_text_processor()
+    
+    pattern_items = []
+    for intent, data in patterns_data.items():
+        if intent != "unknown" and "patterns" in data:
+            for pattern in data["patterns"]:
+                pattern_items.append((pattern, intent))
+    
+    return _check_duplicates_generic(pattern_items, text_processor)
 
 
 def _calculate_diversity(texts):
@@ -692,10 +729,10 @@ def _calculate_diversity(texts):
 
         if len(texts) < 2:
             return None
-            
+
         vectors = TfidfVectorizer(ngram_range=(1, 2), max_features=500).fit_transform(texts)
         similarities = cosine_similarity(vectors)
-        
+
         return round(1 - np.mean(similarities[np.triu_indices_from(similarities, k=1)]), 4)
     except ImportError:
         return None
@@ -708,22 +745,37 @@ def calculate_test_dataset_diversity_score():
 
 def calculate_pattern_file_diversity_score():
     """Calculate pattern file diversity score"""
-    import json
-    import os
-    
-    try:
-        pattern_file_path = os.path.join(os.path.dirname(__file__), '../../utils/intent_patterns.json')
-        with open(pattern_file_path, 'r') as f:
-            patterns_data = json.load(f)
-
-        all_patterns = []
-        for intent, data in patterns_data.items():
-            if intent != "unknown" and "patterns" in data:
-                all_patterns.extend(data["patterns"])
-        
-        return _calculate_diversity(all_patterns)
-    except (FileNotFoundError, json.JSONDecodeError):
+    patterns_data = _load_pattern_file()
+    if patterns_data is None:
         return None
+
+    all_patterns = []
+    for intent, data in patterns_data.items():
+        if intent != "unknown" and "patterns" in data:
+            all_patterns.extend(data["patterns"])
+
+    return _calculate_diversity(all_patterns)
+
+def get_pattern_file_statistics():
+    """Get statistics about the pattern file"""
+    patterns_data = _load_pattern_file()
+    if patterns_data is None:
+        return None
+
+    intent_distribution = {}
+    total_patterns = 0
+
+    for intent, data in patterns_data.items():
+        if intent != "unknown" and "patterns" in data:
+            count = len(data["patterns"])
+            intent_distribution[intent] = count
+            total_patterns += count
+
+    return {
+        'total_patterns': total_patterns,
+        'unique_intents': len(intent_distribution),
+        'intent_distribution': intent_distribution
+    }
 
 def get_dataset_statistics():
     """Get comprehensive statistics about the dataset"""
@@ -731,34 +783,23 @@ def get_dataset_statistics():
     edge_cases = EDGE_CASES_DATASET
     full_dataset = normal_dataset + edge_cases
 
-    # Count intents in each dataset
-    normal_counts = {}
-    edge_counts = {}
-    total_counts = {}
+    # Count intents in full dataset
+    intent_distribution = {}
 
-    for _, intent in normal_dataset:
-        normal_counts[intent] = normal_counts.get(intent, 0) + 1
-        total_counts[intent] = total_counts.get(intent, 0) + 1
-
-    for _, intent in edge_cases:
-        edge_counts[intent] = edge_counts.get(intent, 0) + 1
-        total_counts[intent] = total_counts.get(intent, 0) + 1
+    for _, intent in full_dataset:
+        intent_distribution[intent] = intent_distribution.get(intent, 0) + 1
 
     return {
         'total_queries': len(full_dataset),
-        'normal_queries': len(normal_dataset),
-        'edge_case_queries': len(edge_cases),
-        'unique_intents': len(total_counts),
-        'normal_intent_distribution': normal_counts,
-        'edge_case_intent_distribution': edge_counts,
-        'total_intent_distribution': total_counts
+        'unique_intents': len(intent_distribution),
+        'intent_distribution': intent_distribution
     }
 
 
 if __name__ == '__main__':
     import json
     stats = get_dataset_statistics()
-    print()
+    print("\n=== Test Dataset File Statistics ===")
     print(json.dumps(stats, indent=4))
 
     has_dupes, dupes = check_duplicates()
@@ -771,7 +812,23 @@ if __name__ == '__main__':
             print(f"    Duplicate of: '{original[0]}' ({original[1]})")
 
     diversity_score = calculate_test_dataset_diversity_score()
-    print(f"\nDataset diversity score: {diversity_score:.4f}" if diversity_score else "\nDataset diversity score: N/A")
+    print(f"Dataset Diversity score: {diversity_score:.4f}" if diversity_score else "\nDataset diversity score: N/A")
+
+    pattern_stats = get_pattern_file_statistics()
+    if pattern_stats:
+        print("\n=== Pattern File Statistics ===")
+        print(json.dumps(pattern_stats, indent=4))
+    
+    pattern_dupes_result = check_pattern_duplicates()
+    if pattern_dupes_result[0] is not None:
+        has_pattern_dupes, pattern_dupes = pattern_dupes_result
+        print("\nDuplicates found:", has_pattern_dupes)
+        
+        if has_pattern_dupes:
+            print(f"\nFound {len(pattern_dupes)} duplicate pattern(s):")
+            for pattern, intent, original in pattern_dupes:
+                print(f"  - '{pattern}' ({intent})")
+                print(f"    Duplicate of: '{original[0]}' ({original[1]})")
     
     pattern_diversity_score = calculate_pattern_file_diversity_score()
-    print(f"Pattern file diversity score: {pattern_diversity_score:.4f}" if pattern_diversity_score else "Pattern file diversity score: N/A")
+    print(f"Pattern file Diversity score: {pattern_diversity_score:.4f}" if pattern_diversity_score else "\nPattern file diversity score: N/A")

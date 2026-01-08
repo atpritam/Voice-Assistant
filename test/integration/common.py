@@ -304,7 +304,7 @@ class BaseTestRunner:
             custom_data: Optional custom test dataset
             log_level: Logging level (default: INFO)
         """
-        from .data import get_test_dataset
+        from test.data import get_test_dataset
         from utils.logger import setup_logging
 
         if not logging.getLogger().handlers:

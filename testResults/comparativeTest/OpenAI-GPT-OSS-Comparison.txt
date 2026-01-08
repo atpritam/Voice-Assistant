@@ -15,61 +15,61 @@ Configuration:
   Boost Engine: True
   Edge Cases: True
 
-Test Dataset Size: 400 queries
+Test Dataset Size: 600 queries
 
 
 ────────────────────────────────────────────────────────────────────────────────
 Full Pipeline
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 98.00% (392/400 correct)
-  Time: 36.50s | Avg: 91.2ms | 11.0 q/s
-  Layers Used - Algo: 320, Semantic: 54, LLM: 26
-  Tokens: 9,240 (23.1 avg/query)
+✓ Accuracy: 97.50% (585/600 correct)
+  Time: 64.06s | Avg: 106.8ms | 9.4 q/s
+  Layers Used - Algo: 436, Semantic: 108, LLM: 56
+  Tokens: 20,433 (34.1 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> Semantic
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 94.75% (379/400 correct)
-  Time: 3.58s | Avg: 9.0ms | 111.6 q/s
-  Layers Used - Algo: 320, Semantic: 72, LLM: 0
+✓ Accuracy: 91.67% (550/600 correct)
+  Time: 2.23s | Avg: 3.7ms | 269.5 q/s
+  Layers Used - Algo: 436, Semantic: 135, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 97.00% (388/400 correct)
-  Time: 112.82s | Avg: 282.1ms | 3.5 q/s
-  Layers Used - Algo: 320, Semantic: 0, LLM: 80
-  Tokens: 28,379 (70.9 avg/query)
+✓ Accuracy: 97.00% (582/600 correct)
+  Time: 178.68s | Avg: 297.8ms | 3.4 q/s
+  Layers Used - Algo: 436, Semantic: 0, LLM: 164
+  Tokens: 59,354 (98.9 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic -> LLM
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 93.75% (375/400 correct)
-  Time: 66.41s | Avg: 166.0ms | 6.0 q/s
-  Layers Used - Algo: 0, Semantic: 354, LLM: 46
-  Tokens: 16,253 (40.6 avg/query)
+✓ Accuracy: 93.67% (562/600 correct)
+  Time: 104.49s | Avg: 174.2ms | 5.7 q/s
+  Layers Used - Algo: 0, Semantic: 516, LLM: 84
+  Tokens: 31,312 (52.2 avg/query)
 
 ────────────────────────────────────────────────────────────────────────────────
 Algorithmic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 90.25% (361/400 correct)
-  Time: 1.31s | Avg: 3.3ms | 305.8 q/s
-  Layers Used - Algo: 381, Semantic: 0, LLM: 0
+✓ Accuracy: 85.00% (510/600 correct)
+  Time: 313.8ms | Avg: 0.5ms | 1912.1 q/s
+  Layers Used - Algo: 551, Semantic: 0, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 Semantic Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 89.25% (357/400 correct)
-  Time: 4.41s | Avg: 11.0ms | 90.6 q/s
-  Layers Used - Algo: 0, Semantic: 386, LLM: 0
+✓ Accuracy: 86.17% (517/600 correct)
+  Time: 7.02s | Avg: 11.7ms | 85.4 q/s
+  Layers Used - Algo: 0, Semantic: 561, LLM: 0
 
 ────────────────────────────────────────────────────────────────────────────────
 LLM Only
 ────────────────────────────────────────────────────────────────────────────────
-✓ Accuracy: 92.75% (371/400 correct)
-  Time: 566.91s | Avg: 1.42s | 0.7 q/s
-  Layers Used - Algo: 0, Semantic: 0, LLM: 400
-  Tokens: 139,558 (348.9 avg/query)
+✓ Accuracy: 94.83% (569/600 correct)
+  Time: 617.01s | Avg: 1.03s | 1.0 q/s
+  Layers Used - Algo: 0, Semantic: 0, LLM: 600
+  Tokens: 216,592 (361.0 avg/query)
 
 ================================================================================
 COMPARATIVE ANALYSIS
@@ -80,31 +80,31 @@ Pipeline Comparison
 --------------------------------------------------------------------------------
 Configuration             Accuracy   Total Time   Avg Time   Q/s
 --------------------------------------------------------------------------------
-Full Pipeline               98.00%      36.50s    91.2ms      11.0
-Algorithmic -> Semantic     94.75%       3.58s     9.0ms     111.6
-Algorithmic -> LLM          97.00%     112.82s   282.1ms       3.5
-Semantic -> LLM             93.75%      66.41s   166.0ms       6.0
-Algorithmic Only            90.25%       1.31s     3.3ms     305.8
-Semantic Only               89.25%       4.41s    11.0ms      90.6
-LLM Only                    92.75%     566.91s     1.42s       0.7
+Full Pipeline               97.50%      64.06s   106.8ms       9.4
+Algorithmic -> Semantic     91.67%       2.23s     3.7ms     269.5
+Algorithmic -> LLM          97.00%     178.68s   297.8ms       3.4
+Semantic -> LLM             93.67%     104.49s   174.2ms       5.7
+Algorithmic Only            85.00%     313.8ms     0.5ms    1912.1
+Semantic Only               86.17%       7.02s    11.7ms      85.4
+LLM Only                    94.83%     617.01s     1.03s       1.0
 
 LAYER USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             Algo     Semantic   LLM      Unrecognized Intent
 --------------------------------------------------------------------------------
-Full Pipeline                320        54      26        0
-Algorithmic -> Semantic      320        72       0        8
-Algorithmic -> LLM           320         0      80        0
-Semantic -> LLM                0       354      46        0
-Algorithmic Only             381         0       0       19
-Semantic Only                  0       386       0       14
-LLM Only                       0         0     400        5
+Full Pipeline                436       108      56        0
+Algorithmic -> Semantic      436       135       0       29
+Algorithmic -> LLM           436         0     164        0
+Semantic -> LLM                0       516      84        0
+Algorithmic Only             551         0       0       49
+Semantic Only                  0       561       0       39
+LLM Only                       0         0     600        0
 
 TOKEN USAGE COMPARISON
 --------------------------------------------------------------------------------
 Configuration             LLM Calls    Total Tokens    Avg/Query    vs Full Pipeline
 --------------------------------------------------------------------------------
-Full Pipeline                     26          9,240        23.1       baseline
-Algorithmic -> LLM                80         28,379        70.9       + 207.1%
-Semantic -> LLM                   46         16,253        40.6       +  75.9%
-LLM Only                         400        139,558       348.9       +1410.4%
+Full Pipeline                     56         20,433        34.1       baseline
+Algorithmic -> LLM               164         59,354        98.9       + 190.5%
+Semantic -> LLM                   84         31,312        52.2       +  53.2%
+LLM Only                         600        216,592       361.0       + 960.0%
