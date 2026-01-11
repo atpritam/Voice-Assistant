@@ -93,6 +93,46 @@ python app.py
 
 Access the web interface at `http://localhost:5000`
 
+### Windows Installation
+
+The project runs on Windows, but some dependencies (e.g., audio processing) may require additional setup. For best performance, use WSL 2 (Windows Subsystem for Linux) to follow the Ubuntu instructions above. Alternatively, install natively:
+
+1. **Install Prerequisites**:
+   - Install Python 3.11 from the official site (include PATH option).
+   - Install Git from git-scm.com.
+   - Install Chocolatey (package manager): Run PowerShell as Admin and execute `Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))`.
+   - Install FFmpeg: `choco install ffmpeg`.
+   - Install Espeak-ng (for Coqui TTS): `choco install espeak-ng`.
+
+2. **Clone Repository**:
+     ```bash
+     git clone https://github.com/your-repo/Voice-Assistant.git
+     cd Voice-Assistant
+     ```
+
+3. **Virtual Environment**:
+     ```bash
+     python -m venv .venv
+     .venv\Scripts\activate
+     ```
+
+4. **Install Dependencies**:
+     ```bash
+     pip install -r requirements.txt
+     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  # For CUDA
+     ip install git+https://github.com/openai/whisper.git  # Whisper
+     pip install coqui-tts  # TTS (may need manual Espeak path if issues)
+     ```
+
+5. **Ollama Setup**:
+     - Download and run OllamaSetup.exe from ollama.com/download/windows.
+     - Pull model: `ollama pull llama3.2:3b-instruct-q4_K_M`.
+
+6. **Run the System**:
+     Access at http://127.0.0.1:5000.
+
+**Notes**: For full Linux compatibility, enable WSL 2 via `wsl --install` in PowerShell, install Ubuntu, and follow Linux steps. 
+
 ### Web Interface
 
 <img src="static/assets/screenshot.png" alt="Voice System Interface" width="800">
