@@ -1,0 +1,38 @@
+{
+  "greetings": {
+    "use_template": true,
+    "inclusion_phrases": ["hello", "hi", "hi there","hey", "what's up", "good morning", "good afternoon", "good evening"],
+    "templates": [
+      "Welcome to Pizza Paradise! How can we satisfy your pizza cravings today?",
+      "Welcome to Pizza Paradise! How can we help you with a delicious pizza order today?",
+      "Hello! Welcome to Pizza Paradise, how can I help you order today?"
+    ]
+  },
+
+  "acknowledgements": {
+    "use_template": true,
+    "inclusion_phrases": ["thank you", "thank you very much", "thanks", "thanks for your help", "okay thanks", "thankyou", "appreciate it", "thanks for helping"],
+    "templates": [
+      "You're welcome! Do you need any further assistance?",
+      "No problem — happy to help.",
+      "Thanks for reaching out!",
+      "It's my pleasure to assist you, let me know if you need anything else."
+    ]
+  },
+
+  "intents": {
+    "hours_location": {
+      "use_template": true,
+      "templates": [
+        "We're open Monday to Friday 11 AM to 10 PM, Saturday 12 PM to 11 PM, and Sunday 12 PM to 9 PM. Our address is 123 Main Street, Downtown.",
+        "We are open from 11 AM to 10 PM, Saturday from 12 PM to 11 PM, and Sunday from 12 PM to 9 PM. We can be reached at 123 Main Street, Downtown. We accept walk-ins and deliveries.",
+        "We operate Monday through Friday from 11 AM to 10 PM, Saturdays 11 AM to 11 PM, and Sundays 12 PM to 9 PM. We're located at 123 Main Street, Downtown area.",
+        "Our hours are Monday-Friday 11 AM to 10 PM, Saturday 11 AM to 11 PM, Sunday 12 PM to 9 PM. You can find us at 123 Main Street in Downtown."
+      ],
+      "exclusion_phrases": [
+        "close to", "near", "far from", "distance", "how far", "airport", "stadium", "mall",
+        "center", "closest", "nearest", "branch", "which one", "my area", "my address", "from here"
+      ]
+    }
+  }
+}

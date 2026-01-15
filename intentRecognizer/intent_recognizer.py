@@ -7,6 +7,8 @@ Each layer is tried when the previous layer fails or has below threshold confide
 import os
 import sys
 import json
+import random
+import re
 
 import torch
 from typing import Dict, Optional, List
@@ -66,6 +68,58 @@ class IntentRecognizerUtils:
         """Get default path to patterns file"""
         utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
         return os.path.join(utils_dir, 'intent_patterns.json')
+
+    @staticmethod
+    def get_response_templates_file() -> str:
+        """Get default path to response templates file"""
+        utils_dir = os.path.join(os.path.dirname(__file__), '..', 'utils')
+        return os.path.join(utils_dir, 'response_templates.json')
+
+    @staticmethod
+    def load_response_templates(templates_file: str, enable_logging: bool = False) -> Dict:
+        """Load response templates (per-intent) from JSON file"""
+        logger = ConditionalLogger(__name__, enable_logging)
+        def _normalize_phrases(value):
+            if not isinstance(value, list):
+                return value
+            return [p.strip().lower() for p in value if isinstance(p, str) and p.strip()]
+
+        def _normalize_intent_cfg(cfg: dict) -> dict:
+            if not isinstance(cfg, dict):
+                return cfg
+
+            new_cfg = dict(cfg)
+            new_cfg['inclusion_phrases'] = _normalize_phrases(cfg.get('inclusion_phrases'))
+            new_cfg['exclusion_phrases'] = _normalize_phrases(cfg.get('exclusion_phrases'))
+            return new_cfg
+
+        def _normalize_response_group(cfg):
+            if not isinstance(cfg, dict):
+                return cfg
+
+            normalized = _normalize_intent_cfg(cfg)
+            if 'intents' in cfg and isinstance(cfg['intents'], dict):
+                normalized['intents'] = {
+                    name: _normalize_intent_cfg(intent_cfg)
+                    for name, intent_cfg in cfg['intents'].items()
+                }
+            return normalized
+
+        try:
+            with open(templates_file, 'r', encoding='utf-8') as f:
+                raw = json.load(f)
+
+            return {
+                key: _normalize_response_group(cfg)
+                for key, cfg in raw.items()
+            }
+
+        except FileNotFoundError:
+            logger.info(f"Response templates file not found: {templates_file}")
+            return {}
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing response templates: {e}")
+            return {}
 
 from .algorithmic import AlgorithmicRecognizer
 from .semantic import SemanticRecognizer
@@ -128,6 +182,9 @@ class IntentRecognizer:
         )
 
         self.patterns = IntentRecognizerUtils.load_patterns_from_file(self.patterns_file, self.enable_logging)
+        self.response_templates = IntentRecognizerUtils.load_response_templates(
+            IntentRecognizerUtils.get_response_templates_file(), self.enable_logging
+        )
 
         self.algorithmic_recognizer = None
         self.semantic_recognizer = None
@@ -262,6 +319,36 @@ class IntentRecognizer:
         self._log_layer_acceptance('llm', llm_result)
         return self._create_result(query, llm_result, layer='llm', conversation_history=conversation_history)
 
+    def _should_use_llm_for_response(self, query: str, intent: str) -> tuple[bool, Optional[str]]:
+        """Decide whether to use LLM or Template (when response_templates.json is available) for response generation."""
+        cfg = getattr(self, 'response_templates', {}) or {}
+        query_lower = query.lower()
+        normalized = re.sub(r'[^\w\s]', '', query_lower).strip()
+
+        # Check top-level greeting/acknowledgement groups for direct response
+        for group in ('greetings', 'acknowledgements'):
+            grp = cfg.get(group)
+            if grp and isinstance(grp, dict) and grp.get('use_template'):
+                inc = grp.get('inclusion_phrases', []) or []
+                if normalized in inc:
+                    templates = grp.get('templates', []) or []
+                    return False, (random.choice(templates) if templates else None)
+
+        intent_cfg = (cfg.get('intents', {}) or {}).get(intent) or cfg.get(intent)
+        if not intent_cfg:
+            return True, None
+        if not intent_cfg.get('use_template', False):
+            return True, None
+        multi_intent_keywords = {'but', 'also', 'and', 'plus', 'however', 'though'}
+        if any(kw in query_lower for kw in multi_intent_keywords):
+            return True, None
+        exclusion_phrases = intent_cfg.get('exclusion_phrases', []) or []
+        if any(phrase in query_lower for phrase in exclusion_phrases):
+            return True, None
+        templates = intent_cfg.get('templates', []) if isinstance(intent_cfg, dict) else []
+        return False, (random.choice(templates) if templates else None)
+
+
     def _create_result(self, query: str, result, layer: str,
                        conversation_history: Optional[List[Dict]] = None,
                        original_confidence: float = None) -> RecognitionResult:
@@ -272,26 +359,36 @@ class IntentRecognizer:
         if self.test_mode:
             response = ""
         elif not response and self.enable_llm and layer != 'llm':
-            self.logger.info("  - Using LLM for response generation")
+            use_llm, template_response = self._should_use_llm_for_response(query, result.intent)
 
-            try:
-                llm_result = self.llm_recognizer.recognize(
-                    query, self.patterns, conversation_history, 
-                    result.intent, original_conf,
-                    classifier=False   # LLM only generates response
-                )
-
-                response = llm_result.response
-
-                if not response or not response.strip():
-                    self.logger.warning("LLM returned empty response, using fallback")
+            if not use_llm:
+                if template_response:
+                    response = template_response
+                    self.logger.info("  - Using template response")
+                else:
                     response = self._generate_simple_response(result.intent)
-            except json.JSONDecodeError as e:
-                self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
-                response = self._generate_simple_response(result.intent)
-            except Exception as e:
-                self.logger.warning(f"LLM response generation failed: {e}, using fallback")
-                response = self._generate_simple_response(result.intent)
+                    self.logger.info("  - Using fallback template from patterns file")
+            else:
+                self.logger.info("  - Using LLM for response generation")
+
+                try:
+                    llm_result = self.llm_recognizer.recognize(
+                        query, self.patterns, conversation_history, 
+                        result.intent, original_conf,
+                        classifier=False   # LLM only generates response
+                    )
+
+                    response = llm_result.response
+
+                    if not response or not response.strip():
+                        self.logger.warning("LLM returned empty response, using fallback")
+                        response = self._generate_simple_response(result.intent)
+                except json.JSONDecodeError as e:
+                    self.logger.warning(f"LLM response JSON parse error: {e}, using fallback")
+                    response = self._generate_simple_response(result.intent)
+                except Exception as e:
+                    self.logger.warning(f"LLM response generation failed: {e}, using fallback")
+                    response = self._generate_simple_response(result.intent)
         elif not response and not self.test_mode:
             response = self._generate_simple_response(result.intent)
 
