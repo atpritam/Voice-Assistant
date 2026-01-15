@@ -90,18 +90,23 @@ class TextProcessor:
                 expanded_words.append(word)
 
         return ' '.join(expanded_words)
+    
+    def filter_filler_words(self, words: List[str]) -> List[str]:
+        """Filter out filler words from a list of words."""
+        return [w for w in words if w not in self.filler_words]
 
     def normalize(self, text: str) -> str:
         """Normalize text: expand contractions, convert single-digit numbers to words, lowercase, strip punctuation, filter filler words, and collapse spaces."""
         if not text:
             return ""
 
-        text = text.strip()
         text = text.replace("–", " ").replace("—", " ").replace("\n", " ")
         text = self.expand_contractions(text)
         text = re.sub(r'\b([0-9]|10)\b', lambda m: TextProcessor.number_to_words(int(m.group())), text)
         text = text.lower()
         text = text.translate(str.maketrans('', '', '!?.,;:\'"()[]{}/@'))
-        words = text.split()
-        filtered = [w for w in words if w not in self.filler_words]
-        return ' '.join(filtered)
+        if self.filler_words:
+            words = text.split()
+            filtered = self.filter_filler_words(words)
+            return ' '.join(filtered).strip()
+        return text.strip()
