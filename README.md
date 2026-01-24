@@ -1,12 +1,12 @@
 # Voice Response System with Multi-Layer Intent Recognition Pipeline
 
-A **hybrid intent recognition system** combining classical NLP pattern matching, neural semantic embeddings, and large language models for robust conversational AI. The system has a novel three-layer architecture that balances speed, accuracy, and interpretability.
+A **hybrid intent recognition system** combining classical NLP pattern matching, neural semantic embeddings, and large language models for robust conversational AI. Features intelligent RAG,  and a novel three-layer architecture that balances speed, accuracy, and cost-efficiency.
 
-**Use Case**: Domain-agnostic customer service
+**Use Case**: Domain-agnostic customer service with voice interaction
 
 **Current Domain**: Pizza Restaurant
 
-**Research Focus**: Hybrid NLP approach combining rule-based, embedding-based, and generative techniques
+**Research Focus**: Hybrid NLP approach combining rule-based, embedding-based, and generative techniques with intelligent context management
 
 ## Table of Contents
 
@@ -24,16 +24,69 @@ A **hybrid intent recognition system** combining classical NLP pattern matching,
 
 ## Key Features
 
-- **Multi-Layer Intent Recognition Pipeline**
-  - Layer 1 - Pattern Matching: Algorithmic recognition using Levenshtein edit distance, Jaccard similarity, TF-IDF weighted indexing, and synonym expansion
-  - Layer 2 - Neural Embeddings: Semantic similarity using Sentence Transformer embeddings (SBERT) for context-aware matching
-  - Layer 3 - Generative AI: LLM-based classification with conversation history awareness (Ollama local/cloud models)
-  - Boost Engine: Domain-specific contextual rules applying negative sentiment detection, entity keyword matching, and co-occurrence patterns
+### Intent Recognition Pipeline
+- **Multi-Layer Cascading Architecture**: Three-layer confidence-driven pipeline achieving 97.5% accuracy
+  - Layer 1 - Algorithmic (72% of queries, 0.5ms): TF-IDF indexing, Levenshtein/Jaccard similarity, contextual boost engine
+  - Layer 2 - Semantic (18% of queries, 13.7ms): Sentence-BERT embeddings with persistent caching
+  - Layer 3 - LLM Fallback (10% of queries): Ollama local/cloud models with conversation history
+  
+- **Contextual Boost Engine**: Domain-specific heuristics for handling sarcasm, negative sentiment, multi-intent queries, and edge cases
 
-- **End-to-End Voice Interaction**
-  - **ASR (Automatic Speech Recognition)**: OpenAI Whisper with audio preprocessing for robust transcription
-  - **TTS (Text-to-Speech)**: Coqui TTS neural vocoder (VITS architecture)
-  - **Full conversational loop**: Speech → Text → Intent → Response → Speech
+### Intelligent Response Generation
+- **Selective RAG Implementation**: Intent-driven context injection reducing LLM token usage by ~53%
+  - Only relevant business data sent based on classified intent
+  - Dynamic prompt construction with conversation history awareness
+  
+- **Hybrid Response Strategy**: Template-based responses for deterministic queries, LLM generation for complex interactions
+  - Configurable template system (`response_templates.json`) for instant replies
+
+### End-to-End Voice Interaction
+- **ASR (Automatic Speech Recognition)**: OpenAI Whisper with audio preprocessing
+  - Noise reduction, normalization, silence trimming
+  
+- **TTS (Text-to-Speech)**: Coqui TTS neural vocoder (VITS architecture)
+  - Response sanitization for natural speech (currency formatting, symbol replacement)
+  
+- **Full conversational loop**: Speech → Transcription → Intent Classification → RAG → Response Generation → Speech Synthesis
+
+## Architecture Highlights
+
+### Engineering Core
+
+**Reliability & Error Handling**
+- Comprehensive retry logic with graceful fallbacks (2 retries for LLM failures)
+- Full error handling across all components with meaningful error messages
+- Automatic fallback to previous layer results on LLM failure
+
+**Observability & Monitoring**
+- Detailed per-component statistical tracking (accuracy, latency, token usage, layer distribution)
+- Real-time statistics endpoint (`/statistics`) for monitoring
+- Structured logging with color-coded module identification
+
+**Performance Optimization**
+- Persistent embedding cache with MD5 invalidation (instant cold-start)
+- TF-IDF inverted index for O(1) candidate selection
+- Early exit thresholds to prevent unnecessary computation
+
+**Code Quality**
+- Type hints and dataclasses for type safety
+- Modular architecture with clear separation of concerns
+- Comprehensive test suite: 76 unit tests + integration tests
+
+### Domain-Agnostic Design
+
+**Configuration-Driven Adaptation**
+- Intent patterns in `intent_patterns.json` (290 patterns across 6 intents)
+- Linguistic resources in `linguistic_resources.json` (synonyms, critical keywords, filler words)
+- Business information in `res_info.json` (menu, hours, location, delivery info)
+- Response templates in `response_templates.json` (templated replies for common queries)
+- **No core code changes required** for domain adaptation
+
+**Highly Configurable**
+- Switchable models: ASR (5 Whisper variants), TTS (Coqui models), LLM (Ollama models), Semantic (SBERT models)
+- Tunable thresholds: Algorithmic (0.65), Semantic (0.5), Minimum confidence (0.5)
+- Modular toggles: Enable/disable any layer independently for testing and optimization
+- Configurable boost engine rules via `boostEngine.py`
 
 ## Quick Start
 
@@ -119,9 +172,9 @@ The project runs on Windows, but some dependencies (e.g., audio processing) may 
 4. **Install Dependencies**:
      ```bash
      pip install -r requirements.txt
-     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  # For CUDA
-     ip install git+https://github.com/openai/whisper.git  # Whisper
-     pip install coqui-tts  # TTS (may need manual Espeak path if issues)
+     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+     pip install git+https://github.com/openai/whisper.git
+     pip install coqui-tts
      ```
 
 5. **Ollama Setup**:
@@ -153,33 +206,49 @@ Each layer can be independently enabled or disabled with configurable confidence
 
 ```
 User Voice Input
-     ↓
+     |
 [ASR - Whisper]
-     ↓
+     |
 Text Query
-     ↓
-┌─────────────────────────┐
-│ Intent Recognition      │
-│                         │
-│ 1. Algorithmic (fast)   │ ← 72% of queries
-│    ├─ Pattern matching  │
-│    ├─ Levenshtein/Jaccard│
-│    └─ Boost Engine      │
-│         ↓               │
-│ 2. Semantic (accurate)  │ ← 18% of queries
-│    └─ Neural embeddings │
-│         ↓               │
-│ 3. LLM (fallback)       │ ← 10% of queries
-│    └─ Ollama/Cloud       │
-└─────────────────────────┘
-     ↓
+     |
++-------------------------+
+| Intent Recognition      |
+|                         |
+| 1. Algorithmic (fast)   | <- 72% of queries
+|    |- Pattern matching  |
+|    |- Levenshtein/Jaccard
+|    +- Boost Engine      |
+|         |               |
+| 2. Semantic (accurate)  | <- 18% of queries
+|    +- Neural embeddings |
+|         |               |
+| 3. LLM (fallback)       | <- 10% of queries
+|    +- Ollama/Cloud      |
++-------------------------+
+     |
+     v
+[Selective RAG]
+     |
+     +-- Intent-Based Context Injection
+     |   (menu_inquiry -> menu data only)
+     |   (~53% token reduction)
+     |
+     v
+[Response Strategy Decision]
+     |
+     +-- Template Match? -> Direct Response
+     |   (greetings, hours, fixed facts)
+     |
+     +-- Complex Query? -> LLM Generation
+         (with conversation history)
+     |
+     v
 Response Generation
-     ↓
+     |
 [TTS - Coqui VITS]
-     ↓
+     |
 Voice Output
 ```
-
 ### Full Pipeline vs. LLM-Only
 
 **Intent Recognition Performance Comparison (600 queries, test mode):**
@@ -191,7 +260,7 @@ Voice Output
 | LLM-Only (Llama3.2 3B, local)    | 87.17% | 278.9ms | 3.6 | +981%       |
 | LLM-Only (GPT-OSS 120B, cloud)   | 94.83% | **1.03s** | 1.0 | +1,524%       |
 
-\*GPT-OSS 120B is the latest Open Source GPT model released by OpenAI on August 5, 2025.
+*GPT-OSS 120B is the latest Open Source GPT model released by OpenAI on August 5, 2025.
 
 See `testResults/comparativeTest/` for detailed comparative analysis.
 
@@ -482,28 +551,59 @@ The benchmark results above are validated against dataset with:
 - **Contextual Boost Engine**:
   - Negative sentiment keyword detection for complaint classification
   - Keyword co-occurrence patterns and contextual heuristics
+  - Sarcasm detection for implicit complaint identification
 
 ### Semantic Layer
 
 - **Transformer Embeddings**: Sentence-BERT models (MPNet, MiniLM) for semantic similarity
-- **Embedding Caching**: Persistent storage for instant initialization and reduced cold-start latency
+- **Embedding Caching**: Persistent storage with MD5 invalidation for instant initialization and reduced cold-start latency
 - **Batch Processing**: Optimized pattern encoding
+- **Top-K Averaging**: Weighted average of top 3 pattern matches (50%, 30%, 20%) for robust similarity scoring
 
 ### LLM Layer
 
-- **Conversation Context**: Conversation history tracking for context-aware classification and response generation
-- Support for both cloud and local Ollama models
+- **Conversation Context**: Multi-turn conversation history tracking for context-aware classification and response generation
+- **Retry Logic**: 2 retries with graceful fallback on transient failures
+- **Support for both cloud and local Ollama models**
 
 ## Development
 
 ### Extending to Other Domains
 
-1. Update `utils/res_info.json` with your domain information
-2. Update intent patterns in `utils/intent_patterns.json`
-3. Modify linguistics in `utils/linguistic_resources.json`
-4. Adjust boost rules in `intentRecognizer/algorithmic/boostEngine.py` if using algorithmic layer
-5. Update llm prompt templates in `intentRecognizer/llm/templates.py`
-6. Update test dataset in `test/integration/data.py`
+The system is designed for easy adaptation to new domains:
+
+1. **Update Business Information** (`utils/res_info.json`)
+
+2. **Define Intent Patterns** (`utils/intent_patterns.json`)
+   - Add intent categories with example phrases
+   - Set similarity thresholds per intent
+   - Provide default responses
+
+3. **Configure Linguistic Resources** (`utils/linguistic_resources.json`)
+   - Domain-specific synonyms
+   - Critical keywords per intent
+   - Filler words to filter
+
+4. **Customize Response Templates** (`utils/response_templates.json`)
+   - Template responses for common queries
+   - Exclusion/inclusion phrase rules
+   - Response variations
+
+5. **Adjust Boost Rules** (`intentRecognizer/algorithmic/boostEngine.py`)
+   - Domain-specific contextual heuristics
+   - Sentiment detection rules
+   - Multi-intent handling logic
+
+6. **Update LLM Prompts** (`intentRecognizer/llm/templates.py`)
+   - Intent descriptions
+   - Business workflows
+   - RAG context mapping
+
+7. **Create Test Dataset** (`test/data.py`)
+   - Representative queries for each intent
+   - Edge cases specific to domain
+
+**No core code changes required** - all adaptation is configuration-driven.
 
 ## License
 
@@ -515,3 +615,10 @@ This project is part of a Bachelor's Thesis. All rights reserved.
 - Coqui TTS for speech synthesis
 - Sentence Transformers for semantic embeddings
 - Ollama for LLM inference
+
+## Contact
+
+**Author**: Pritam Chakraborty  
+**Supervisor**: Dr. Eng. Jarosław Kozik  
+**Institution**: AGH University of Science and Technology, Krakow, Poland  
+**Year**: 2026
